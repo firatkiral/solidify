@@ -49,7 +49,7 @@ test("two overlapping coplanar circles", async () => {
     const placement2 = curves.lookup(circle1).placement;
     await regions.updatePlacement(placement2);
 
-    expect(db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(db.find(visual.PlaneInstance, true).length).toBe(3);
 
     await curves.remove(circle2);
     await regions.updatePlacement(placement2);

@@ -3,6 +3,9 @@ import * as THREE from "three";
 import { Choice, PointPickerModel } from "../../command/point-picker/PointPickerModel";
 import { Viewport } from "../../components/viewport/Viewport";
 import * as visual from "../../visual_model/VisualModel";
+import { AxisSnap } from "./AxisSnap";
+import { ScreenSpaceConstructionPlaneSnap } from "./ConstructionPlaneSnap";
+import { PlaneSnap } from "./PlaneSnap";
 import { ChoosableSnap, GridLike } from "./Snap";
 import { SnapManagerGeometryCache } from "./SnapManagerGeometryCache";
 import { SnapResult } from "./SnapPicker";
@@ -51,7 +54,9 @@ export class PointPickerSnapPickerStrategy extends SnapPickerStrategy {
         const output = [];
         for (const info of input) {
             if (!restriction.isValid(info.position)) continue;
-            const { position, orientation } = restriction.project(info.position, grid);
+            // Snaps onto geometry (vertices, edges, faces...) keep their exact position; only free positions step by the grid.
+            const isFree = info.snap instanceof AxisSnap || info.snap instanceof PlaneSnap || info.snap instanceof ScreenSpaceConstructionPlaneSnap;
+            const { position, orientation } = restriction.project(info.position, isFree ? grid : undefined);
             info.position = position;
             info.orientation = orientation;
             output.push(info);

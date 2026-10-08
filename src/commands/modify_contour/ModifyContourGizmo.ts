@@ -1,10 +1,11 @@
 import { CompositeDisposable } from "event-kit";
 import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2";
-import { EditorLike, Mode } from "../../command/AbstractGizmo";
+import { EditorLike, Intersector, Mode, MovementInfo } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
 import { AbstractAxialScaleGizmo, AbstractAxisGizmo, arrowGeometry, AxisHelper, lineGeometry, MagnitudeStateMachine, sphereGeometry } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
+import { Helper } from "../../util/Helpers";
 import { AdvancedGizmoTriggerStrategy } from "../../command/AdvancedGizmoTriggerStrategy";
 import { ModifyContourParams } from "./ModifyContourFactory";
 
@@ -13,7 +14,7 @@ const Y = new THREE.Vector3(0, 1, 0);
 export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
     private readonly filletAll = new FilletCornerGizmo("modify-contour:fillet-all", this.editor, true);
     private readonly segments: PushCurveGizmo[] = [];
-    private readonly corners: FilletCornerGizmo[] = [];
+    private readonly corners: FilletCornerHandleGizmo[] = [];
 
     private readonly segmentTrigger = new AdvancedGizmoTriggerStrategy<number, void>(this.editor);
     private readonly filletTrigger = new AdvancedGizmoTriggerStrategy<number, void>(this.editor);
@@ -21,14 +22,16 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
     constructor(params: ModifyContourParams, editor: EditorLike) {
         super(params, editor);
 
-        for (const _ of params.segmentAngles) {
+        for (const [i, segment] of params.segmentAngles.entries()) {
+            if (!segment.pushable) continue;
             const gizmo = new PushCurveGizmo("modify-contour:segment", this.editor);
+            gizmo.userData.index = i;
             gizmo.trigger = this.segmentTrigger;
             this.segments.push(gizmo);
         }
 
         for (const corner of params.cornerAngles) {
-            const gizmo = new FilletCornerGizmo("modify-contour:fillet", this.editor);
+            const gizmo = new FilletCornerHandleGizmo("modify-contour:fillet", this.editor);
             gizmo.userData.index = corner.index;
             gizmo.trigger = this.filletTrigger;
             this.corners.push(gizmo);
@@ -43,8 +46,8 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
         for (const segment of segments) segment.relativeScale.setScalar(0.8);
 
         const quat = new THREE.Quaternion();
-        for (const [i, segment] of params.segmentAngles.entries()) {
-            const gizmo = segments[i];
+        for (const gizmo of segments) {
+            const segment = params.segmentAngles[gizmo.userData.index];
             gizmo.relativeScale.setScalar(0.5);
             quat.setFromUnitVectors(Y, segment.normal);
             gizmo.quaternion.copy(quat);
@@ -79,13 +82,13 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
         disposable.add(segmentTrigger.execute());
         disposable.add(filletTrigger.execute());
 
-        for (const [i, segment] of segments.entries()) {
+        for (const segment of segments) {
             this.addGizmo(segment, d => {
                 this.disableCorners();
                 this.disableSegments(segment);
 
                 params.mode = 'offset';
-                params.segment = i;
+                params.segment = segment.userData.index;
                 params.distance = d;
             });
         }
@@ -155,7 +158,14 @@ class PushCurveGizmo extends AbstractAxisGizmo {
         return original + dist
     }
 
-    get shouldRescaleOnZoom() { return true }
+    // Only the arrow keeps a constant screen size; the gizmo itself stays in world units so the arrow follows the pushed segment
+    protected override scaleIndependentOfZoom(camera: THREE.Camera, worldPosition: THREE.Vector3) {
+        const { relativeScale, tip, knob } = this;
+        tip.scale.copy(relativeScale);
+        knob.scale.copy(relativeScale);
+        Helper.scaleIndependentOfZoom(tip, camera, worldPosition);
+        Helper.scaleIndependentOfZoom(knob, camera, worldPosition);
+    }
 }
 
 export class FilletCornerGizmo extends AbstractAxialScaleGizmo {
@@ -175,4 +185,54 @@ export class FilletCornerGizmo extends AbstractAxialScaleGizmo {
     }
 
     get shouldRescaleOnZoom() { return true }
+}
+
+// A corner's sphere starts a short, screen-constant distance from the corner along its side and moves out along that side
+// by the radius, so it stays under the pointer while dragging
+export class FilletCornerHandleGizmo extends FilletCornerGizmo {
+    private readonly startPoint = new THREE.Vector3();
+    private readonly away = new THREE.Vector3();
+    private radius = 0;
+    private factor?: number;
+
+    override onPointerDown(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo) {
+        super.onPointerDown(cb, intersect, info);
+        const hit = intersect.raycast(this.plane);
+        if (hit !== undefined) this.startPoint.copy(hit.point);
+    }
+
+    override onPointerMove(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo): number {
+        if (this.mode !== 'pointer') return this.state.current;
+        const point = intersect.raycast(this.plane)?.point;
+        if (point === undefined) return this.state.current;
+
+        const away = this.away.set(0, -1, 0).applyQuaternion(this.worldQuaternion);
+        const radius = this.stepLength(Math.max(0, this.state.original + point.sub(this.startPoint).dot(away)), info.event);
+        this.state.current = radius;
+        this.render(radius);
+        cb(radius);
+        return radius;
+    }
+
+    render(radius: number) {
+        this.radius = radius;
+        this.place();
+    }
+
+    protected override scaleIndependentOfZoom(camera: THREE.Camera, worldPosition: THREE.Vector3) {
+        const { relativeScale, tip, knob } = this;
+        tip.scale.copy(relativeScale);
+        knob.scale.copy(relativeScale);
+        Helper.scaleIndependentOfZoom(tip, camera, worldPosition);
+        this.factor = Helper.scaleIndependentOfZoom(knob, camera, worldPosition);
+        this.place();
+    }
+
+    private place() {
+        // NOTE: render() runs from the base constructor, before this class's fields are initialized
+        const y = this.handleLength * this.relativeScale.y * (this.factor ?? 1) - this.radius;
+        this.shaft.scale.y = y;
+        this.tip.position.set(0, y, 0);
+        this.knob.position.copy(this.tip.position);
+    }
 }

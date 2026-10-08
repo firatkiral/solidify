@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { PointResult } from "../../command/point-picker/PointPicker";
 import { PlaneSnap } from "./PlaneSnap";
 import { GridLike, RaycastableSnap, Snap } from "./Snap";

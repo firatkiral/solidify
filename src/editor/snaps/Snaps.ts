@@ -1,6 +1,6 @@
 import { freeze, X, Y, Z } from "../../util/Constants";
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { curve3d2curve2d, isSamePlacement, normalizePlacement, point2point, vec2vec } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
 import { CrossPoint } from "../curves/CrossPointDatabase";

@@ -10,6 +10,7 @@ import { SolidCopier } from "../../src/editor/SolidCopier";
 import * as visual from '../../src/visual_model/VisualModel';
 import { FakeMaterials } from "../../__mocks__/FakeMaterials";
 import '../matchers';
+import { collectGarbage } from '../gc';
 
 let db: GeometryDatabase;
 let materials: Required<MaterialDatabase>;
@@ -40,6 +41,21 @@ describe(ThreePointBoxFactory, () => {
         expect(center).toApproximatelyEqual(new THREE.Vector3(0.5, 0.5, 0.5));
         expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 1, 1));
+    });
+
+    test('faces and edges stay usable after garbage collection', async () => {
+        makeBox.p1 = new THREE.Vector3();
+        makeBox.p2 = new THREE.Vector3(1, 0, 0);
+        makeBox.p3 = new THREE.Vector3(1, 1, 0);
+        makeBox.p4 = new THREE.Vector3(1, 1, 1);
+        const item = await makeBox.commit() as visual.Solid;
+        const model = db.lookup(item);
+        await collectGarbage();
+        for (const face of model.GetFaces()) {
+            expect(() => face.IsSameSense()).not.toThrow();
+            expect(() => face.Normal(0.5, 0.5)).not.toThrow();
+        }
+        for (const edge of model.GetEdges()) expect(() => edge.Point(0.5)).not.toThrow();
     });
 });
 

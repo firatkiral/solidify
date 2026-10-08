@@ -5,7 +5,8 @@ import { ProxyCamera } from "../components/viewport/ProxyCamera";
 import { Viewport } from "../components/viewport/Viewport";
 import { CancellableRegisterable } from "../util/CancellableRegisterable";
 import { CancellableRegistor } from "../util/CancellableRegistor";
-import { deg2rad, rad2deg } from "../util/Conversion";
+import { deg2rad, rad2deg, roundToStep } from "../util/Conversion";
+import { formatAngle, formatLength } from "../util/Units";
 import { Helper } from "../util/Helpers";
 import { CircleGeometry } from "../util/Util";
 import { AbstractGizmo, EditorLike, GizmoHelper, Intersector, MovementInfo } from "./AbstractGizmo";
@@ -129,7 +130,7 @@ type InputMode = 'keyboard' | 'pointer';
 
 export class AngleGizmo extends CircularGizmo<number> {
     protected mode: InputMode = 'pointer';
-    override readonly helper = new CompositeHelper([new DashedLineMagnitudeHelper(), new NumberHelper(rad2deg)]);
+    override readonly helper = new CompositeHelper([new DashedLineMagnitudeHelper(), new NumberHelper(formatAngle)]);
 
     private _camera!: THREE.Camera;
     get camera() { return this._camera }
@@ -158,10 +159,12 @@ export class AngleGizmo extends CircularGizmo<number> {
         this.mode = 'pointer';
     }
 
+    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on or Shift is held.
     protected truncate(angle: number, event: MouseEvent): number {
-        if (event.ctrlKey) {
-            return deg2rad(Math.trunc(rad2deg(angle) / 5) * 5)
-        } else return angle
+        const { snaps } = this.editor;
+        if (!(snaps.angleSnapping || event?.shiftKey)) return angle;
+        const start = this.state.original;
+        return start + deg2rad(roundToStep(rad2deg(angle - start), snaps.angleStep));
     }
 
     override onKeyPress(cb: (angle: number) => void, text: KeyboardInterpreter) {
@@ -189,7 +192,7 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
     protected abstract readonly state: MagnitudeStateMachine;
     protected readonly hasCommand: boolean = true;
 
-    private readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
+    protected readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
 
     protected originalPosition!: THREE.Vector3;
     private readonly startMousePosition = new THREE.Vector3();
@@ -200,6 +203,16 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
         editor: EditorLike,
     ) {
         super(longName.split(':')[0], editor);
+    }
+
+    // Lengths step by the gizmo length step, counted from the value the drag started at, while gizmo snapping is on
+    // or Shift is held; ratios (scale) opt out.
+    protected get stepsAsLength() { return true }
+    protected stepLength(length: number, event: MouseEvent): number {
+        const { snaps } = this.editor;
+        if (!this.stepsAsLength || !(snaps.gizmoSnapping || event?.shiftKey)) return length;
+        const start = this.state.original;
+        return start + roundToStep(length - start, snaps.lengthStep);
     }
 
     protected setup() {
@@ -262,7 +275,7 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
             if (point === undefined) return; // this only happens when the user is dragging through different viewports.
 
             const dist = point.sub(this.startMousePosition).dot(localY);
-            length = this.accumulate(this.state.original, this.sign, dist);
+            length = this.stepLength(this.accumulate(this.state.original, this.sign, dist), info.event);
         }
         point.copy(localY).multiplyScalar(length).add(this.originalPosition);
         this.state.current = length;
@@ -519,7 +532,7 @@ export abstract class AbstractAxialScaleGizmo extends AbstractAxisGizmo {
         start2center.copy(pointStart2d).sub(center2d);
         const sign = Math.sign(end2center.dot(start2center));
 
-        const magnitude = this.accumulate(this.state.original, end2center.length() * this.cameraFactorForPointerVelocity, this.denominator * this.cameraFactorForPointerVelocity, sign);
+        const magnitude = this.stepLength(this.accumulate(this.state.original, end2center.length() * this.cameraFactorForPointerVelocity, this.denominator * this.cameraFactorForPointerVelocity, sign), info.event);
         this.state.current = magnitude;
         this.render(this.state.current);
         cb(this.state.current);
@@ -622,11 +635,12 @@ points.push(new THREE.Vector3(0, -10_000, 0));
 points.push(new THREE.Vector3(0, 10_000, 0));
 axisGeometry.setFromPoints(points);
 
+// The gizmo's value as text, with its unit: lengths by default
 export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>, CancellableRegisterable {
     private readonly element: HTMLElement;
     private viewport?: Viewport;
 
-    constructor(private readonly map: (t: number) => number = x => x) {
+    constructor(private readonly format: (t: number) => string = formatLength) {
         super();
         const div = document.createElement('div');
         div.className = 'axis-helper';
@@ -642,7 +656,7 @@ export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>,
 
     onMove(position: THREE.Vector2 | THREE.Vector3, value: number) {
         this.element.hidden = false;
-        this.element.innerHTML = this.map(value).toFixed(2);
+        this.element.textContent = this.format(value);
         this.project();
     }
 
@@ -652,7 +666,7 @@ export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>,
             viewport.domElement.appendChild(this.element);
         }
         this.element.hidden = false;
-        this.element.innerHTML = this.map(value).toFixed(2);
+        this.element.textContent = this.format(value);
         this.project();
     }
 

@@ -64,10 +64,10 @@ describe(AngleGizmo, () => {
         gizmo.onPointerLeave(intersector);
     })
 
-    test("it truncates when ctrl is held", () => {
+    test("it steps by the angle step when shift is held", () => {
         const intersector = { raycast: jest.fn(), snap: jest.fn() } as Intersector;
         const cb = jest.fn();
-        const event = new MouseEvent('move', { ctrlKey: true });
+        const event = new MouseEvent("move", { shiftKey: true });
         const info = { viewport, event } as MovementInfo;
 
         gizmo.onPointerEnter(intersector);
@@ -76,6 +76,17 @@ describe(AngleGizmo, () => {
         expect(gizmo.value).toBe(degToRad(45));
         gizmo.onPointerUp(cb, intersector, info);
         gizmo.onPointerLeave(intersector);
+    })
+
+    test("angle steps count from the angle the drag started at", () => {
+        const intersector = { raycast: jest.fn(), snap: jest.fn() } as Intersector;
+        const cb = jest.fn();
+        const event = new MouseEvent('move', { shiftKey: true });
+        gizmo.value = degToRad(12);
+        gizmo.onPointerEnter(intersector);
+        gizmo.onPointerDown(cb, intersector, { viewport, event } as MovementInfo);
+        gizmo.onPointerMove(cb, intersector, { angle: degToRad(11), viewport, event } as MovementInfo);
+        expect(gizmo.value).toBeCloseTo(degToRad(22));
     })
 
 })
@@ -185,6 +196,44 @@ describe(LengthGizmo, () => {
         expect(gizmo.value).toBe(1);
         gizmo.onPointerUp(cb, intersector, info)
         gizmo.onPointerLeave(intersector);
+    })
+
+    test("steps by the length step with gizmo snapping on, or while shift is held", () => {
+        const intersector = { raycast: jest.fn(), snap: jest.fn() };
+        const cb = jest.fn();
+        const drag = (y: number, shiftKey: boolean) => {
+            gizmo.onPointerEnter(intersector);
+            intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3() })
+            gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
+            intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, y, 0) })
+            gizmo.onPointerMove(cb, intersector, { viewport, event: new MouseEvent('move', { shiftKey }) } as MovementInfo);
+            const value = gizmo.value;
+            gizmo.onInterrupt(() => { });
+            gizmo.onPointerUp(cb, intersector, {} as MovementInfo);
+            gizmo.onPointerLeave(intersector);
+            return value;
+        }
+
+        expect(drag(0.37, false)).toBeCloseTo(0.37);
+        expect(drag(0.37, true)).toBe(0.4);
+        editor.snaps.gizmoSnapping = true;
+        editor.snaps.stepLengthStep(1); // 0.2
+        expect(drag(0.37, false)).toBe(0.4);
+        expect(drag(0.29, false)).toBe(0.2);
+        editor.snaps.gizmoSnapping = false;
+        editor.snaps.stepLengthStep(-1);
+    })
+
+    test("steps count from the value the drag started at", () => {
+        const intersector = { raycast: jest.fn(), snap: jest.fn() };
+        const cb = jest.fn();
+        gizmo.value = 0.37;
+        gizmo.onPointerEnter(intersector);
+        intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3() })
+        gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
+        intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 0.23, 0) })
+        gizmo.onPointerMove(cb, intersector, { viewport, event: new MouseEvent('move', { shiftKey: true }) } as MovementInfo);
+        expect(gizmo.value).toBeCloseTo(0.57);
     })
 
     test("ctrl key uses snaps", () => {

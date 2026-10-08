@@ -67,11 +67,11 @@ export default (editor: Editor) => {
                         ? <button
                             onClick={e => this.expand(e)}
                         >
-                            <plasticity-icon name="nav-arrow-down" class="text-neutral-500 hover:text-neutral-300"></plasticity-icon>
+                            <solidify-icon name="nav-arrow-down" class="text-neutral-500 hover:text-neutral-300"></solidify-icon>
                         </button>
                         : <div class="w-4 h-4"></div>
                     }
-                    <plasticity-icon name={klass.toLowerCase()} class={isSelected ? 'text-accent-100 hover:text-accent-50' : 'text-accent-500 hover:text-neutral-50'}></plasticity-icon>
+                    <solidify-icon name={klass.toLowerCase()} class={isSelected ? 'text-accent-100 hover:text-accent-50' : 'text-accent-500 hover:text-neutral-50'}></solidify-icon>
                     <div
                         class="py-0.5 flex-1"
                         onDblClick={e => { if (!editable) this.editName(e) }}
@@ -83,22 +83,22 @@ export default (editor: Editor) => {
                             class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${hidden ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setHidden(e, !hidden)}
                         >
-                            <plasticity-tooltip placement="top" command="command:hide-selected">Hide in viewport</plasticity-tooltip>
-                            <plasticity-icon key={!hidden} name={!hidden ? 'eye' : 'eye-off'}></plasticity-icon>
+                            <solidify-tooltip placement="top" command="command:hide-selected">Hide in viewport</solidify-tooltip>
+                            <solidify-icon key={!hidden} name={!hidden ? 'eye' : 'eye-off'}></solidify-icon>
                         </button>
                         <button
                             class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${!visible ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setVisibility(e, !visible)}
                         >
-                            <plasticity-tooltip placement="top">Disable in viewport</plasticity-tooltip>
-                            <plasticity-icon key={visible} name={visible ? 'light-bulb-on' : 'light-bulb-off'}></plasticity-icon>
+                            <solidify-tooltip placement="top">Disable in viewport</solidify-tooltip>
+                            <solidify-icon key={visible} name={visible ? 'light-bulb-on' : 'light-bulb-off'}></solidify-icon>
                         </button>
                         <button
                             class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${!selectable ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setSelectable(e, !selectable)}
                         >
-                            <plasticity-tooltip placement="top">Disable selection in viewport</plasticity-tooltip>
-                            <plasticity-icon key={selectable} name={selectable ? 'no-lock' : 'lock'}></plasticity-icon>
+                            <solidify-tooltip placement="top">Disable selection in viewport</solidify-tooltip>
+                            <solidify-icon key={selectable} name={selectable ? 'no-lock' : 'lock'}></solidify-icon>
                         </button>
                         <button
                             style={color === undefined ? "" : `background-color: #${color}`}
@@ -183,7 +183,7 @@ export default (editor: Editor) => {
             return item;
         }
     }
-    customElements.define('plasticity-outliner-item', OutlinerItem);
+    customElements.define('solidify-outliner-item', OutlinerItem);
 
     class OutlinerGroup extends HTMLElement {
         private _group!: Group;
@@ -204,7 +204,7 @@ export default (editor: Editor) => {
             render(result, this);
         }
     }
-    customElements.define('plasticity-outliner-group', OutlinerGroup);
+    customElements.define('solidify-outliner-group', OutlinerGroup);
 }
 
 class OutlinerChangeSelectionCommand extends cmd.CommandLike {

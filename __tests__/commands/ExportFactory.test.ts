@@ -37,7 +37,8 @@ beforeEach(() => {
     exp = new ExportFactory(db, materials, signals);
 })
 
-test('invokes the appropriate c3d commands', async () => {
-    exp.solids = [box];
+test('meshes the solids it is given', async () => {
+    exp.setSolids([box], ['Box']);
     await exp.update();
+    expect(exp.summary).toMatchObject({ solids: 1, triangles: 12, problems: [] });
 });

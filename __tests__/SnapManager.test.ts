@@ -248,20 +248,69 @@ test("enabling and disabling types adds/removes snaps", async () => {
     expect(snaps.all.geometrySnaps[0].size).toBe(7);
 });
 
-test("xor enabled=true", () => {
-    snaps.enabled = true;
-    snaps.xor = true;
-    expect(snaps.enabled).toBe(false);
-    snaps.xor = false;
+const objectLayersOff = () => { for (const layer of SnapManager.objectLayers) snaps.layers.disable(layer) };
+
+test("object snapping is on while any of Face/Curve/Edge is, and Ctrl turns all three on while held", () => {
     expect(snaps.enabled).toBe(true);
+    objectLayersOff();
+    expect(snaps.enabled).toBe(false);
+    expect(snaps.activeLayers.isEnabled(visual.Layers.Face)).toBe(false);
+
+    snaps.holdObjects(true);
+    expect(snaps.enabled).toBe(true);
+    for (const layer of SnapManager.objectLayers) expect(snaps.activeLayers.isEnabled(layer)).toBe(true);
+    expect(snaps.isLayerOn(visual.Layers.Face)).toBe(false);
+    snaps.holdObjects(false);
+    expect(snaps.enabled).toBe(false);
+
+    snaps.layers.enable(visual.Layers.Curve);
+    expect(snaps.enabled).toBe(true);
+    snaps.holdObjects(true);
+    snaps.holdObjects(false);
+    expect(snaps.isLayerOn(visual.Layers.Curve)).toBe(true);
+    expect(snaps.isLayerOn(visual.Layers.Face)).toBe(false);
 })
 
-test("xor enabled=false", () => {
-    snaps.enabled = false;
-    snaps.xor = true;
-    expect(snaps.enabled).toBe(true);
-    snaps.xor = false;
-    expect(snaps.enabled).toBe(false);
+test("Shift turns grid snapping and handle stepping on while held, and releasing restores the toggles", () => {
+    snaps.snapToGrid = false;
+    snaps.gizmoSnapping = false;
+    snaps.angleSnapping = false;
+    snaps.holdGrid(true);
+    expect(snaps.snapToGrid).toBe(true);
+    expect(snaps.gizmoSnapping).toBe(true);
+    expect(snaps.angleSnapping).toBe(true);
+    expect(snaps.angleSnappingSetting).toBe(false);
+    expect(snaps.snapToGridSetting).toBe(false);
+    expect(snaps.gizmoSnappingSetting).toBe(false);
+    snaps.releaseHolds();
+    expect(snaps.snapToGrid).toBe(false);
+    expect(snaps.gizmoSnapping).toBe(false);
+    expect(snaps.angleSnapping).toBe(false);
+
+    snaps.snapToGrid = true;
+    snaps.gizmoSnapping = true;
+    snaps.holdGrid(true);
+    snaps.holdGrid(false);
+    expect(snaps.snapToGrid).toBe(true);
+    expect(snaps.gizmoSnapping).toBe(true);
+})
+
+test("handle drag steps move along their ladders and stop at the ends", () => {
+    expect(snaps.lengthStep).toBe(0.1);
+    snaps.stepLengthStep(1);
+    expect(snaps.lengthStep).toBe(0.2);
+    snaps.stepLengthStep(1);
+    expect(snaps.lengthStep).toBe(0.5);
+    for (let i = 0; i < 20; i++) snaps.stepLengthStep(-1);
+    expect(snaps.lengthStep).toBe(0.001);
+
+    expect(snaps.angleStep).toBe(5);
+    snaps.stepAngleStep(-1);
+    expect(snaps.angleStep).toBe(1);
+    snaps.stepAngleStep(-1);
+    expect(snaps.angleStep).toBe(1);
+    for (let i = 0; i < 20; i++) snaps.stepAngleStep(1);
+    expect(snaps.angleStep).toBe(90);
 })
 
 describe('undo', () => {

@@ -2,12 +2,12 @@ import * as THREE from "three";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry";
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { RaycasterParams } from "../editor/snaps/SnapPicker";
 import { point2point, vec2vec } from '../util/Conversion';
 import { RaycastableTopologyItem } from "./Intersectable";
 import { ControlPointGroup, Curve3D, CurveEdge, CurveGroup, CurveSegment, Face, FaceGroup, PlaneInstance, Region, Solid, SpaceInstance } from './VisualModel';
-import { ImageEmpty } from "../editor/Empties";
+import { SurfaceEmpty } from "../editor/Empties";
 
 declare module './VisualModel' {
     interface TopologyItem {
@@ -297,9 +297,9 @@ Regions: {
 }
 
 Empties: {
-    ImageEmpty.prototype.raycast = function (raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
+    SurfaceEmpty.prototype.raycast = function (raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
         const child: THREE.Intersection[] = [];
-        raycaster.intersectObject(this.plane, false, child);
+        raycaster.intersectObject(this.surface, false, child);
         if (child.length > 0) {
             const intersection = child[0];
             intersection.object = this;

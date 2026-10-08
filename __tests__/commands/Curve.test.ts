@@ -161,11 +161,18 @@ describe(CurveWithPreviewFactory, () => {
         expect(makeCurve.underlying.points).toEqual([p2, p4]);
         await makeCurve.update();
 
-        expect(makeCurve.preview.wouldBeClosed(p2)).toBe(true);
+        // Two points are too few to close
+        expect(makeCurve.wouldBeClosed(p2)).toBe(false);
+        const p5 = new THREE.Vector3(3, 0, 3);
+        makeCurve.push(p5);
+        await makeCurve.update();
+
+        // The preview's cursor on the start point previews the closed curve without repeating the start
+        makeCurve.preview.last = p2;
+        expect(makeCurve.wouldBeClosed(p2)).toBe(true);
         makeCurve.preview.closed = true;
         await makeCurve.preview.update();
 
-        expect(makeCurve.wouldBeClosed(p2)).toBe(true);
         makeCurve.closed = true;
         await makeCurve.update();
     });

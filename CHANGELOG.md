@@ -1,3 +1,13 @@
+[1.0.0]
+
+- [x] Renamed to Solidify; documents are saved as .solidify files and settings live in ~/.solidify
+- [x] Geometry kernel replaced with OpenCascade (OCCT)
+- [x] Spiral tool, with sweeps along spirals for threads
+- [x] Tangent snaps from a point to a curve and between two curves
+- [x] Exact areas for regions bounded by arcs and splines
+- [x] Undo no longer leaves stale curve fragments after a curve cuts another
+- [x] Screw tutorial in tutorials/screw
+
 [0.1.9]
 
 - [x] Can't remove fillet using modify contour command #bug  

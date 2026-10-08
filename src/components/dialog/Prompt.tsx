@@ -31,12 +31,12 @@ export class Prompt extends HTMLElement {
         let icon;
         switch (tag) {
             case 'executing': icon = <div class="w-4 h-4 rounded-full bg-neutral-600"> <div class="w-full h-full rounded-full animate-ping bg-neutral-600"> </div></div>; break;
-            case 'finished': icon = <plasticity-icon name="check" class="bg-green-600 rounded-full"></plasticity-icon>; break;
+            case 'finished': icon = <solidify-icon name="check" class="bg-green-600 rounded-full"></solidify-icon>; break;
             default: icon = <div class="w-4 h-4 bg-transparent rounded-full"> </div>; break;;
         }
         const clear = onclear !== undefined
             ? <button class="rounded-full group text-neutral-300 group-hover:text-neutral-100 hover:bg-neutral-500" onClick={() => onclear()}>
-                <plasticity-icon name="cancel"></plasticity-icon>
+                <solidify-icon name="cancel"></solidify-icon>
             </button>
             : <></>;
 
@@ -67,5 +67,5 @@ export class Prompt extends HTMLElement {
 }
 
 export default (editor: Editor) => {
-    customElements.define('plasticity-prompt', Prompt);
+    customElements.define('solidify-prompt', Prompt);
 }

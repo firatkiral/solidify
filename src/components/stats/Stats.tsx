@@ -41,6 +41,6 @@ export default (editor: Editor) => {
             }
         }
     }
-    customElements.define('plasticity-stats', Anon);
+    customElements.define('solidify-stats', Anon);
 }
 

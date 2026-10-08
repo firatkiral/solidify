@@ -1,58 +1,72 @@
 export default {
-    "[command='center-circle'] plasticity-viewport": {
+    "[command='center-circle'] solidify-viewport": {
         "v": "gizmo:circle:mode",
     },
 
-    "[command='edit-circle'] plasticity-viewport": {
+    "[command='edit-circle'] solidify-viewport": {
         "d": "gizmo:circle:radius",
     },
 
-    "[command='edit-center-rectangle'] plasticity-viewport, [command='edit-corner-rectangle'] plasticity-viewport, [command='edit-three-point-rectangle'] plasticity-viewport": {
+    "[command='edit-center-point-arc'] solidify-viewport": {
+        "d": "gizmo:arc:length",
+        "f": "gizmo:arc:angle",
+    },
+
+    "[command='edit-three-point-arc'] solidify-viewport": {
+        "d": "gizmo:arc:length",
+        "f": "gizmo:arc:height",
+    },
+
+    "[command='edit-center-rectangle'] solidify-viewport, [command='edit-corner-rectangle'] solidify-viewport, [command='edit-three-point-rectangle'] solidify-viewport": {
         "d": "gizmo:rectangle:width",
         "f": "gizmo:rectangle:length",
     },
 
-    "[command='corner-rectangle'] plasticity-viewport, [command='center-rectangle'] plasticity-viewport, [command='corner-box'] plasticity-viewport, [command='center-box'] plasticity-viewport": {
+    "[command='corner-rectangle'] solidify-viewport, [command='center-rectangle'] solidify-viewport, [command='corner-box'] solidify-viewport, [command='center-box'] solidify-viewport": {
         "^alt": "keyboard:rectangle:mode",
     },
 
-    "[command='polygon'] plasticity-viewport": {
+    "[command='polygon'] solidify-viewport, [command='edit-polygon'] solidify-viewport": {
         "shift-wheel+up": "gizmo:polygon:add-vertex",
         "shift-wheel+down": "gizmo:polygon:subtract-vertex",
         "v": "gizmo:polygon:mode",
     },
 
-    "[command='radial-array'] plasticity-viewport, [command='rectangular-array'] plasticity-viewport": {
+    "[command='edit-polygon'] solidify-viewport": {
+        "d": "gizmo:polygon:diameter",
+    },
+
+    "[command='radial-array'] solidify-viewport, [command='rectangular-array'] solidify-viewport": {
         "shift-wheel+up": "gizmo:array:add",
         "shift-wheel+down": "gizmo:array:subtract",
     },
 
-    "[command='rebuild'] plasticity-viewport": {
+    "[command='rebuild'] solidify-viewport": {
         "shift-wheel+up": "gizmo:rebuild:forward",
         "shift-wheel+down": "gizmo:rebuild:backward",
     },
 
-    "[command='spiral'] plasticity-viewport": {
+    "[command='spiral'] solidify-viewport": {
         "a": "gizmo:spiral:angle",
         "d": "gizmo:spiral:length",
         "r": "gizmo:spiral:radius",
     },
 
-    "[command='revolution'] plasticity-viewport": {
+    "[command='revolution'] solidify-viewport": {
         "a": "gizmo:revolution:angle",
         "t": "gizmo:revolution:thickness",
     },
 
-    "[command='loft'] plasticity-viewport": {
+    "[command='loft'] solidify-viewport": {
         "t": "gizmo:loft:thickness",
     },
 
-    "[command='evolution'] plasticity-viewport": {
+    "[command='evolution'] solidify-viewport": {
         "a": "gizmo:revolution:angle",
         "t": "gizmo:revolution:thickness",
     },
 
-    "[command='pipe'] plasticity-viewport": {
+    "[command='pipe'] solidify-viewport": {
         "d": "gizmo:pipe:section-size",
         "t": "gizmo:pipe:thickness",
         "a": "gizmo:pipe:angle",
@@ -63,7 +77,7 @@ export default {
         "r": "keyboard:pipe:new-body",
     },
 
-    "[command='boolean'] plasticity-viewport": {
+    "[command='boolean'] solidify-viewport": {
         "q": "gizmo:boolean:union",
         "w": "gizmo:boolean:difference",
         "e": "gizmo:boolean:intersect",
@@ -77,7 +91,7 @@ export default {
         "g": "gizmo:move:screen",
     },
 
-    "[command='center-box'] plasticity-viewport, [command='corner-box'] plasticity-viewport, [command='three-point-box'] plasticity-viewport": {
+    "[command='center-box'] solidify-viewport, [command='corner-box'] solidify-viewport, [command='three-point-box'] solidify-viewport": {
         "q": "keyboard:box:union",
         "w": "keyboard:box:difference",
         "e": "keyboard:box:intersect",
@@ -88,7 +102,7 @@ export default {
         "h": "gizmo:box:height",
     },
 
-    "[command='cylinder'] plasticity-viewport": {
+    "[command='cylinder'] solidify-viewport": {
         "q": "keyboard:cylinder:union",
         "w": "keyboard:cylinder:difference",
         "e": "keyboard:cylinder:intersect",
@@ -98,14 +112,16 @@ export default {
         "f": "gizmo:cylinder:radius",
     },
 
-    "[command='sphere'] plasticity-viewport": {
+    "[command='sphere'] solidify-viewport": {
         "q": "keyboard:sphere:union",
         "w": "keyboard:sphere:difference",
         "e": "keyboard:sphere:intersect",
         "r": "keyboard:sphere:new-body",
+
+        "d": "gizmo:sphere:radius",
     },
 
-    "[command='extrude'] plasticity-viewport": {
+    "[command='extrude'] solidify-viewport": {
         "a": "gizmo:extrude:race1",
         "s": "gizmo:extrude:race2",
         "d": "gizmo:extrude:distance1",
@@ -120,21 +136,31 @@ export default {
         "v": "keyboard:extrude:pivot"
     },
 
-    "[command='offset-face'] plasticity-viewport": {
+    "[command='offset-face'] solidify-viewport": {
         "d": "gizmo:offset-face:distance",
         "a": "gizmo:offset-face:angle",
         "q": "gizmo:offset-face:toggle",
     },
 
-    "[command='refillet-face'] plasticity-viewport": {
+    "[command='refillet-face'] solidify-viewport": {
         "d": "gizmo:refillet-face:distance",
     },
 
-    "[command='offset-curve'] plasticity-viewport": {
+    "[command='offset-curve'] solidify-viewport": {
         "d": "gizmo:offset-curve:distance",
     },
 
-    "[command='move'] plasticity-viewport, [command='move-item'] plasticity-viewport, [command='move-empty'] plasticity-viewport, [command='duplicate'] plasticity-viewport, [command='move-control-point'] plasticity-viewport, [command='action-face'] plasticity-viewport": {
+    "[command='bridge-curves'] solidify-viewport": {
+        "q": "keyboard:bridge-curves:trim",
+        "d": "gizmo:bridge-curves:tension",
+    },
+
+    // More specific than the Tab quasimode binding below, so Tab cycles continuity instead
+    "body[command='bridge-curves']:not([gizmo]):not([quasimode]) solidify-viewport": {
+        "tab": "keyboard:bridge-curves:cycle",
+    },
+
+    "[command='move'] solidify-viewport, [command='move-item'] solidify-viewport, [command='move-empty'] solidify-viewport, [command='duplicate'] solidify-viewport, [command='move-control-point'] solidify-viewport, [command='action-face'] solidify-viewport": {
         "x": "gizmo:move:x",
         "y": "gizmo:move:y",
         "z": "gizmo:move:z",
@@ -147,7 +173,7 @@ export default {
         "v": "keyboard:move:pivot"
     },
 
-    "[command='scale'] plasticity-viewport, [command='scale-item'] plasticity-viewport, [command='scale-empty'] plasticity-viewport, [command='scale-control-point'] plasticity-viewport": {
+    "[command='scale'] solidify-viewport, [command='scale-item'] solidify-viewport, [command='scale-empty'] solidify-viewport, [command='scale-control-point'] solidify-viewport": {
         "x": "gizmo:scale:x",
         "y": "gizmo:scale:y",
         "z": "gizmo:scale:z",
@@ -159,18 +185,18 @@ export default {
         "v": "keyboard:scale:pivot"
     },
 
-    "[command='fillet-solid'] plasticity-viewport": {
+    "[command='fillet-solid'] solidify-viewport": {
         "v": "gizmo:fillet-solid:add",
         "d": "gizmo:fillet-solid:fillet",
         "c": "gizmo:fillet-solid:chamfer",
         "a": "gizmo:fillet-solid:angle",
     },
 
-    "[command='modify-contour'] plasticity-viewport": {
+    "[command='modify-contour'] solidify-viewport": {
         "d": "gizmo:modify-contour:fillet-all",
     },
 
-    "[command='rotate'] plasticity-viewport, [command='rotate-item'] plasticity-viewport, [command='rotate-empty'] plasticity-viewport, [command='rotate-control-point'] plasticity-viewport, [command='draft-solid'] plasticity-viewport": {
+    "[command='rotate'] solidify-viewport, [command='rotate-item'] solidify-viewport, [command='rotate-empty'] solidify-viewport, [command='rotate-control-point'] solidify-viewport, [command='draft-solid'] solidify-viewport": {
         "x": "gizmo:rotate:x",
         "y": "gizmo:rotate:y",
         "z": "gizmo:rotate:z",
@@ -179,7 +205,7 @@ export default {
         "v": "keyboard:rotate:pivot"
     },
 
-    "[command='curve'] plasticity-viewport": {
+    "[command='curve'] solidify-viewport": {
         "1": "gizmo:curve:hermite",
         "2": "gizmo:curve:bezier",
         "3": "gizmo:curve:nurbs",
@@ -188,12 +214,12 @@ export default {
         "ctrl-z": "gizmo:curve:undo",
     },
 
-    "[command='line'] plasticity-viewport": {
+    "[command='line'] solidify-viewport": {
         "cmd-z": "gizmo:line:undo",
         "ctrl-z": "gizmo:line:undo",
     },
 
-    "[command='mirror'] plasticity-viewport": {
+    "[command='mirror'] solidify-viewport": {
         "x": "gizmo:mirror:x",
         "y": "gizmo:mirror:y",
         "z": "gizmo:mirror:z",
@@ -204,18 +230,18 @@ export default {
         "v": "gizmo:mirror:pivot",
     },
 
-    "[command='thin-solid'] plasticity-viewport": {
+    "[command='thin-solid'] solidify-viewport": {
         "d": "gizmo:thin-solid:thickness",
     },
 
-    "[command='place'] plasticity-viewport": {
+    "[command='place'] solidify-viewport": {
         "d": "gizmo:place:offset",
         "f": "gizmo:place:flip",
         "a": "gizmo:place:angle",
         "s": "gizmo:place:scale",
     },
 
-    "body:not([gizmo]) plasticity-viewport, body[gizmo='point-picker'] plasticity-viewport": {
+    "body:not([gizmo]) solidify-viewport, body[gizmo='point-picker'] solidify-viewport": {
         "numpad1": "viewport:navigate:front",
         "numpad3": "viewport:navigate:right",
         "numpad7": "viewport:navigate:top",
@@ -227,9 +253,11 @@ export default {
         "numpad5": "viewport:toggle-orthographic",
     },
 
-    "plasticity-viewport": {
+    "solidify-viewport": {
         "space": "viewport:navigate:selection",
         "shift-space": "viewport:grid:selection",
+        "ctrl-space": "command:create-viewspace-construction-plane-at-origin",
+        "ctrl-shift-space": "command:create-viewspace-construction-plane",
         "alt-z": "viewport:toggle-x-ray",
         "shift-alt-z": "viewport:toggle-overlays",
         "shift-wheel+up": "viewport:grid:incr",
@@ -312,8 +340,10 @@ export default {
         "ctrl-v": "edit:paste",
         "cmd-v": "edit:paste",
 
-        "cmd-n": "file:new",
-        "ctrl-n": "file:new",
+        // Browsers keep cmd-n and ctrl-n for a new window
+        "alt-shift-n": "file:new",
+        "cmd-s": "file:save",
+        "ctrl-s": "file:save",
         "cmd-shift-s": "file:save-as",
         "ctrl-shift-s": "file:save-as",
         "cmd-o": "file:open",
@@ -323,7 +353,7 @@ export default {
         "escape": "command:deselect-all",
     },
 
-    "body:not([gizmo]) plasticity-viewport": {
+    "body:not([gizmo]) solidify-viewport": {
         "/": "viewport:focus",
     },
 
@@ -361,21 +391,27 @@ export default {
 
         "mouse2": "point-picker:finish",
         "enter": "point-picker:finish",
-
-        "ctrl": "snaps:temporarily-disable",
-        "^ctrl": "snaps:temporarily-enable",
     },
 
     "body": {
+        // Holding turns that snapping on until released, whatever the panel toggles say: Shift the grid and handle-drag
+        // steps, Ctrl the Face/Curve/Edge snaps. Global, so the snaps panel always shows what is in effect.
+        "shift": "snaps:hold-grid",
+        "^shift": "snaps:release-grid",
+        "ctrl": "snaps:hold-objects",
+        "^ctrl": "snaps:release-objects",
+        // Pressing either while the other is down arrives as one combined keystroke; releasing Ctrl first does too.
+        "ctrl-shift": "snaps:hold-all",
+        "^ctrl-shift": "snaps:release-objects",
         "alt": "noop",
         "escape": "menu:cancel",
     },
 
-    "body[command] plasticity-viewport": {
+    "body[command] solidify-viewport": {
         "escape": "command:abort",
     },
 
-    "body[command]:not([gizmo]) plasticity-viewport": {
+    "body[command]:not([gizmo]) solidify-viewport": {
         "enter": "command:finish",
         "mouse2": "command:finish",
 
@@ -383,7 +419,7 @@ export default {
         "^tab": "command:quasimode:stop",
     },
 
-    "body[command][gizmo]:not([gizmo='point-picker']) plasticity-viewport": {
+    "body[command][gizmo]:not([gizmo='point-picker']) solidify-viewport": {
         "enter": "gizmo:finish", // for `sz0<enter>`, etc
     }
 }

@@ -2,7 +2,7 @@ import { DatabaseLike } from "../editor/DatabaseLike";
 import { Empty, EmptyId } from '../editor/Empties';
 import { Group, GroupId } from '../editor/Groups';
 import { Scene } from '../editor/Scene';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { GConstructor } from '../util/Util';
 import * as visual from '../visual_model/VisualModel';
 import { Selectable } from './SelectionDatabase';

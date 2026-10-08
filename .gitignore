@@ -30,7 +30,6 @@ coverage
 .lock-wscript
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
 
 # Dependency directories
 node_modules/
@@ -91,17 +90,15 @@ out/
 # Generated related
 /coverage/
 /dist/
-/include/
-/lib/c3d/*
-!/lib/c3d/enums.ts
-/binding.gyp
-/build
 /bin
 
-# Unclear license
-/vendor/c3d
-/vendor/c3d.old
-license-key.json
+# Local Electron debug/test profiles and scratch output
+/.debug-profile/
+/.gear-debug-profile/
+/.gear-runtime/
+/.gear-temp/
+/.test-tmp/
+
 
 ### VisualStudioCode ###
 .vscode/*
@@ -125,11 +122,37 @@ license-key.json
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
-backtrace-access-token.txt
 
-/references
-
-MathematicalNode.txt
-Converter.txt
-
-SCRATCH
+# AI assistants and coding agents: instructions, settings, memory and tool configs
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+AGENTS.md
+GEMINI.md
+.gemini/
+.cursor/
+.cursorrules
+.cursorignore
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+.copilot/
+.aider*
+.windsurf/
+.windsurfrules
+.codeium/
+.continue/
+.clinerules
+.cline/
+.roo/
+.roomodes
+.kiro/
+.junie/
+.codex/
+.amazonq/
+.augment/
+.trae/
+.tabnine/
+.qodo/
+.mcp.json
+mcp.json

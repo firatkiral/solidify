@@ -1,4 +1,4 @@
-import { CompositeDisposable } from 'event-kit';
+import { CompositeDisposable, Disposable } from 'event-kit';
 import { EditorLike } from '../command/Command';
 import CommandRegistry from '../components/atom/CommandRegistry';
 import { ConvertCommand } from './SelectionConversionStrategy';
@@ -13,7 +13,12 @@ export class SelectionCommandRegistrar {
     ) { }
 
     register(registry: CommandRegistry) {
-        const { selection } = this.editor;
+        const { selection, snaps } = this.editor;
+
+        // A key released while another window has focus never reaches us, so don't leave a held snap stuck on.
+        const releaseHolds = () => snaps.releaseHolds();
+        window.addEventListener('blur', releaseHolds);
+        this.disposable.add(new Disposable(() => window.removeEventListener('blur', releaseHolds)));
 
         return registry.add(document.body, {
             'selection:mode:set:control-point': () => selection.mode.set(SelectionMode.ControlPoint),
@@ -31,8 +36,11 @@ export class SelectionCommandRegistrar {
             'selection:convert:face': () => this.editor.enqueue(new ConvertCommand(this.editor, SelectionMode.Face)),
             'selection:convert:solid': () => this.editor.enqueue(new ConvertCommand(this.editor, SelectionMode.Solid)),
 
-            'snaps:temporarily-enable': () => this.editor.snaps.xor = false,
-            'snaps:temporarily-disable': () => this.editor.snaps.xor = true,
+            'snaps:hold-grid': () => snaps.holdGrid(true),
+            'snaps:release-grid': () => snaps.holdGrid(false),
+            'snaps:hold-objects': () => snaps.holdObjects(true),
+            'snaps:release-objects': () => snaps.holdObjects(false),
+            'snaps:hold-all': () => { snaps.holdGrid(true); snaps.holdObjects(true) },
         })
     }
 }

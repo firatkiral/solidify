@@ -4,11 +4,14 @@ import * as visual from '../visual_model/VisualModel';
 import { EditorSignals } from "./EditorSignals";
 import { EmptyMemento, MementoOriginator } from "./History";
 import { Images } from "./Images";
-import { EmptyJSON } from "./serialization/PlasticityDocument";
+import { Meshes } from "./Meshes";
+import { EmptyJSON } from "./serialization/SolidifyDocument";
+import { MeshSurfaceSnap } from "./snaps/MeshSurfaceSnap";
 
 export type EmptyId = number;
 
-export type EmptyInfo = { tag: 'Image', path: string }
+// An image's path is its name in Images; a mesh's, its name in Meshes
+export type EmptyInfo = { tag: 'Image', path: string } | { tag: 'Mesh', path: string }
 
 export abstract class Empty extends visual.SpaceItem {
     constructor(readonly simpleName: EmptyId) {
@@ -19,8 +22,19 @@ export abstract class Empty extends visual.SpaceItem {
 
 const startCounter = 0;
 
-export class ImageEmpty extends Empty {
+// An empty with a surface, which is what's picked, outlined and given a material
+export abstract class SurfaceEmpty extends Empty {
+    abstract readonly surface: THREE.Mesh;
+
+    get outline(): THREE.Object3D | undefined {
+        if (!this.visible) return undefined;
+        return this;
+    }
+}
+
+export class ImageEmpty extends SurfaceEmpty {
     readonly plane: THREE.Mesh;
+    get surface() { return this.plane }
 
     constructor(simpleName: EmptyId, readonly texture: THREE.Texture) {
         super(simpleName);
@@ -33,15 +47,34 @@ export class ImageEmpty extends Empty {
         this.renderOrder = visual.RenderOrder.ImageEmpty;
     }
 
-    get outline(): THREE.Object3D | undefined {
-        if (!this.visible) return undefined;
-        return this;
-    }
-
     dispose() {
         const material = this.plane.material as THREE.MeshLambertMaterial;
         material.dispose();
         material.map!.dispose();
+    }
+}
+
+// A mesh brought in to model against, like a scan or a part from elsewhere: shown, picked and snapped to, but not geometry
+export class MeshEmpty extends SurfaceEmpty {
+    readonly surface: THREE.Mesh;
+
+    constructor(simpleName: EmptyId, readonly geometry: THREE.BufferGeometry) {
+        super(simpleName);
+        // Without a matcap texture, shaded by how each triangle faces the view; meshes from elsewhere may face either way
+        const material = new THREE.MeshMatcapMaterial({ color: 0xc4c4cc, side: THREE.DoubleSide });
+        this.surface = new THREE.Mesh(geometry, material);
+        this.add(this.surface);
+    }
+
+    // Where a ray hit it
+    snapAt(intersection: THREE.Intersection): MeshSurfaceSnap {
+        const normal = intersection.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1);
+        normal.transformDirection(this.surface.matrixWorld);
+        return new MeshSurfaceSnap(intersection.point.clone(), normal);
+    }
+
+    dispose() {
+        (this.surface.material as THREE.Material).dispose();
     }
 }
 
@@ -52,7 +85,8 @@ export class Empties implements MementoOriginator<EmptyMemento>{
 
     constructor(
         private readonly images: Images,
-        private readonly signals: EditorSignals
+        private readonly signals: EditorSignals,
+        private readonly meshes = new Meshes(),
     ) { }
 
     addImage(filePath: string): ImageEmpty {
@@ -64,16 +98,29 @@ export class Empties implements MementoOriginator<EmptyMemento>{
         return this.add(id, empty, info);
     }
 
+    addMesh(name: string): MeshEmpty {
+        const id = this.counter++;
+        const info: EmptyInfo = { tag: 'Mesh', path: name };
+        const geometry = this.meshes.get(name);
+        if (geometry === undefined) throw new Error("invalid precondition: " + name);
+        return this.add(id, new MeshEmpty(id, geometry), info);
+    }
+
     duplicate<T extends Empty>(empty: T): T {
+        const id = this.counter++;
+        const info = this.id2info.get(empty.simpleName);
+        if (info === undefined) throw new Error("Empty has no info");
         if (empty instanceof ImageEmpty) {
-            const id = this.counter++;
-            const info = this.id2info.get(empty.simpleName);
-            if (info === undefined) throw new Error("Empty has no info");
-            const dup = new ImageEmpty(id, empty.texture);
-            return this.add(id, dup, info) as unknown as T;
+            return this.add(id, new ImageEmpty(id, empty.texture), info) as unknown as T;
+        } else if (empty instanceof MeshEmpty) {
+            return this.add(id, new MeshEmpty(id, empty.geometry), info) as unknown as T;
         } else {
             throw new Error('Invalid empty type');
         }
+    }
+
+    infoOf(empty: Empty): Readonly<EmptyInfo> | undefined {
+        return this.id2info.get(empty.simpleName);
     }
 
     private add<T extends Empty>(id: EmptyId, empty: T, info: EmptyInfo): T {
@@ -129,6 +176,9 @@ export class Empties implements MementoOriginator<EmptyMemento>{
             switch (json.type) {
                 case 'Image':
                     this.addImage(json.image!);
+                    break;
+                case 'Mesh':
+                    this.addMesh(json.mesh!);
                     break;
                 default: assertUnreachable(json.type);
             }

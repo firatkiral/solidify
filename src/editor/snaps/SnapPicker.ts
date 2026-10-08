@@ -88,6 +88,17 @@ export class SnapPicker {
         return this.sort(results);
     }
 
+    // Only the given point snaps, and even when snapping is turned off
+    intersectPoints(points: readonly PointSnapCache[], snaps: SnapManagerGeometryCache): SnapResult[] {
+        const { strategy, raycaster, viewport } = this;
+
+        strategy.configureIntersectRaycaster(raycaster, snaps, viewport);
+        raycaster.layers.enableAll();
+        const intersections = raycaster.intersectObjects(this.prepare([...points]), false);
+        const { results } = strategy.projectIntersections(viewport, [], this.intersections2snaps(snaps, intersections), [], undefined, undefined);
+        return this.sort(results);
+    }
+
     sort(results: SnapResult[]) {
         return results.sort(sort);
     }

@@ -201,7 +201,6 @@ export class FaceCacheMeshCreator implements MeshCreator {
         const edgePromises: Promise<c3d.EdgeBuffer[]>[] = [];
         const mesh = new c3d.Mesh(false);
         const cachedFaces = [];
-        const cachedEdges = [];
         const faces = shell.GetFaces();
         const seenEdges = new Set<bigint>();
         for (const [i, face] of faces.entries()) {
@@ -209,9 +208,15 @@ export class FaceCacheMeshCreator implements MeshCreator {
             const isCacheable = !face.GetOwnChanged() && id !== undefined;
             const existingGrid = isCacheable ? faceCache.get(id) : undefined;
             if (isCacheable && existingGrid !== undefined) {
-                const [face, edges] = existingGrid;
-                cachedFaces.push(face);
-                cachedEdges.push(...edges);
+                // Reuse the triangles, but name them after this face: an operation may renumber faces it leaves alone
+                const [cached] = existingGrid;
+                cachedFaces.push({ ...cached, i, model: face, simpleName: face.GetNameHash() });
+                for (const edge of face.GetEdges()) {
+                    const id = edge.Id();
+                    if (seenEdges.has(id)) continue;
+                    seenEdges.add(id);
+                    edgePromises.push(edge.CalculateMesh_async(stepData, formNote).then(mesh => mesh.GetEdges(outlinesOnly).slice(0, 1)));
+                }
             } else {
                 const facePromise = underlying.calculateFace(mesh, face, stepData, formNote, i);
                 const edges = face.GetEdges();
@@ -235,7 +240,7 @@ export class FaceCacheMeshCreator implements MeshCreator {
         for (const edge of edgeBufferss) {
             edgeBuffers.push(...edge);
         }
-        const allEdges = cachedEdges.concat(edgeBuffers);
+        const allEdges = edgeBuffers;
 
         const allFaces = cachedFaces.concat(await Promise.all(facePromises));
         c3d.Mutex.ExitParallelRegion();

@@ -13,7 +13,7 @@ export class TrimDialog extends AbstractDialog<{}> {
         render(
             <>
                 <ol>
-                    <plasticity-prompt name="Select curve segments" description="to trim away"></plasticity-prompt>
+                    <solidify-prompt name="Select curve segments" description="to trim away"></solidify-prompt>
                 </ol>
             </>, this);
     }

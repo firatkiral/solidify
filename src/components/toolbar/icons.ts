@@ -50,8 +50,9 @@ tooltips.set(cmd.RadialArrayCommand, "Radial array");
 tooltips.set(cmd.RectangularArrayCommand, "Rectangular array");
 tooltips.set(cmd.ExtensionShellCommand, "Extend face");
 tooltips.set(cmd.DuplicateCommand, "Duplicate object");
-tooltips.set(cmd.SlotCommand, "Create a hole");
 tooltips.set(cmd.PlaceCommand, "Place solid or curve");
+tooltips.set(like.CreateViewspaceConstructionPlaneAtOriginCommand, "Construction plane from camera (through origin)");
+tooltips.set(like.CreateViewspaceConstructionPlaneCommand, "Construction plane from camera (select distance point)");
 
 export const keybindings = new Map<string, string>();
 keybindings.set("gizmo:move:x", "X axis");
@@ -96,12 +97,16 @@ keybindings.set("gizmo:fillet-solid:chamfer", "Chamfer distance");
 keybindings.set("gizmo:fillet-solid:angle", "Chamfer angle");
 keybindings.set("gizmo:circle:mode", "Toggle vertical/horizontal");
 keybindings.set("gizmo:circle:radius", "Radius");
+keybindings.set("gizmo:arc:length", "Length");
+keybindings.set("gizmo:arc:angle", "Angle");
+keybindings.set("gizmo:arc:height", "Height");
 keybindings.set("gizmo:rectangle:width", "Width");
 keybindings.set("gizmo:rectangle:length", "Length");
 keybindings.set("keyboard:rectangle:mode", "Toggle center/corner");
 keybindings.set("gizmo:polygon:add-vertex", "Add a vertex");
 keybindings.set("gizmo:polygon:subtract-vertex", "Subtract a vertex");
 keybindings.set("gizmo:polygon:mode", "Toggle vertical/horizontal");
+keybindings.set("gizmo:polygon:diameter", "Diameter");
 keybindings.set("gizmo:array:add", "Add copy");
 keybindings.set("gizmo:array:subtract", "Subtract copy");
 keybindings.set("gizmo:pipe:add-vertex", "Add a vertex");
@@ -135,6 +140,7 @@ keybindings.set("keyboard:sphere:union", "Union");
 keybindings.set("keyboard:sphere:difference", "Difference");
 keybindings.set("keyboard:sphere:intersect", "Intersect");
 keybindings.set("keyboard:sphere:new-body", "New body");
+keybindings.set("gizmo:sphere:radius", "Radius");
 keybindings.set("keyboard:box:union", "Union");
 keybindings.set("keyboard:box:difference", "Difference");
 keybindings.set("keyboard:box:intersect", "Intersect");
@@ -168,6 +174,9 @@ keybindings.set("gizmo:revolution:thickness", "Thickness");
 keybindings.set("gizmo:evolution:thickness", "Thickness");
 keybindings.set("gizmo:pipe:thickness", "Thickness");
 keybindings.set("gizmo:offset-curve:distance", "Distance");
+keybindings.set("keyboard:bridge-curves:cycle", "Cycle continuity");
+keybindings.set("keyboard:bridge-curves:trim", "Trim");
+keybindings.set("gizmo:bridge-curves:tension", "G1 tension");
 keybindings.set("gizmo:place:offset", "Offset");
 keybindings.set("gizmo:place:scale", "Scale");
 keybindings.set("gizmo:place:flip", "Flip");
@@ -183,7 +192,7 @@ keybindings.set("gizmo:shell", "Thickness");
 
 export default (editor: Editor): void => {
     for (const Command of Object.values(cmd)) {
-        editor.registry.addOne('plasticity-viewport', `command:${Command.identifier}`, () => {
+        editor.registry.addOne('solidify-viewport', `command:${Command.identifier}`, () => {
             const command = new Command(editor);
             command.agent = 'user';
             editor.enqueue(command);
@@ -191,7 +200,7 @@ export default (editor: Editor): void => {
     }
 
     for (const Command of Object.values(like)) {
-        editor.registry.addOne('plasticity-viewport', `command:${Command.identifier}`, () => {
+        editor.registry.addOne('solidify-viewport', `command:${Command.identifier}`, () => {
             const command = new Command(editor);
             command.agent = 'user';
             editor.enqueue(command);

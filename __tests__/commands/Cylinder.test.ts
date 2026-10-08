@@ -10,6 +10,7 @@ import { SolidCopier } from "../../src/editor/SolidCopier";
 import * as visual from '../../src/visual_model/VisualModel';
 import { FakeMaterials } from "../../__mocks__/FakeMaterials";
 import '../matchers';
+import { collectGarbage } from '../gc';
 
 let db: GeometryDatabase;
 let materials: Required<MaterialDatabase>;
@@ -39,6 +40,20 @@ describe(CylinderFactory, () => {
         expect(center).toApproximatelyEqual(new THREE.Vector3(0, 0, 5));
         expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-1, -1, 0));
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 1, 10));
+    });
+
+    test('faces and edges stay usable after garbage collection', async () => {
+        makeCylinder.p0 = new THREE.Vector3();
+        makeCylinder.p1 = new THREE.Vector3(1, 0, 0);
+        makeCylinder.p2 = new THREE.Vector3(0, 0, 1);
+        const item = await makeCylinder.commit() as visual.Solid;
+        const model = db.lookup(item);
+        await collectGarbage();
+        for (const face of model.GetFaces()) {
+            expect(() => face.IsSameSense()).not.toThrow();
+            expect(() => face.Normal(0.5, 0.5)).not.toThrow();
+        }
+        for (const edge of model.GetEdges()) expect(() => edge.Point(0.5)).not.toThrow();
     });
 
     test('sideways that starts off vertical but ends sideways X cylinder', async () => {

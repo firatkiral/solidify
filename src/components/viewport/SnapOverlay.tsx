@@ -40,7 +40,7 @@ export default (editor: Editor) => {
             this.render();
         }
     }
-    customElements.define('plasticity-snap-overlay', SnapOverlay);
+    customElements.define('solidify-snap-overlay', SnapOverlay);
 }
 
 function normalized2screen(from: THREE.Vector3, to: THREE.Vector2) {

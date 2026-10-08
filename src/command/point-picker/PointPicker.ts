@@ -170,6 +170,8 @@ export class PointPicker implements Executable<PointResult, PointResult> {
             disposables.add(new Disposable(() => { e.detach(); d.detach() }))
 
             let info: SnapInfo | undefined = undefined;
+            // While the left button is held the point stays where it was pressed; dragging does nothing until release.
+            let pressed = false;
             for (const viewport of editor.viewports) {
                 disposables.add(viewport.disableControls(viewport.navigationControls));
 
@@ -183,6 +185,7 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                 const onPointerMove = (e: PointerEvent | undefined) => {
                     if (e === undefined) return;
                     if (isNavigating) return;
+                    if (pressed) return;
 
                     lastMoveEvent = () => onPointerMove(e);
                     picker.setFromViewport(e, viewport);
@@ -199,10 +202,23 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                     editor.signals.pointPickerChanged.dispatch();
                 }
 
+                const onPointerDown = (e: PointerEvent) => {
+                    if (e.button != 0) return;
+                    if (isNavigating) return;
+
+                    if (info === undefined) onPointerMove(e);
+                    pressed = true;
+                    // Deliver the release here even if it happens outside the viewport
+                    domElement.setPointerCapture(e.pointerId);
+                }
+
+                const onLostPointerCapture = () => { pressed = false }
+
                 const onPointerUp = (e: PointerEvent) => {
                     if (e.button != 0) return;
                     if (isNavigating) return;
 
+                    pressed = false;
                     dispose();
                     finish();
                     info = undefined;
@@ -212,7 +228,8 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                     if (e.repeat) return;
                     if (isNavigating) return;
 
-                    if (e.key === "Shift") {
+                    // Alt locks onto the snap under the cursor (Shift is reserved for holding grid snapping on).
+                    if (e.key === "Alt") {
                         this.model.choose(info?.snap, info, true);
                     }
                 }
@@ -220,7 +237,7 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                 const onKeyUp = (e: KeyboardEvent) => {
                     if (isNavigating) return;
 
-                    if (e.key === "Shift") {
+                    if (e.key === "Alt") {
                         const oldChoice = this.model.choice;
                         this.model.choose(undefined);
                         // TODO: need to pass all last snap results
@@ -242,11 +259,15 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                 disposables.add(d, f);
 
                 domElement.addEventListener('pointermove', onPointerMove);
+                domElement.addEventListener('pointerdown', onPointerDown);
                 domElement.addEventListener('pointerup', onPointerUp);
+                domElement.addEventListener('lostpointercapture', onLostPointerCapture);
                 document.addEventListener('keydown', onKeyDown);
                 document.addEventListener('keyup', onKeyUp);
                 disposables.add(new Disposable(() => domElement.removeEventListener('pointermove', onPointerMove)));
+                disposables.add(new Disposable(() => domElement.removeEventListener('pointerdown', onPointerDown)));
                 disposables.add(new Disposable(() => domElement.removeEventListener('pointerup', onPointerUp)));
+                disposables.add(new Disposable(() => domElement.removeEventListener('lostpointercapture', onLostPointerCapture)));
                 disposables.add(new Disposable(() => document.removeEventListener('keydown', onKeyDown)));
                 disposables.add(new Disposable(() => document.removeEventListener('keyup', onKeyUp)));
             }
@@ -328,6 +349,7 @@ export class PointPicker implements Executable<PointResult, PointResult> {
     restrictToLine(origin: THREE.Vector3, direction: THREE.Vector3) { this.model.restrictToLine(origin, direction) }
     addAxesAt(pt: THREE.Vector3, orientation = new THREE.Quaternion()) { this.model.addAxesAt(pt, orientation) }
     addSnap(...snaps: (PointSnap | RaycastableSnap)[]) { this.model.addSnap(...snaps) }
+    addEssentialSnap(...snaps: PointSnap[]) { this.model.addEssentialSnap(...snaps) }
     clearAddedSnaps() { this.model.clearAddedSnaps() }
     restrictToEdges(edges: visual.CurveEdge[]) { return this.model.restrictToEdges(edges) }
     set facePreferenceMode(facePreferenceMode: PreferenceMode) { this.model.facePreferenceMode = facePreferenceMode }

@@ -19,11 +19,11 @@ export class ThinSolidDialog extends AbstractDialog<ThinSolidParams> {
                     <li>
                         <label>Thickness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
-                            <plasticity-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);
     }
 }
-customElements.define('plasticity-thin-solid-dialog', ThinSolidDialog);
+customElements.define('solidify-thin-solid-dialog', ThinSolidDialog);

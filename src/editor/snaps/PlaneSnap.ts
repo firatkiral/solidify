@@ -1,6 +1,6 @@
 import { X, Y, Z, origin } from "../../util/Constants";
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { point2point, vec2vec } from "../../util/Conversion";
 import { AxisSnap } from "./AxisSnap";
 import { GridLike, RaycastableSnap, Snap } from "./Snap";
@@ -95,7 +95,12 @@ export class PlaneSnap extends RaycastableSnap implements GridLike {
     snapToGrid(position: THREE.Vector3, compat: Snap) {
         if (compat instanceof PlaneSnap && compat !== this) return position;
         const { plane } = this;
-        if (compat instanceof AxisSnap && !compat.isCoplanar(plane)) return position;
+        if (compat instanceof AxisSnap && !compat.isCoplanar(plane)) {
+            // A line leaving the plane, e.g. a box's height: step the distance from the line's origin by the grid size.
+            const step = 1 / (this.gridFactor * 10);
+            const distance = position.clone().sub(compat.o).dot(compat.n);
+            return position.copy(compat.n).multiplyScalar(Math.round(distance / step) * step).add(compat.o);
+        }
 
         let { gridFactor, basis, basisInv } = this;
         gridFactor *= 10;

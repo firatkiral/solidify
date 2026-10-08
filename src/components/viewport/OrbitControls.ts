@@ -52,7 +52,7 @@ export class OrbitControls extends THREE.EventDispatcher {
     enableRotate = true;
     enablePan = true;
 
-    private readonly mouseButtons: Record<string, string>;
+    private mouseButtons: Record<string, string> = {};
     private readonly touches: Record<string, string>;
 
     private readonly target0 = this.target.clone();
@@ -68,18 +68,7 @@ export class OrbitControls extends THREE.EventDispatcher {
         super();
         domElement.style.touchAction = 'none';
 
-        let bindings = keymaps.getKeyBindings();
-        MouseButtons: {
-            bindings = bindings.filter(b => b.selector == 'orbit-controls');
-            const r = bindings.filter(b => b.command == 'orbit:rotate').sort((a, b) => a.compare(b))[0];
-            const p = bindings.filter(b => b.command == 'orbit:pan').sort((a, b) => a.compare(b))[0];
-            const d = bindings.filter(b => b.command == 'orbit:dolly').sort((a, b) => a.compare(b))[0];
-            const mouseButtons: Record<string, string> = {};
-            if (r !== undefined) mouseButtons[r.keystrokes] = r.command;
-            if (p !== undefined) mouseButtons[p.keystrokes] = p.command;
-            if (d !== undefined) mouseButtons[d.keystrokes] = d.command;
-            this.mouseButtons = mouseButtons;
-        }
+        this.reloadBindings();
         Touches: {
             this.touches = { 1: 'orbit:rotate', 2: 'orbit:dolly-pan' };
         }
@@ -93,6 +82,19 @@ export class OrbitControls extends THREE.EventDispatcher {
         this.onPointerUp = this.onPointerUp.bind(this);
 
         this.update();
+    }
+
+    // Rereads which mouse buttons orbit, pan and dolly, e.g. after the navigation setting changes
+    reloadBindings() {
+        const bindings = this.keymaps.getKeyBindings().filter(b => b.selector == 'orbit-controls');
+        const r = bindings.filter(b => b.command == 'orbit:rotate').sort((a, b) => a.compare(b))[0];
+        const p = bindings.filter(b => b.command == 'orbit:pan').sort((a, b) => a.compare(b))[0];
+        const d = bindings.filter(b => b.command == 'orbit:dolly').sort((a, b) => a.compare(b))[0];
+        const mouseButtons: Record<string, string> = {};
+        if (r !== undefined) mouseButtons[r.keystrokes] = r.command;
+        if (p !== undefined) mouseButtons[p.keystrokes] = p.command;
+        if (d !== undefined) mouseButtons[d.keystrokes] = d.command;
+        this.mouseButtons = mouseButtons;
     }
 
     addEventListeners() {

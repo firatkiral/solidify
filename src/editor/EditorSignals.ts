@@ -1,5 +1,5 @@
 import signals from "signals";
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { AbstractDialog } from "../command/AbstractDialog";
 import Command from '../command/Command';
 import { PointPickerModel } from "../command/point-picker/PointPickerModel";
@@ -16,6 +16,7 @@ import { ConstructionPlane } from "./snaps/ConstructionPlaneSnap";
 import { Snap } from "./snaps/Snap";
 import { DisablableType } from "./TypeManager";
 import { Empty } from "./Empties";
+import { DocumentState } from "./CurrentDocument";
 
 export class EditorSignals {
     objectAdded: signals.Signal<[visual.Item, Agent]> = new signals.Signal();
@@ -61,6 +62,7 @@ export class EditorSignals {
     historyChanged: signals.Signal = new signals.Signal();
     historyAdded: signals.Signal = new signals.Signal();
     backupLoaded: signals.Signal = new signals.Signal();
+    documentChanged: signals.Signal<DocumentState> = new signals.Signal();
     contoursChanged: signals.Signal<visual.SpaceInstance<visual.Curve3D>> = new signals.Signal();
     creatorChanged: signals.Signal<{ creator: c3d.Creator, item: visual.Item }> = new signals.Signal();
     dialogAdded: signals.Signal<AbstractDialog<any>> = new signals.Signal();

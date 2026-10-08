@@ -1,6 +1,7 @@
 import { Z } from "../../util/Constants";
 import * as THREE from "three";
 import Command from "../../command/Command";
+import { diameter, height, Measurements } from "../../command/Measurements";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
@@ -29,10 +30,12 @@ export class CylinderCommand extends Command {
         circle.center = p1;
         pointPicker.restrictToPlaneThroughPoint(p1, snap);
 
-        const { point: p2 } = await pointPicker.execute(({ point: p2, info: { orientation } }) => {
+        const measurements = new Measurements(this.editor).resource(this);
+        const { point: p2, info: { orientation: baseOrientation } } = await pointPicker.execute(({ point: p2, info: { orientation } }) => {
             circle.point = p2;
             circle.orientation = orientation;
             circle.update();
+            measurements.set(diameter(p1, p2));
         }).resource(this);
         circle.cancel();
 
@@ -42,14 +45,17 @@ export class CylinderCommand extends Command {
         const keyboard = new PossiblyBooleanKeyboardGizmo("cylinder", this.editor);
         keyboard.prepare(cylinder).resource(this);
 
+        // Like the box, the height runs along the base's normal wherever the cursor is, instead of falling back to the floor off-axis.
         pointPicker = new PointPicker(this.editor);
-        pointPicker.addSnap(...snap.additionalSnapsFor(p1));
-        pointPicker.addAxesAt(p1);
+        const axis = Z.clone().applyQuaternion(baseOrientation);
+        pointPicker.restrictToLine(p1, axis);
         await pointPicker.execute(({ point: p3 }) => {
             cylinder.p2 = p3;
             cylinder.update();
             keyboard.toggle(cylinder.isOverlapping);
+            measurements.set(height(p1, axis, p3.clone().sub(p1).dot(axis)));
         }).resource(this);
+        measurements.reset();
 
         dialog.execute(params => {
             gizmo.render(params);

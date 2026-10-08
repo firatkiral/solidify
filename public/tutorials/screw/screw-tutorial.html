@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modeling a Threaded Hex Screw</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+  :root {
+    --ink: #1d1d22;
+    --muted: #5b5b66;
+    --accent: #7c3aed;
+    --accent-soft: #f1eafe;
+    --rule: #e3e1ea;
+    --key-bg: #f4f4f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font: 10.5pt/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 6pt; letter-spacing: -0.01em; }
+  h2 { font-size: 15pt; margin: 0 0 6pt; }
+  h3 { font-size: 11pt; margin: 12pt 0 4pt; }
+  p { margin: 0 0 6pt; }
+  .subtitle { color: var(--muted); font-size: 12pt; margin-bottom: 14pt; }
+  .cover img { width: 100%; border-radius: 6px; border: 1px solid var(--rule); }
+  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; margin: 12pt 0; }
+  .meta div { background: var(--accent-soft); border-radius: 6px; padding: 7pt 9pt; }
+  .meta b { display: block; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 6pt 0 10pt; }
+  th, td { text-align: left; padding: 4pt 6pt; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  kbd {
+    font: 600 8.5pt/1 "Segoe UI", system-ui, sans-serif;
+    background: var(--key-bg); border: 1px solid #cfcdd8; border-bottom-width: 2px;
+    border-radius: 4px; padding: 1.5pt 4pt; white-space: nowrap;
+  }
+  .step { break-before: page; }
+  .step-head { display: flex; align-items: baseline; gap: 10pt; border-bottom: 2px solid var(--accent); padding-bottom: 4pt; margin-bottom: 8pt; }
+  .step-num { font-size: 22pt; font-weight: 700; color: var(--accent); line-height: 1; }
+  .tools { margin: 0 0 8pt; }
+  .chip { display: inline-block; background: var(--accent-soft); color: #4c1d95; border-radius: 999px; padding: 1.5pt 8pt; margin: 0 4pt 4pt 0; font-size: 9pt; font-weight: 600; }
+  ol { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+  .note { background: #fff8e6; border-left: 3px solid #f0b429; padding: 5pt 8pt; margin: 6pt 0 8pt; font-size: 9.5pt; }
+  figure { margin: 0 0 8pt; break-inside: avoid; }
+  figure img { width: 100%; display: block; border-radius: 5px; border: 1px solid var(--rule); }
+  figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 3pt; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+  .grid figure img { height: auto; }
+  .big { text-align: center; }
+  .big img { width: auto; max-width: 100%; max-height: 92mm; margin: 0 auto; }
+  .big figcaption { text-align: left; }
+  .big.short img { max-height: 68mm; }
+  .cover img { max-height: 150mm; object-fit: cover; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <h1>Modeling a Threaded Hex Screw</h1>
+  <p class="subtitle">A step-by-step tutorial for Solidify, from a hexagon sketch to a cut thread</p>
+  <img src="images/28-final.jpg" alt="The finished threaded hex screw">
+  <div class="meta">
+    <div><b>Result</b>Hex-head screw with a chamfered head, chamfered tip and a 60° thread</div>
+    <div><b>Workflow</b>The usual FreeCAD/Fusion screw tutorial: extrude, intersect, sweep a profile along a helix, subtract</div>
+    <div><b>Size</b>Head 2 units across corners, shank radius 0.45 units, length 3 units, pitch 0.25 units</div>
+  </div>
+</section>
+
+<section class="step">
+  <h2>Tools used</h2>
+  <p>Every tool below is in the right-hand toolbar or the bottom toolbar, and most have a keyboard shortcut. The shortcuts in a command only work while the mouse is over the viewport.</p>
+  <table>
+    <tr><th>Tool</th><th>Where / shortcut</th><th>Used for</th></tr>
+    <tr><td>Regular polygon</td><td>Right toolbar (hexagon icon). <kbd>Shift</kbd>+wheel adds or removes sides.</td><td>Hexagon for the head</td></tr>
+    <tr><td>Center and radius circle</td><td>Right toolbar, <kbd>Shift</kbd>+<kbd>W</kbd></td><td>Chamfer cone and shank profiles</td></tr>
+    <tr><td>Extrude</td><td>Bottom toolbar, <kbd>E</kbd>. While extruding: <kbd>D</kbd> distance, <kbd>A</kbd> angle, <kbd>Q</kbd>/<kbd>W</kbd>/<kbd>E</kbd>/<kbd>R</kbd> union/difference/intersect/new body.</td><td>Head, chamfer cone, shank</td></tr>
+    <tr><td>Boolean</td><td><kbd>Q</kbd>, then <kbd>Q</kbd> union, <kbd>W</kbd> difference, <kbd>E</kbd> intersect</td><td>Rounding the head corners, cutting the thread</td></tr>
+    <tr><td>Fillet / chamfer</td><td><kbd>B</kbd>. A negative distance makes a chamfer.</td><td>Tip chamfer</td></tr>
+    <tr><td>Hide / unhide</td><td><kbd>H</kbd> hides the selection; the eye icon in the Scene list shows it again (<kbd>Alt</kbd>+<kbd>H</kbd> shows everything)</td><td>Drawing helper curves without snapping to the body</td></tr>
+    <tr><td>Construction plane</td><td>XY / YZ / XZ in the right-hand panel</td><td>Drawing the helix axis and the thread profile in the XZ plane</td></tr>
+    <tr><td>Spiral</td><td>Right toolbar (coil icon). While drawing: <kbd>D</kbd> length, <kbd>R</kbd> radius, <kbd>A</kbd> angle.</td><td>The helix the thread follows</td></tr>
+    <tr><td>Line</td><td>Right toolbar, <kbd>Shift</kbd>+<kbd>A</kbd>. Click the first point again to close the shape.</td><td>Triangular thread profile</td></tr>
+    <tr><td>Sweep (Evolution)</td><td>Bottom toolbar, <kbd>Alt</kbd>+<kbd>E</kbd></td><td>Sweeping the profile along the helix</td></tr>
+  </table>
+  <div class="note"><b>General keys:</b> <kbd>Enter</kbd> or <b>OK</b> confirms a command, <kbd>Esc</kbd> cancels it, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes. Values are typed into the dialog at the bottom left. Lengths are in scene units. The extrude "Race" angle is in radians (−0.52 rad = −30°).</div>
+  <h3>Overview</h3>
+  <ol>
+    <li>Draw a hexagon and extrude it into the head.</li>
+    <li>Round the head's corners: intersect it with a 30° cone.</li>
+    <li>Extrude the shank from the underside of the head and join it.</li>
+    <li>Chamfer the tip.</li>
+    <li>Draw a helix around the shank with the Spiral tool.</li>
+    <li>Draw a 60° triangle at the start of the helix.</li>
+    <li>Sweep the triangle along the helix into a coil.</li>
+    <li>Subtract the coil from the screw to cut the thread.</li>
+  </ol>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">1</span><h2>Draw the hexagon</h2></div>
+  <div class="tools"><span class="chip">Regular polygon</span></div>
+  <ol>
+    <li>In the right-hand toolbar, click <b>Regular polygon</b> (the hexagon icon).</li>
+    <li>Click the origin to place the center.</li>
+    <li>Move the mouse out along the red X axis. The polygon starts with 5 sides: hold <kbd>Shift</kbd> and scroll the wheel up once to get 6.</li>
+    <li>Click 1 unit from the center. A closed curve becomes a <b>region</b>, which can be extruded.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/01-polygon-tool.jpg"><figcaption>The Regular polygon tool in the right-hand toolbar.</figcaption></figure>
+    <figure><img src="images/02-polygon-drawing.jpg"><figcaption>Drawing it: the hints at the bottom right show <kbd>Shift</kbd>+wheel for adding or removing vertices.</figcaption></figure>
+  </div>
+  <figure class="big"><img src="images/03-hexagon.jpg"><figcaption>The finished hexagon region (1 unit from center to corner).</figcaption></figure>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">2</span><h2>Extrude the head</h2></div>
+  <div class="tools"><span class="chip">Extrude · E</span></div>
+  <ol>
+    <li>Click inside the hexagon to select the region.</li>
+    <li>Press <kbd>E</kbd>, or click <b>Extrude</b> in the bottom toolbar.</li>
+    <li>In the dialog, set the first <b>Distance</b> to <b>0.70</b> (upwards), then click <b>OK</b>.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/04-extrude-tool.jpg"><figcaption>Extrude (<kbd>E</kbd>) on the selected region.</figcaption></figure>
+    <figure><img src="images/05-extrude-head.jpg"><figcaption>Distance 0.70: preview with the drag arrow.</figcaption></figure>
+  </div>
+  <figure class="big"><img src="images/06-head.jpg"><figcaption>The hexagonal head.</figcaption></figure>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">3</span><h2>Round the head's corners</h2></div>
+  <div class="tools"><span class="chip">Center and radius circle · Shift+W</span><span class="chip">Extrude with angle</span><span class="chip">Boolean · Q → E (Intersect)</span></div>
+  <p>Real bolt heads have their corners trimmed by a 30° cone, which leaves curved arcs on each flat. We build that cone and keep only the part of the head inside it.</p>
+  <ol>
+    <li>Press <kbd>Shift</kbd>+<kbd>W</kbd>. Click the center of the top face, then click about 0.89 units out, just beyond the middle of the flats.</li>
+    <li>Select only this circle region and press <kbd>E</kbd>. Set <b>Distance</b> to <b>0.00</b> in the first box and <b>0.70</b> in the second, so it goes down through the head. Set the second <b>Race (angle)</b> box to <b>−0.52</b> rad (−30°) so the cone widens downwards. Click <b>OK</b>, which creates a separate cone body.</li>
+    <li>Select the head, then <kbd>Shift</kbd>-click the cone. Press <kbd>Q</kbd> (Boolean) and then <kbd>E</kbd> for <b>Intersect</b>; the preview turns green. Click <b>OK</b>.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/08-circle-on-top.jpg"><figcaption>The circle on the top face snaps to the face.</figcaption></figure>
+    <figure><img src="images/09-cone-extrude.jpg"><figcaption>Extruded down 0.70 with a −0.52 rad angle: a cone.</figcaption></figure>
+    <figure><img src="images/11-boolean-intersect.jpg"><figcaption>Boolean, Intersect (<kbd>E</kbd>): the green preview is what remains.</figcaption></figure>
+    <figure><img src="images/12-head-chamfered.jpg"><figcaption>The head with its corners rounded off.</figcaption></figure>
+  </div>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">4</span><h2>Extrude the shank</h2></div>
+  <div class="tools"><span class="chip">Circle · Shift+W</span><span class="chip">Extrude · E → Q (Union)</span></div>
+  <ol>
+    <li>Orbit the view (middle-mouse drag) until you look at the underside of the head.</li>
+    <li>Press <kbd>Shift</kbd>+<kbd>W</kbd>, click the center of the bottom face and draw a circle of radius <b>0.45</b>.</li>
+    <li>Select the circle region and <kbd>Shift</kbd>-click the head, then press <kbd>E</kbd>.</li>
+    <li>Drag the arrow a little (or press <kbd>D</kbd>, move and click). This switches on the union, difference, intersect and new-body keys.</li>
+    <li>Set <b>Distance</b> to <b>0.00</b> in the first box and <b>3.00</b> in the second, then press <kbd>Q</kbd> for <b>Union</b> and click <b>OK</b>.</li>
+  </ol>
+  <div class="note">When an extrusion touches a body, it starts out as a cut (red preview). Press <kbd>Q</kbd> to join it to the body instead.</div>
+  <div class="grid">
+    <figure><img src="images/13-shank-circle.jpg"><figcaption>Circle on the underside (the face snap is shown).</figcaption></figure>
+    <figure><img src="images/14-shank-extrude.jpg"><figcaption>Extruded 3.00 downwards; the union, difference and intersect keys are listed bottom right.</figcaption></figure>
+  </div>
+  <figure class="big short"><img src="images/15-shank.jpg"><figcaption>Head and shank are now one body.</figcaption></figure>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">5</span><h2>Chamfer the tip</h2></div>
+  <div class="tools"><span class="chip">Fillet / chamfer · B</span></div>
+  <ol>
+    <li>Select the circular edge at the bottom of the shank (edge selection mode: <kbd>2</kbd>).</li>
+    <li>Press <kbd>B</kbd>. Type <b>−0.12</b> into <b>both</b> Distance boxes; a negative distance makes a chamfer instead of a fillet.</li>
+    <li>Click <b>OK</b>.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/16-tip-chamfer.jpg"><figcaption>Fillet dialog with −0.12 / −0.12: a chamfer.</figcaption></figure>
+    <figure><img src="images/17-tip-done.jpg"><figcaption>The chamfered tip.</figcaption></figure>
+  </div>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">6</span><h2>Draw the helix</h2></div>
+  <div class="tools"><span class="chip">Hide · H</span><span class="chip">XZ construction plane</span><span class="chip">Spiral</span></div>
+  <p>The thread follows a helix around the shank. Draw it in a front view on the XZ plane, so the clicks land exactly on the shank's axis.</p>
+  <ol>
+    <li>Select the screw and press <kbd>H</kbd> to hide it, so your clicks don't snap to its faces.</li>
+    <li>Click <b>XZ</b> in the right-hand panel and look from the front.</li>
+    <li>Click <b>Spiral</b> in the right-hand toolbar.</li>
+    <li>Click the <b>axis start</b> just below the tip at (0, −3.25), then the <b>axis end</b> straight above it at (0, −0.45); the Z-axis snap keeps it vertical. Finally click the <b>radius</b> point to the right (+X).</li>
+    <li>In the dialog set <b>Step</b> (the number of turns) to <b>11.20</b> and <b>Radius</b> to <b>0.4536</b>, the shank radius. That gives a pitch of 2.8 / 11.2 = 0.25. Press <kbd>Enter</kbd>.</li>
+  </ol>
+  <div class="note">The helix starts below the tip so the thread runs out cleanly at the end. It stops 0.45 below the head, leaving a plain section under the head.</div>
+  <div class="grid">
+    <figure><img src="images/18-hide-and-xz-plane.jpg"><figcaption>Screw hidden; the XZ plane is active (highlighted at right).</figcaption></figure>
+    <figure><img src="images/19-spiral-tool.jpg"><figcaption>The Spiral tool.</figcaption></figure>
+  </div>
+  <figure class="big short"><img src="images/20-spiral.jpg"><figcaption>The helix: Step 11.20 turns, Radius 0.45. Use the handles or <kbd>D</kbd>/<kbd>R</kbd>/<kbd>A</kbd> to adjust length, radius and taper angle.</figcaption></figure>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">7</span><h2>Draw the thread profile</h2></div>
+  <div class="tools"><span class="chip">Line · Shift+A</span></div>
+  <p>The thread profile is a 60° triangle in the XZ plane at the helix's start point. Its base sits 0.05 outside the shank and its tip points 0.13 into it.</p>
+  <ol>
+    <li>Select the helix and press <kbd>H</kbd>, so the line clicks don't snap onto it. Zoom in on the bottom of the axis.</li>
+    <li>Press <kbd>Shift</kbd>+<kbd>A</kbd> (Line) and click <b>(0.50, −3.35)</b>, <b>(0.50, −3.15)</b> and <b>(0.32, −3.25)</b>.</li>
+    <li>Click the first point again: the <b>Closed</b> snap closes the triangle, and it becomes a region.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/21-line-tool.jpg"><figcaption>The Line tool (<kbd>Shift</kbd>+<kbd>A</kbd>).</figcaption></figure>
+    <figure><img src="images/22-triangle-closing.jpg"><figcaption>Closing the triangle on its first point ("Closed").</figcaption></figure>
+  </div>
+  <figure class="big"><img src="images/23-triangle.jpg"><figcaption>The closed thread profile.</figcaption></figure>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">8</span><h2>Sweep the profile along the helix</h2></div>
+  <div class="tools"><span class="chip">Unhide (eye icon)</span><span class="chip">Sweep · Alt+E</span></div>
+  <ol>
+    <li>Show the screw and the helix again with their eye icons in the Scene list.</li>
+    <li>Select the triangle region, then <kbd>Shift</kbd>-click the helix.</li>
+    <li>Press <kbd>Alt</kbd>+<kbd>E</kbd> (Sweep). Keep <b>Mode: Preserve</b>; the profile then turns with the helix and stays in the axial plane. Press <kbd>Enter</kbd>.</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/24-sweep.jpg"><figcaption>Sweep dialog: region and curve selected, Mode Preserve.</figcaption></figure>
+    <figure><img src="images/25-coil.jpg"><figcaption>The swept coil around the shank.</figcaption></figure>
+  </div>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">9</span><h2>Cut the thread</h2></div>
+  <div class="tools"><span class="chip">Boolean · Q → W (Difference)</span></div>
+  <ol>
+    <li>Select the screw, then <kbd>Shift</kbd>-click the coil.</li>
+    <li>Press <kbd>Q</kbd> (Boolean), then <kbd>W</kbd> for <b>Difference</b>; the coil turns red. Click <b>OK</b>.</li>
+    <li>Hide the sketch curves (select them in the Scene list and press <kbd>H</kbd>).</li>
+  </ol>
+  <div class="grid">
+    <figure><img src="images/26-boolean-difference.jpg"><figcaption>Boolean, Difference: the red coil is removed from the screw.</figcaption></figure>
+    <figure><img src="images/27-thread-cut.jpg"><figcaption>The thread is cut.</figcaption></figure>
+  </div>
+</section>
+
+<section class="step">
+  <div class="step-head"><span class="step-num">✓</span><h2>Finished screw</h2></div>
+  <div class="grid">
+    <figure><img src="images/28-final.jpg"><figcaption>The finished hex screw.</figcaption></figure>
+    <figure><img src="images/29-final-closeup.jpg"><figcaption>Close-up: even thread, run-out below the head, chamfered tip.</figcaption></figure>
+  </div>
+  <h3>Variations</h3>
+  <ul>
+    <li><b>Finer or coarser thread:</b> change the Spiral's Step (number of turns) and scale the triangle to match the pitch.</li>
+    <li><b>Tapered (wood-screw) thread:</b> give the Spiral an <b>Angle</b>; its radius then changes along the axis.</li>
+    <li><b>Socket head:</b> draw a hexagon on the top face and extrude it down as a cut (difference) instead of rounding the corners.</li>
+  </ul>
+</section>
+
+</body>
+</html>

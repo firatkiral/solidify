@@ -1,17 +1,20 @@
 import * as THREE from "three";
 import c3d from '../../build/Release/c3d.node';
 import { CenterPointArcFactory, ThreePointArcFactory } from "../../src/commands/arc/ArcFactory";
+import { CenterCircleFactory } from "../../src/commands/circle/CircleFactory";
+import CurveFactory from "../../src/commands/curve/CurveFactory";
 import JoinCurvesFactory from "../../src/commands/curve/JoinCurvesFactory";
 import LineFactory from '../../src/commands/line/LineFactory';
 import { ContourFilletFactory } from "../../src/commands/modify_contour/ContourFilletFactory";
 import { ContourRebuilder, ModifyContourSegmentFactory, OffsetResult } from "../../src/commands/modify_contour/ModifyContourSegmentFactory";
 import { CornerRectangleFactory } from "../../src/commands/rect/RectangleFactory";
+import { ValidationError } from "../../src/command/GeometryFactory";
 import { EditorSignals } from '../../src/editor/EditorSignals';
 import { GeometryDatabase } from '../../src/editor/GeometryDatabase';
 import MaterialDatabase from '../../src/editor/MaterialDatabase';
 import { ParallelMeshCreator } from "../../src/editor/MeshCreator";
 import { SolidCopier } from "../../src/editor/SolidCopier";
-import { inst2curve, polyline2contour } from "../../src/util/Conversion";
+import { inst2curve, normalizeCurve, point2point, polyline2contour } from "../../src/util/Conversion";
 import * as visual from '../../src/visual_model/VisualModel';
 import { FakeMaterials } from "../../__mocks__/FakeMaterials";
 import '../matchers';
@@ -128,7 +131,7 @@ describe('A triangle', () => {
 
     it('offsetting the last line works', async () => {
         modifyContour.contour = contour;
-        modifyContour.distance = -1;
+        modifyContour.distance = 1;
         modifyContour.segment = 2;
         const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
 
@@ -445,7 +448,7 @@ describe('A rectangle', () => {
 
     it('offsets the first segment', async () => {
         modifyContour.contour = contour;
-        modifyContour.distance = -1;
+        modifyContour.distance = 1;
         modifyContour.segment = 3;
         const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
 
@@ -490,7 +493,7 @@ describe('A rectangle', () => {
 
         it('offsets the first segment', async () => {
             modifyContour.contour = filleted;
-            modifyContour.distance = -1;
+            modifyContour.distance = 1;
             modifyContour.segment = 4;
             const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
 
@@ -553,7 +556,7 @@ describe('A rectangle', () => {
 
         it('offsets the first segment', async () => {
             modifyContour.contour = filleted;
-            modifyContour.distance = -1;
+            modifyContour.distance = 1;
             modifyContour.segment = 5;
             const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
 
@@ -611,6 +614,7 @@ describe('Two intersecting lines', () => {
         expect(segmentAngles[0].normal).toApproximatelyEqual(new THREE.Vector3(Math.SQRT1_2, -Math.SQRT1_2, 0));
         expect(segmentAngles[1].origin).toApproximatelyEqual(new THREE.Vector3(0.5, 1, 0));
         expect(segmentAngles[1].normal).toApproximatelyEqual(new THREE.Vector3(0, 1, 0));
+        expect(segmentAngles.every(s => s.pushable)).toBe(true);
     })
 
     it('allows offsetting a first line', async () => {
@@ -1215,7 +1219,7 @@ describe('A half moon (Arc:Line[closed] beforeIsAfter)', () => {
 
     it('allows offsetting the line', async () => {
         modifyContour.contour = contour;
-        modifyContour.distance = -0.5;
+        modifyContour.distance = 0.5;
         modifyContour.segment = 1;
         const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
 
@@ -1384,4 +1388,115 @@ describe('Line:Arc:Line:Arc[closed]', () => {
         expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-1.5, -1.5, 0));
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1.5, 1, 0));
     })
+});
+
+describe('A circle', () => {
+    beforeEach(async () => {
+        const makeCircle = new CenterCircleFactory(db, materials, signals);
+        makeCircle.center = new THREE.Vector3();
+        makeCircle.radius = 1;
+        contour = await makeCircle.commit() as visual.SpaceInstance<visual.Curve3D>;
+        modifyContour.contour = await normalizeCurve(inst2curve(db.lookup(contour))!);
+    });
+
+    it('puts the segment handle on the edge, pointing outward', () => {
+        expect(modifyContour.segmentAngles.length).toBe(1);
+        const { origin, normal } = modifyContour.segmentAngles[0];
+        expect(origin.length()).toBeCloseTo(1);
+        expect(normal).toApproximatelyEqual(origin.clone().normalize());
+    });
+
+    it('changes the radius when offsetting', async () => {
+        modifyContour.distance = 0.5;
+        modifyContour.segment = 0;
+        const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
+
+        const model = inst2curve(db.lookup(result)) as c3d.Arc3D;
+        expect(model.IsA()).toBe(c3d.SpaceType.Arc3D);
+        expect(model.GetRadius()).toBeCloseTo(150);
+
+        bbox.setFromObject(result);
+        bbox.getCenter(center);
+        expect(center).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
+        expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1.5, 1.5, 0));
+    });
+
+    it('rejects shrinking the radius to zero', async () => {
+        modifyContour.distance = -1;
+        modifyContour.segment = 0;
+        await expect(modifyContour.commit()).rejects.toBeInstanceOf(ValidationError);
+    });
+});
+
+describe('A lone arc', () => {
+    /**
+     * A quarter arc around the origin, from (1,0) to (0,1); its middle is at (√½,√½), a bulge of 1-√½ off its chord
+     */
+
+    const start = new THREE.Vector3(1, 0, 0);
+    const end = new THREE.Vector3(0, 1, 0);
+    const middle = new THREE.Vector3(Math.SQRT1_2, Math.SQRT1_2, 0);
+    const bulge = 1 - Math.SQRT1_2;
+
+    beforeEach(async () => {
+        const makeArc = new ThreePointArcFactory(db, materials, signals);
+        makeArc.p1 = start;
+        makeArc.p2 = middle;
+        makeArc.p3 = end;
+        contour = await makeArc.commit() as visual.SpaceInstance<visual.Curve3D>;
+        modifyContour.contour = await normalizeCurve(inst2curve(db.lookup(contour))!);
+    });
+
+    async function push(distance: number) {
+        modifyContour.distance = distance;
+        modifyContour.segment = 0;
+        const result = await modifyContour.commit() as visual.SpaceInstance<visual.Curve3D>;
+        const model = inst2curve(db.lookup(result)) as c3d.Arc3D;
+        expect(model.IsA()).toBe(c3d.SpaceType.Arc3D);
+        expect(point2point(model.GetLimitPoint(1))).toApproximatelyEqual(start);
+        expect(point2point(model.GetLimitPoint(2))).toApproximatelyEqual(end);
+        return point2point(model.PointOn((model.GetTMin() + model.GetTMax()) / 2));
+    }
+
+    it('puts the segment handle on the middle of the arc, pointing outward', () => {
+        expect(modifyContour.segmentAngles.length).toBe(1);
+        const { origin, normal } = modifyContour.segmentAngles[0];
+        expect(origin).toApproximatelyEqual(middle);
+        expect(normal).toApproximatelyEqual(middle.clone().normalize());
+    });
+
+    it('bulges out, keeping its endpoints', async () => {
+        expect(await push(0.5)).toApproximatelyEqual(middle.clone().multiplyScalar(1 + 0.5));
+    });
+
+    it('flattens, keeping its endpoints', async () => {
+        expect(await push(-0.2)).toApproximatelyEqual(middle.clone().multiplyScalar(1 - 0.2));
+    });
+
+    it('flips to bulge the other way when pushed past flat', async () => {
+        expect(await push(-bulge - 0.3)).toApproximatelyEqual(middle.clone().multiplyScalar(1 - bulge - 0.3));
+    });
+
+    it('rejects pushing it flat', async () => {
+        modifyContour.distance = -bulge;
+        modifyContour.segment = 0;
+        await expect(modifyContour.commit()).rejects.toBeInstanceOf(ValidationError);
+    });
+});
+
+describe('A freeform curve', () => {
+    beforeEach(async () => {
+        const makeCurve = new CurveFactory(db, materials, signals);
+        makeCurve.type = c3d.SpaceType.Hermit3D;
+        makeCurve.push(new THREE.Vector3());
+        makeCurve.push(new THREE.Vector3(1, 1, 0));
+        makeCurve.push(new THREE.Vector3(2, 0, 0));
+        contour = await makeCurve.commit() as visual.SpaceInstance<visual.Curve3D>;
+        modifyContour.contour = await normalizeCurve(inst2curve(db.lookup(contour))!);
+    });
+
+    it("can't be pushed", () => {
+        expect(modifyContour.segmentAngles.length).toBe(1);
+        expect(modifyContour.segmentAngles[0].pushable).toBe(false);
+    });
 });

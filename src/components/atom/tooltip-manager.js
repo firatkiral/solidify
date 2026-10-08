@@ -1,6 +1,7 @@
-const _ = require('underscore-plus');
-const { Disposable, CompositeDisposable } = require('event-kit');
-let Tooltip = null;
+import _ from 'underscore-plus';
+import { Disposable, CompositeDisposable } from 'event-kit';
+import Tooltip from './tooltip';
+import { os } from '../../util/Os';
 
 // Essential: Associates tooltips with HTML elements.
 //
@@ -111,10 +112,6 @@ export default class TooltipManager {
     // Returns a {Disposable} on which `.dispose()` can be called to remove the
     // tooltip.
     add(target, options) {
-        if (Tooltip == null) {
-            Tooltip = require('./tooltip');
-        }
-
         const { keyBindingCommand, keyBindingTarget } = options;
 
         if (keyBindingCommand != null) {
@@ -188,7 +185,8 @@ export default class TooltipManager {
 
 export function humanizeKeystrokes(keystroke) {
     let keystrokes = keystroke.split(' ');
-    keystrokes = keystrokes.map(stroke => _.humanizeKeystroke(stroke));
+    // underscore-plus would ask Node which platform it is
+    keystrokes = keystrokes.map(stroke => _.humanizeKeystroke(stroke, os));
     return keystrokes.join(' ');
 }
 

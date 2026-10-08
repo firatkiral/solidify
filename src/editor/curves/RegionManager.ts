@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { isSamePlacement } from '../../util/Conversion';
 import { GeometryDatabase } from '../GeometryDatabase';
 import { PlanarCurveDatabase } from './PlanarCurveDatabase';

@@ -44,12 +44,19 @@ describe(OffsetFaceFactory, () => {
         const face = solid.faces.get(0);
         offsetFace.solid = solid;
         offsetFace.faces = [face];
-        offsetFace.distance = -1
+        offsetFace.distance = -0.5
         expect(solid).toHaveCentroidNear(new THREE.Vector3(0.5, 0.5, 0.5));
         const offsetted = await offsetFace.commit();
-        expect(offsetted).toHaveCentroidNear(new THREE.Vector3(0.5, 0.5, 1));
+        expect(offsetted).toHaveCentroidNear(new THREE.Vector3(0.5, 0.5, 0.75));
         expect(db.temporaryObjects.children.length).toBe(0);
         expect(db.items.length).toBe(1);
+    })
+
+    test('offsetting a face through the whole solid is an error', async () => {
+        offsetFace.solid = solid;
+        offsetFace.faces = [solid.faces.get(0)];
+        offsetFace.distance = -1;
+        await expect(offsetFace.commit()).rejects.toThrow('The offset removes the whole solid');
     })
 })
 
@@ -73,12 +80,12 @@ describe(MultiOffsetFactory, () => {
         const face1 = solid.faces.get(0);
         const face2 = solid2.faces.get(0);
         offset.faces = [face1, face2];
-        offset.distance = -1;
+        offset.distance = -0.5;
         const offsetteds = await offset.commit() as visual.Solid[];
         expect(offsetteds.length).toBe(2);
 
         const first = offsetteds[0];
-        expect(first).toHaveCentroidNear(new THREE.Vector3(0.5, 0.5, 1));
+        expect(first).toHaveCentroidNear(new THREE.Vector3(0.5, 0.5, 0.75));
         expect(db.temporaryObjects.children.length).toBe(0);
         expect(db.items.length).toBe(2);
     })

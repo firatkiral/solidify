@@ -1,4 +1,4 @@
-import KeymapManager from "atom-keymap-plasticity";
+import KeymapManager from "atom-keymap-solidify";
 import { CompositeDisposable, Disposable } from "event-kit";
 import * as THREE from "three";
 

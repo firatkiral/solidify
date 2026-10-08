@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { delegate, derive } from '../../command/FactoryBuilder';
 import { GeometryFactory, NoOpError, PhantomInfo } from '../../command/GeometryFactory';
 import { groupBy, MultiGeometryFactory } from '../../command/MultiFactory';

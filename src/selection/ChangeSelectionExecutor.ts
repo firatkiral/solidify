@@ -1,6 +1,6 @@
 import { DatabaseLike } from "../editor/DatabaseLike";
 import { EditorSignals } from '../editor/EditorSignals';
-import { Empty, ImageEmpty } from "../editor/Empties";
+import { Empty } from "../editor/Empties";
 import { Group } from "../editor/Groups";
 import { RealNodeItem } from "../editor/Nodes";
 import { Scene } from "../editor/Scene";
@@ -56,7 +56,7 @@ export class ChangeSelectionExecutor {
         const objects = new Set(intersections.map(i => i.object));
         for (const intersection of intersections) {
             const object = intersection.object;
-            const prohibitable = object instanceof ImageEmpty ? object : object.parentItem;
+            const prohibitable = object instanceof Empty ? object : object.parentItem;
             if (prohibitions.has(prohibitable)) continue;
 
             if (object instanceof Face || object instanceof CurveEdge) {

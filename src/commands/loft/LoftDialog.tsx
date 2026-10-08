@@ -17,15 +17,15 @@ export class LoftDialog extends AbstractDialog<LoftParams> {
         render(
             <>
                 <ol>
-                    <plasticity-prompt name="Select spine" description="to loft along"></plasticity-prompt>
+                    <solidify-prompt name="Select spine" description="to loft along"></solidify-prompt>
                 </ol>
 
                 <ul>
                     <li>
                         <label>Thickness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
-                            <plasticity-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

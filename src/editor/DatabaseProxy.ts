@@ -1,4 +1,4 @@
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { GConstructor } from "../util/Util";
 import { Agent, ControlPointData, DatabaseLike, MaterialOverride, TemporaryObject, TopologyData } from "./DatabaseLike";
 import * as visual from "../visual_model/VisualModel";
@@ -115,6 +115,6 @@ export class DatabaseProxy implements DatabaseLike {
         return this.db.lookupById(name);
     }
 
-    async deserialize(data: Buffer): Promise<visual.Item[]> { return this.db.deserialize(data) }
+    async deserialize(data: Uint8Array): Promise<visual.Item[]> { return this.db.deserialize(data) }
     async load(model: c3d.Model | c3d.Assembly): Promise<visual.Item[]> { return this.db.load(model) }
 }

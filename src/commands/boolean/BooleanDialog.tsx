@@ -15,8 +15,8 @@ export class BooleanDialog extends AbstractDialog<BooleanParams> {
         render(
             <>
                 <ol>
-                    <plasticity-prompt name="Select target bodies" description="to cut or join into"></plasticity-prompt>
-                    <plasticity-prompt name="Select tool bodies" description="to cut or join with"></plasticity-prompt>
+                    <solidify-prompt name="Select target bodies" description="to cut or join into"></solidify-prompt>
+                    <solidify-prompt name="Select tool bodies" description="to cut or join with"></solidify-prompt>
                 </ol>
 
                 <ul>

@@ -19,6 +19,7 @@
             "ESNext"
         ],
         "experimentalDecorators": true,
+        "useDefineForClassFields": false,
         "jsx": "react-jsx",
         "jsxImportSource": "preact",
         "paths": {

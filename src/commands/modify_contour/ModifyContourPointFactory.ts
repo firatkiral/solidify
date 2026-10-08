@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
-import { computeControlPointInfo, ControlPointInfo, inst2curve, normalizeCurve, point2point, unit } from '../../util/Conversion';
+import { computeControlPointInfo, contour2circle, ControlPointInfo, inst2curve, normalizeCurve, point2point, unit, vec2vec } from '../../util/Conversion';
 import { GeometryFactory, NoOpError, ValidationError } from '../../command/GeometryFactory';
 import { FreestyleScaleFactory, FreestyleScaleFactoryLike, MoveFactoryLike, MoveParams, RotateFactoryLike, ScaleParams } from "../translate/TranslateItemFactory";
 
@@ -84,7 +84,11 @@ abstract class ModifyContourPointFactory extends ContourPointFactory implements 
 
         this.validate();
 
-        const segments = contour.GetSegments();
+        const circle = contour2circle(contour);
+        if (circle !== undefined) return new c3d.SpaceInstance(this.resizeCircle(circle, this.computeDestination(controlPointInfo[0])));
+
+        // Every update starts from the original segments; moving an arc's end is not idempotent
+        const segments = contour.GetSegments().map(s => s.Duplicate().Cast<c3d.Curve3D>(s.IsA()));
         for (const controlPoint of controlPoints) {
             const info = controlPointInfo[controlPoint];
             const to = this.computeDestination(info);
@@ -111,6 +115,27 @@ abstract class ModifyContourPointFactory extends ContourPointFactory implements 
         }
 
         return new c3d.SpaceInstance(result);
+    }
+
+    // A circle's only vertex is its start point: keep the center and plane, and pass the circle through the vertex's new position
+    private resizeCircle(circle: c3d.Arc3D, to: THREE.Vector3) {
+        const { axis } = circle.GetCircleAxis();
+        const center = point2point(axis.GetOrigin());
+        const z = vec2vec(axis.GetAxisZ(), 1);
+        const radial = to.clone().sub(center);
+        radial.addScaledVector(z, -radial.dot(z));
+        const radius = radial.length();
+        if (radius < 10e-5) throw new ValidationError("Radius must be positive");
+
+        const x = radial.divideScalar(radius);
+        const y = z.clone().cross(x);
+        const placement = new c3d.Placement3D();
+        placement.SetAxisX(vec2vec(x, 1));
+        placement.SetAxisY(vec2vec(y, 1));
+        placement.SetAxisZ(vec2vec(z, 1));
+        placement.Reset();
+        placement.SetOrigin(point2point(center));
+        return new c3d.Arc3D(placement, unit(radius), unit(radius), 0);
     }
 
     protected abstract computeDestination(info: ControlPointInfo): THREE.Vector3;

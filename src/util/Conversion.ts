@@ -40,6 +40,7 @@ export function trunc(x: number, precision: number) {
     return Math.trunc(x * precision) / precision;
 }
 
+// From view units, which are millimeters, to model units, which are hundredths of a millimeter
 export function unit(x: number): number {
     return x * 100;
 }
@@ -239,6 +240,14 @@ export function computeControlPointInfo(contour: c3d.Contour3D): ControlPointInf
     return result;
 }
 
+// A full circle normalizes to a contour with a single closed circular arc
+export function contour2circle(contour: c3d.Contour3D): c3d.Arc3D | undefined {
+    const segments = contour.GetSegments();
+    if (segments.length !== 1 || !contour.IsClosed()) return;
+    const segment = segments[0].Cast<c3d.Curve3D>(segments[0].IsA());
+    if (segment instanceof c3d.Arc3D && Math.abs(segment.GetRadiusA() - segment.GetRadiusB()) < 1e-6) return segment;
+}
+
 export interface CornerAngle {
     index: number;
     origin: THREE.Vector3;
@@ -409,4 +418,9 @@ export function deg2rad(degrees: number) {
 
 export function rad2deg(radians: number) {
     return (radians * 360) / (2 * Math.PI);
+}
+
+// Rounds `value` to the nearest multiple of `step`, without floating point noise like 0.30000000000000004.
+export function roundToStep(value: number, step: number): number {
+    return +(Math.round(value / step) * step).toFixed(10);
 }

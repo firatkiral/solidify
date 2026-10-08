@@ -15,7 +15,7 @@ import { ProjectingFreestyleScaleFactory } from "./ProjectCurveFactory";
 import { RotateDialog } from "./RotateDialog";
 import { RotateGizmo } from './RotateGizmo';
 import { ScaleDialog } from "./ScaleDialog";
-import { MoveItemCommand, RotateCommand, ScaleCommand } from "./TranslateCommand";
+import { MoveCommand, RotateCommand, ScaleCommand } from "./TranslateCommand";
 import { FreestyleScaleFactoryLike, MoveItemFactory, MoveFactoryLike, RotateItemFactory, RotateFactoryLike } from './TranslateItemFactory';
 
 export abstract class AbstractFreestyleMoveCommand extends Command {
@@ -51,12 +51,16 @@ export abstract class AbstractFreestyleMoveCommand extends Command {
         dialog.finish();
 
         const selection = await move.commit();
-        this.editor.selection.selected.add(selection);
+        this.select(selection);
 
-        this.editor.enqueue(new MoveItemCommand(this.editor), false);
+        this.editor.enqueue(new MoveCommand(this.editor), false);
     }
 
     protected abstract makeFactory(): Promise<MoveFactoryLike>;
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        this.editor.selection.selected.add(selection);
+    }
 }
 
 export abstract class AbstractFreestyleScaleCommand extends Command {
@@ -95,12 +99,16 @@ export abstract class AbstractFreestyleScaleCommand extends Command {
         dialog.finish();
 
         const selection = await scale.commit();
-        this.editor.selection.selected.add(selection);
+        this.select(selection);
 
         this.editor.enqueue(new ScaleCommand(this.editor), false);
     }
 
     protected abstract makeFactory(): Promise<FreestyleScaleFactoryLike>;
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        this.editor.selection.selected.add(selection);
+    }
 }
 
 export abstract class AbstractFreestyleRotateCommand extends Command {
@@ -172,12 +180,16 @@ export abstract class AbstractFreestyleRotateCommand extends Command {
         dialog.finish();
 
         const selection = await rotate.commit();
-        this.editor.selection.selected.add(selection);
+        this.select(selection);
 
         this.editor.enqueue(new RotateCommand(this.editor), false);
     }
 
     protected abstract makeFactory(): Promise<RotateFactoryLike>;
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        this.editor.selection.selected.add(selection);
+    }
 }
 
 export class FreestyleMoveItemCommand extends AbstractFreestyleMoveCommand {

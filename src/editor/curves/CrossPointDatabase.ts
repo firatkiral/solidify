@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { point2point } from '../../util/Conversion';
 import { CrossPointMemento, MementoOriginator } from '../History';
 import { Transaction } from './ContourManager';

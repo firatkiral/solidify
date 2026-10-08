@@ -294,6 +294,14 @@ describe('restrictToLine', () => {
     test("choice", () => {
         expect(pointPicker.choice!.snap).toBeInstanceOf(LineAxisSnap);
     })
+
+    test("un-choosing (e.g. releasing the lock key) keeps the line", () => {
+        const line = pointPicker.choice!.snap;
+        pointPicker.choose(AxisSnap.X, undefined, true);
+        expect(pointPicker.choice!.snap).toBe(AxisSnap.X);
+        pointPicker.choose(undefined);
+        expect(pointPicker.choice!.snap).toBe(line);
+    })
 });
 
 describe('addPickedPoint', () => {

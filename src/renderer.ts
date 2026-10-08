@@ -1,99 +1,70 @@
-import * as THREE from 'three';
-import c3d from '../build/Release/c3d.node';
-import '../lib/c3d/enums';
-import license from '../license-key.json';
-import * as cmd from './commands/GeometryCommands';
-import Clipboard from './components/clipboard/Clipboard';
-import Creators from './components/creators/Creators';
-import Dialog from './components/dialog/Dialog';
-import NumberScrubber from './components/dialog/NumberScrubber';
-import Prompt from './components/dialog/Prompt';
-import Menu from './components/menu/Menu';
-import Outliner from './components/outliner/Outliner';
-import './components/pane/Pane';
-import Planes from './components/planes/Planes';
-import Snaps from './components/snaps/Snaps';
-import Stats from './components/stats/Stats';
-import TitleBar from './components/title-bar/TitleBar';
-import Icon from './components/toolbar/Icon';
-import registerDefaultCommands from './components/toolbar/icons';
-import Palette from './components/toolbar/Palette';
-import Toolbar from './components/toolbar/Toolbar';
-import Tooltip from './components/tooltip/Tooltip';
-import UndoHistory from './components/undo-history/UndoHistory';
-import Keybindings from './components/viewport/Keybindings';
-import SnapOverlay from './components/viewport/SnapOverlay';
-import Viewport from './components/viewport/Viewport';
-import ViewportHeader from './components/viewport/ViewportHeader';
-import './css/index.css';
-import { Editor } from './editor/Editor';
-import { supportedExtensions } from './editor/ImporterExporter';
-import { ConfigFiles } from './startup/ConfigFiles';
+import kernelUrl from 'replicad-opencascadejs/wasm?url';
+import { load } from './kernel/occt/occt';
+import { listenForInstallOffer } from './startup/Install';
 
-c3d.Enabler.EnableMathModules(license.name, license.key);
+// The geometry kernel (OpenCascade, compiled to WebAssembly) is about 23 MB. It's compiled as it downloads, while the
+// loading screen in index.html shows how far along it is; the app starts once it's ready.
 
-ConfigFiles.loadTheme();
-ConfigFiles.loadSettings();
+const screen = document.getElementById('loading')!;
+const status = screen.querySelector('.status')!;
+const fill = screen.querySelector<HTMLElement>('.fill')!;
 
-export const editor = new Editor();
+// The browser can offer to install the app while the kernel is still loading
+listenForInstallOffer();
 
-Object.defineProperty(window, 'editor', {
-    value: editor,
-    writable: false
-}); // Make available to debug console
+const megabytes = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
-Object.defineProperty(window, 'THREE', {
-    value: THREE,
-    writable: false,
-})
-
-Object.defineProperty(window, 'cmd', {
-    value: cmd,
-    writable: false,
-})
-
-ConfigFiles.loadKeymap(editor.keymaps);
-
-registerDefaultCommands(editor);
-
-Icon(editor);
-TitleBar(editor);
-Toolbar(editor);
-Keybindings(editor);
-Palette(editor);
-Viewport(editor);
-Creators(editor);
-NumberScrubber(editor);
-Dialog(editor);
-ViewportHeader(editor);
-SnapOverlay(editor);
-Prompt(editor);
-Outliner(editor);
-UndoHistory(editor);
-Tooltip(editor);
-Stats(editor);
-Snaps(editor);
-Planes(editor);
-Clipboard(editor);
-Menu(editor);
-
-editor.backup.load();
-
-const res = new RegExp(`\\.${supportedExtensions.join('|')}$`, 'i')
-
-document.addEventListener('drop', e => {
-    e.preventDefault();
-    if (e.dataTransfer === null) return;
-    const files = [];
-    for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const file = e.dataTransfer.files[i].path;
-        if (!res.test(file)) continue;
-        files.push(file);
+function progress(loaded: number) {
+    // Counted after decompression, so against the file's own size, whatever the server compressed it to
+    const total = Number(process.env.KERNEL_SIZE) || 0;
+    if (total > 0) {
+        screen.classList.remove('indeterminate');
+        fill.style.width = `${Math.min(100, 100 * loaded / total)}%`;
+        status.textContent = `Loading the geometry kernel… ${megabytes(loaded)} of ${megabytes(total)}`;
+    } else {
+        status.textContent = `Loading the geometry kernel… ${megabytes(loaded)}`;
     }
-    editor.import(files);
-});
+}
 
-document.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.stopPropagation();
-});
+function fail(error: unknown) {
+    console.error(error);
+    screen.classList.add('failed');
+    status.textContent = typeof WebAssembly === 'undefined'
+        ? "Solidify needs WebAssembly, which this browser doesn't have. Try a recent Chrome, Edge, Firefox or Safari."
+        : `Solidify couldn't start: ${error instanceof Error ? error.message : String(error)}. Reloading may help; if not, try a recent Chrome, Edge, Firefox or Safari.`;
+}
+
+async function start() {
+    const instantiated = new Promise<void>((resolve, reject) => {
+        const instantiateWasm = (imports: WebAssembly.Imports, receive: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => {
+            (async () => {
+                const response = await fetch(kernelUrl);
+                if (!response.ok || response.body === null) throw new Error(`the geometry kernel didn't download (${response.status})`);
+                let loaded = 0;
+                const counted = response.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+                    transform(chunk, controller) {
+                        loaded += chunk.byteLength;
+                        progress(loaded);
+                        controller.enqueue(chunk);
+                    },
+                }));
+                const { instance, module } = await WebAssembly.instantiateStreaming(new Response(counted, { headers: { 'Content-Type': 'application/wasm' } }), imports);
+                receive(instance, module);
+                resolve();
+            })().catch(reject);
+            // Emscripten waits for receive()
+            return {};
+        };
+        load({ instantiateWasm }).catch(reject);
+    });
+    await instantiated;
+    await load();
+    status.textContent = "Starting…";
+    await import('./renderer-app');
+    document.body.classList.add('started');
+    screen.remove();
+    // The app expects to start before the window finishes loading; if loading the kernel took longer, replay the event.
+    if (document.readyState === 'complete') window.dispatchEvent(new Event('load'));
+}
+
+start().catch(fail);

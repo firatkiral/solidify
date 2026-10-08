@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory, ValidationError } from '../../command/GeometryFactory';
 import { CornerAngle, cornerInfo, inst2curve, unit } from '../../util/Conversion';
 import * as visual from '../../visual_model/VisualModel';
@@ -17,6 +17,7 @@ export interface FilletCurveParams {
 export interface SegmentAngle {
     origin: THREE.Vector3;
     normal: THREE.Vector3;
+    pushable: boolean;
 }
 
 export class ContourFilletFactory extends GeometryFactory {

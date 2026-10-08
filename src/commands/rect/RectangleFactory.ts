@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory, NoOpError, ValidationError } from '../../command/GeometryFactory';
 import { ConstructionPlane } from "../../editor/snaps/ConstructionPlaneSnap";
 import { point2point } from "../../util/Conversion";
@@ -22,6 +22,12 @@ abstract class RectangleFactory extends GeometryFactory {
     }
 
     protected abstract orthogonal(): FourCorners;
+
+    // The corners in drawing order, p1 first; throws NoOpError while the rectangle is degenerate
+    get corners(): FourCorners {
+        const { p1, p2, p3, p4 } = this.orthogonal();
+        return { p1: p1.clone(), p2: p2.clone(), p3: p3.clone(), p4: p4.clone() };
+    }
 
     private readonly _basis = new THREE.Matrix4();
     private readonly cross = new THREE.Vector3();

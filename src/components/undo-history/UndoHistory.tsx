@@ -30,5 +30,5 @@ export default (editor: Editor) => {
         }
     }
 
-    customElements.define('plasticity-undo-history', Undo);
+    customElements.define('solidify-undo-history', Undo);
 }

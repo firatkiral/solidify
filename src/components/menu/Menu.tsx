@@ -31,5 +31,5 @@ export default (editor: Editor) => {
             this.menu.hide();
         }
     }
-    customElements.define('plasticity-menu', Anon);
+    customElements.define('solidify-menu', Anon);
 }

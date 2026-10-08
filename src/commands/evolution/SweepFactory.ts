@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory } from '../../command/GeometryFactory';
 import { composeMainName, normalizePlacement, point2point } from '../../util/Conversion';
 import * as visual from '../../visual_model/VisualModel';

@@ -19,11 +19,11 @@ export class CircleDialog extends AbstractDialog<EditCircleParams> {
                     <li>
                         <label for="radius">Radius</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="radius" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="mm" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>
             </>, this);
     }
 }
-customElements.define('plasticity-center-circle-dialog', CircleDialog);
+customElements.define('solidify-center-circle-dialog', CircleDialog);

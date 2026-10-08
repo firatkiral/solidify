@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory, NoOpError, ValidationError } from '../../command/GeometryFactory';
 import { DatabaseLike } from "../../editor/DatabaseLike";
 import { EditorSignals } from "../../editor/EditorSignals";
@@ -93,7 +93,9 @@ export default class CurveFactory extends GeometryFactory {
         if (!this.hasEnoughPoints) throw new ValidationError(`${points.length} points is too few points for ${c3d.SpaceType[type]}`);
         if (points.length === 2 && this.points[1].manhattanDistanceTo(this.startPoint) < 10e-6) throw new NoOpError();
 
-        const cartPoints = points.map(p => point2point(p));
+        // A closed curve doesn't repeat its start point (the preview's cursor sits on it while closing)
+        const repeatsStart = this.closed && points.length > 1 && points[points.length - 1].manhattanDistanceTo(this.startPoint) < 10e-6;
+        const cartPoints = (repeatsStart ? points.slice(0, -1) : points).map(p => point2point(p));
         let curve = c3d.ActionCurve3D.SplineCurve(cartPoints, this.closed, type);
         curve = await CurveFactory.projectOntoConstructionSurface(curve, snap, this.constructionPlane);
 
@@ -117,7 +119,6 @@ export default class CurveFactory extends GeometryFactory {
 
     set last(point: THREE.Vector3) {
         this.points[this.points.length - 1] = point;
-        if (this.wouldBeClosed(point)) this.closed = closed;
     }
 
     get last() {
@@ -190,7 +191,7 @@ export class CurveWithPreviewFactory extends GeometryFactory {
     get otherPoints() { return this.underlying.otherPoints }
 
     wouldBeClosed(p: THREE.Vector3) {
-        return this.underlying.wouldBeClosed(p);
+        return this.canBeClosed && this.underlying.wouldBeClosed(p);
     }
 
     set closed(c: boolean) {

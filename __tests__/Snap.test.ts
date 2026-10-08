@@ -16,7 +16,7 @@ import { SolidCopier } from "../src/editor/SolidCopier";
 import * as visual from '../src/visual_model/VisualModel';
 import { FakeMaterials } from "../__mocks__/FakeMaterials";
 import './matchers';
-import { AxisSnap } from "../src/editor/snaps/AxisSnap";
+import { AxisSnap, LineAxisSnap } from "../src/editor/snaps/AxisSnap";
 import { OrRestriction } from "../src/editor/snaps/Snap";
 import { PlaneSnap } from "../src/editor/snaps/PlaneSnap";
 import { PointSnap } from "../src/editor/snaps/PointSnap";
@@ -78,6 +78,15 @@ describe(AxisSnap, () => {
         expect(axis.isValid(new THREE.Vector3(1, 0, 1))).toBe(true);
         expect(axis.isValid(new THREE.Vector3(1, 0, 10))).toBe(true);
         expect(axis.isValid(new THREE.Vector3(1, 1, 10))).toBe(false);
+    });
+
+    test("snapping to the grid steps a line leaving the plane (e.g. a height) from its origin", () => {
+        const grid = new ConstructionPlaneSnap(new THREE.Vector3(0, 0, 1));
+        const height = new LineAxisSnap(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0.33, 0.47, 0.02));
+        expect(height.project(new THREE.Vector3(0.33, 0.47, 0.5), grid).position).toApproximatelyEqual(new THREE.Vector3(0.33, 0.47, 0.52));
+        grid.gridFactor = 2; // 0.05 steps
+        expect(height.project(new THREE.Vector3(0.33, 0.47, 0.1), grid).position).toApproximatelyEqual(new THREE.Vector3(0.33, 0.47, 0.12));
+        expect(height.project(new THREE.Vector3(0.33, 0.47, -0.1), grid).position).toApproximatelyEqual(new THREE.Vector3(0.33, 0.47, -0.08));
     });
 })
 

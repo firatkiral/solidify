@@ -23,7 +23,7 @@ export class Menu {
     constructor(private readonly target: HTMLElement, private readonly options: MenuOptions) {
         const { div } = this;
         div.appendChild(options.content);
-        div.setAttribute('class', 'plasticity-menu');
+        div.setAttribute('class', 'solidify-menu');
         this.disposable.add(
             listen(
                 div,

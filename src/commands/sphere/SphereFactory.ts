@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory, NoOpError } from '../../command/GeometryFactory';
 import { composeMainName, point2point } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
@@ -8,6 +8,12 @@ import { PossiblyBooleanFactory } from "../boolean/PossiblyBooleanFactory";
 
 interface SphereParams {
     center: THREE.Vector3;
+    radius: number;
+}
+
+export const minRadius = 0.01;
+
+export interface EditSphereParams {
     radius: number;
 }
 
@@ -37,7 +43,7 @@ export default class SphereFactory extends GeometryFactory implements SpherePara
     }
 }
 
-export class PossiblyBooleanSphereFactory extends PossiblyBooleanFactory<SphereFactory> implements SphereParams {
+export class PossiblyBooleanSphereFactory extends PossiblyBooleanFactory<SphereFactory> implements SphereParams, EditSphereParams {
     protected bool = new MultiBooleanFactory(this.db, this.materials, this.signals);
     protected fantom = new SphereFactory(this.db, this.materials, this.signals);
 
@@ -45,5 +51,5 @@ export class PossiblyBooleanSphereFactory extends PossiblyBooleanFactory<SphereF
     get radius() { return this.fantom.radius }
 
     set center(center: THREE.Vector3) { this.fantom.center = center }
-    set radius(radius: number) { this.fantom.radius = radius }
+    set radius(radius: number) { this.fantom.radius = Math.max(radius, minRadius) }
 }

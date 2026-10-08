@@ -43,6 +43,38 @@ test('basic move and click', async () => {
     expect(point).toApproximatelyEqual(new THREE.Vector3());
 });
 
+test('dragging while the button is held keeps the pressed point', async () => {
+    const cb = jest.fn();
+    const promise = pointPicker.execute(cb);
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    expect(cb).toHaveBeenCalledTimes(1);
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 80, clientY: 20 }));
+    expect(cb).toHaveBeenCalledTimes(1);
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 80, clientY: 20 }));
+    const { point } = await promise;
+    expect(point).toApproximatelyEqual(new THREE.Vector3());
+});
+
+test('pressing without a prior move picks the pressed point', async () => {
+    const promise = pointPicker.execute();
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 50, clientY: 50 }));
+    const { point } = await promise;
+    expect(point).toApproximatelyEqual(new THREE.Vector3());
+});
+
+test('the point follows the mouse again once pointer capture is lost', async () => {
+    const promise = pointPicker.execute();
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('lostpointercapture'));
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 80, clientY: 20 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 80, clientY: 20 }));
+    const { point } = await promise;
+    expect(point.length()).toBeGreaterThan(0.1);
+});
+
 test('execute with no callback and preresult', async () => {
     const preresult: PointResult = { point: new THREE.Vector3(), info: { orientation: new THREE.Quaternion(), snap: new PointSnap() } };
     const result = await pointPicker.execute({ result: preresult });

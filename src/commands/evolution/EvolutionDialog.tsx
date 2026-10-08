@@ -16,21 +16,21 @@ export class EvolutionDialog extends AbstractDialog<EvolutionParams> {
         render(
             <>
                 <ol>
-                <plasticity-prompt name="Select region or face" description="to sweep"></plasticity-prompt>
-                <plasticity-prompt name="Select curve" description="to sweep along"></plasticity-prompt>
+                <solidify-prompt name="Select region or face" description="to sweep"></solidify-prompt>
+                <solidify-prompt name="Select curve" description="to sweep along"></solidify-prompt>
                 </ol>
 
                 <ul>
                     <li>
                         <label for="thickness1">Thickness 1 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="thickness2">Thickness 1 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -49,4 +49,4 @@ export class EvolutionDialog extends AbstractDialog<EvolutionParams> {
                 </ul></>, this);
     }
 }
-customElements.define('plasticity-evolution-dialog', EvolutionDialog);
+customElements.define('solidify-evolution-dialog', EvolutionDialog);

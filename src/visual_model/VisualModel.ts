@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry";
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { deunit } from "../util/Conversion";
 import { CurveSegmentGroupBuilder } from "./VisualModelBuilder";
 import { BetterRaycastingPoints } from "./VisualModelRaycasting";
@@ -391,19 +391,16 @@ export class CurveGroup<T extends CurveEdge | CurveSegment> extends THREE.Group 
     slice(edges: T[], kind: 'line' | 'line2' = 'line2'): THREE.Line | LineSegments2 {
         const instanceStart = this.line.geometry.attributes.instanceStart as THREE.InterleavedBufferAttribute;
         const inArray = instanceStart.data.array as Float32Array;
-        const inBuffer = Buffer.from(inArray.buffer);
 
         let size = 0;
         for (const edge of edges) size += edge.group.count;
-        const outBuffer = Buffer.alloc(size * 4);
+        const points = new Float32Array(size);
         let offset = 0;
         for (const edge of edges) {
             const group = edge.group;
-            const next = (group.start + group.count) * 4;
-            inBuffer.copy(outBuffer, offset, group.start * 4, next);
-            offset += group.count * 4;
+            points.set(inArray.subarray(group.start, group.start + group.count), offset);
+            offset += group.count;
         }
-        const points = new Float32Array(outBuffer.buffer);
         if (kind == 'line2') {
             const geometry = new LineSegmentsGeometry();
             geometry.setPositions(points);

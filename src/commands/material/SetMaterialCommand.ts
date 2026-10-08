@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import * as cmd from "../../command/Command";
-import { Empty, ImageEmpty } from "../../editor/Empties";
+import { Empty, SurfaceEmpty } from "../../editor/Empties";
 import { defaultPhysicalMaterial } from "../../visual_model/RenderedSceneBuilder";
 import { MaterialDialog } from "./MaterialDialog";
 
@@ -48,8 +48,8 @@ export class SetMaterialCommand extends cmd.CommandLike {
         dialog.execute(() => {
             signals.factoryUpdated.dispatch();
             for (const empty of [...selected.empties]) {
-                if (empty instanceof ImageEmpty) {
-                    const existing = empty.plane.material as THREE.MeshBasicMaterial;
+                if (empty instanceof SurfaceEmpty) {
+                    const existing = empty.surface.material as THREE.Material;
                     existing.depthWrite = material!.depthFunc !== THREE.NeverDepth; 
                     existing.depthFunc = material!.depthFunc;
                     existing.opacity = material!.opacity;

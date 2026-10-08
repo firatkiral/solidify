@@ -1,3 +1,10 @@
+import * as THREE from "three";
+import { FakeMaterials } from "../__mocks__/FakeMaterials";
+import LineFactory from "../src/commands/line/LineFactory";
+import { EditorSignals } from "../src/editor/EditorSignals";
+import { GeometryDatabase } from "../src/editor/GeometryDatabase";
+import { ParallelMeshCreator } from "../src/editor/MeshCreator";
+import { SolidCopier } from "../src/editor/SolidCopier";
 import { CancellableRegisterable } from "../src/util/CancellableRegisterable";
 import { CancellableRegistor } from "../src/util/CancellableRegistor";
 
@@ -84,4 +91,20 @@ describe(CancellableRegistor, () => {
         command.cancel();
         expect(registerable.cancelled).toBeCalledTimes(1);
     })
+});
+
+describe('hasChanges', () => {
+    test('is set once one of its factories updates, not by registering it', async () => {
+        const materials = new FakeMaterials();
+        const signals = new EditorSignals();
+        const db = new GeometryDatabase(new ParallelMeshCreator(), new SolidCopier(), materials, signals);
+        const command = new MyCancellableRegistor();
+        const line = command.resource(new LineFactory(db, materials, signals));
+        line.p1 = new THREE.Vector3();
+        line.p2 = new THREE.Vector3(1, 0, 0);
+        expect(command.hasChanges).toBe(false);
+
+        await line.update();
+        expect(command.hasChanges).toBe(true);
+    });
 });

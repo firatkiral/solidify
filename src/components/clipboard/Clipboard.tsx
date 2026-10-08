@@ -32,5 +32,5 @@ export default (editor: Editor) => {
         }
     }
 
-    customElements.define('plasticity-clipboard', Clipboard);
+    customElements.define('solidify-clipboard', Clipboard);
 }

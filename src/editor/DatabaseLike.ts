@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import * as visual from '../visual_model/VisualModel';
 import { BetterRaycastingPointsMaterial } from '../visual_model/VisualModelRaycasting';
 import { SolidCopierPool } from './SolidCopier';
@@ -77,6 +77,6 @@ export interface DatabaseLike {
     lookupById(name: c3d.SimpleName): { view: visual.Item; model: c3d.Item; };
     pool(solid: c3d.Solid, size: number): SolidCopierPool;
 
-    deserialize(data: Buffer): Promise<visual.Item[]>;
+    deserialize(data: Uint8Array): Promise<visual.Item[]>;
     load(model: c3d.Model | c3d.Assembly): Promise<visual.Item[]>;
 }

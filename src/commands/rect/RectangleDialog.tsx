@@ -19,14 +19,14 @@ export class RectangleDialog extends AbstractDialog<EditRectangleParams> {
                     <li>
                         <label for="width">Width</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="width" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="width" unit="mm" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 
                     <li>
                         <label for="length">Length</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="length" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="length" unit="mm" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 
@@ -34,4 +34,4 @@ export class RectangleDialog extends AbstractDialog<EditRectangleParams> {
             </>, this);
     }
 }
-customElements.define('plasticity-rectangle-dialog', RectangleDialog);
+customElements.define('solidify-rectangle-dialog', RectangleDialog);

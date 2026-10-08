@@ -4,6 +4,7 @@ import Command, * as cmd from "../command/Command";
 import { Viewport } from "../components/viewport/Viewport";
 import { defaultRaycasterParams, RaycasterParameters, ViewportControl } from "../components/viewport/ViewportControl";
 import { DatabaseLike } from "../editor/DatabaseLike";
+import { Empty } from "../editor/Empties";
 import { EditorSignals } from "../editor/EditorSignals";
 import LayerManager from "../editor/LayerManager";
 import * as intersectable from "../visual_model/Intersectable";
@@ -191,7 +192,14 @@ class BoxSelectionHelper {
     }
 }
 
+// Clicks are raycast before the interrupted command finishes; if that command replaced the clicked item, the hit is stale
+function isLive(db: DatabaseLike, object: intersectable.Intersectable) {
+    return object instanceof Empty || db.lookupId(object.parentItem.simpleName) !== undefined;
+}
+
 export class ClickChangeSelectionCommand extends cmd.CommandLike {
+    readonly changesDocument = false;
+
     point?: THREE.Vector3;
 
     constructor(
@@ -203,7 +211,8 @@ export class ClickChangeSelectionCommand extends cmd.CommandLike {
 
 
     async execute(): Promise<void> {
-        this.point = this.editor.changeSelection.onClick(this.intersection, this.modifier, this.option)?.point;
+        const intersection = this.intersection.filter(i => isLive(this.editor.db, i.object));
+        this.point = this.editor.changeSelection.onClick(intersection, this.modifier, this.option)?.point;
     }
 
     shouldAddToHistory(selectionChanged: boolean) {
@@ -212,6 +221,8 @@ export class ClickChangeSelectionCommand extends cmd.CommandLike {
 }
 
 export class DblClickChangeSelectionCommand extends cmd.CommandLike {
+    readonly changesDocument = false;
+
     point?: THREE.Vector3;
 
     constructor(
@@ -222,7 +233,8 @@ export class DblClickChangeSelectionCommand extends cmd.CommandLike {
 
 
     async execute(): Promise<void> {
-        this.point = this.editor.changeSelection.onDblClick(this.intersection, this.modifier)?.point;
+        const intersection = this.intersection.filter(i => isLive(this.editor.db, i.object));
+        this.point = this.editor.changeSelection.onDblClick(intersection, this.modifier)?.point;
     }
 
     shouldAddToHistory(selectionChanged: boolean) {
@@ -231,6 +243,8 @@ export class DblClickChangeSelectionCommand extends cmd.CommandLike {
 }
 
 export class BoxChangeSelectionCommand extends cmd.CommandLike {
+    readonly changesDocument = false;
+
     constructor(
         editor: cmd.EditorLike,
         private readonly intersected: Set<intersectable.Intersectable>,
@@ -238,7 +252,8 @@ export class BoxChangeSelectionCommand extends cmd.CommandLike {
     ) { super(editor) }
 
     async execute(): Promise<void> {
-        this.editor.changeSelection.onBoxSelect(this.intersected, this.modifier);
+        const intersected = new Set([...this.intersected].filter(o => isLive(this.editor.db, o)));
+        this.editor.changeSelection.onBoxSelect(intersected, this.modifier);
     }
 
     shouldAddToHistory(selectionChanged: boolean) {

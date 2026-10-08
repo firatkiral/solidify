@@ -16,7 +16,7 @@ import { TextureLoader } from '../src/editor/TextureLoader';
 import { ChangeSelectionExecutor, ChangeSelectionModifier } from '../src/selection/ChangeSelectionExecutor';
 import { SelectionDatabase } from '../src/selection/SelectionDatabase';
 import { SelectionMode } from '../src/selection/SelectionModeSet';
-import theme from '../src/startup/default-theme';
+import theme from '../src/startup/default-theme.json';
 import { RenderedSceneBuilder } from '../src/visual_model/RenderedSceneBuilder';
 import * as visual from '../src/visual_model/VisualModel';
 import { FakeMaterials } from "../__mocks__/FakeMaterials";

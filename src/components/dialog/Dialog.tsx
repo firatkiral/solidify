@@ -34,7 +34,7 @@ export default (editor: Editor) => {
                         <div class="flex justify-between items-center px-2">
                             <div class="flex items-center m-3 space-x-4 text-xs font-bold text-neutral-100">
                                 <div>{dialog.name}</div>
-                                <plasticity-icon name="alert" class="text-red-700 alert"></plasticity-icon>
+                                <solidify-icon name="alert" class="text-red-700 alert"></solidify-icon>
                             </div>
 
                             <a class="py-1 px-3 text-xs text-center align-middle rounded-full bg-neutral-800 text-neutral-400">Learn more ...</a>
@@ -68,5 +68,5 @@ export default (editor: Editor) => {
             this.classList.remove('success');
         }
     }
-    customElements.define('plasticity-dialog', Dialog);
+    customElements.define('solidify-dialog', Dialog);
 }

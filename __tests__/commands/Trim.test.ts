@@ -74,7 +74,7 @@ describe(TrimFactory, () => {
 
         test("it works", async () => {
             expect(db.find(visual.SpaceInstance, true).length).toBe(6);
-            expect(db.find(visual.PlaneInstance, true).length).toBe(1);
+            expect(db.find(visual.PlaneInstance, true).length).toBe(3);
             const { fragments } = curves.lookup(circle1);
             const fragment = await fragments[0];
             trim.fragment = db.lookupItemById(fragment).view as visual.SpaceInstance<visual.Curve3D>;
@@ -83,7 +83,7 @@ describe(TrimFactory, () => {
                 await trim.commit();
             });
             expect(db.find(visual.SpaceInstance, true).length).toBe(5);
-            expect(db.find(visual.PlaneInstance, true).length).toBe(1);
+            expect(db.find(visual.PlaneInstance, true).length).toBe(2);
         });
     });
 

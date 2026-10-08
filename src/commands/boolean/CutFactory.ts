@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { GeometryFactory, PhantomInfo, ValidationError } from '../../command/GeometryFactory';
 import { ConstructionPlane } from "../../editor/snaps/ConstructionPlaneSnap";
 import { PlaneSnap } from "../../editor/snaps/PlaneSnap";

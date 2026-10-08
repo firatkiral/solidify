@@ -1,7 +1,7 @@
 import { CompositeDisposable, Disposable } from 'event-kit';
 import { render } from 'preact';
 import _ from "underscore-plus";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import * as cmd from "../../command/Command";
 import { EditorLike } from '../../command/Command';
 import { RebuildCommand } from '../../commands/CommandLike';
@@ -110,7 +110,7 @@ export default (editor: Editor) => {
 
             const result = <ol class="h-[42px] absolute bottom-0 w-full pl-2 py-0.5 flex flex-row justify-start space-x-0.5 items-center overflow-x-auto">
                 {creators.map((creator, index) => {
-                    const Z = `plasticity-creator-${_.dasherize(c3d.CreatorType[creator.IsA()])}`;
+                    const Z = `solidify-creator-${_.dasherize(c3d.CreatorType[creator.IsA()])}`;
                     // @ts-expect-error("not sure how to type this")
                     return <li><Z creator={creator} index={index} item={solid} model={model}></Z></li>
                 })}
@@ -118,7 +118,7 @@ export default (editor: Editor) => {
             render(result, this);
         }
     }
-    customElements.define('plasticity-creators', Creators);
+    customElements.define('solidify-creators', Creators);
 
     class Creator extends HTMLElement {
         private _index!: number;
@@ -150,8 +150,8 @@ export default (editor: Editor) => {
         render() {
             render(
                 <button class="p-2 shadow-lg first:rounded-l last:rounded-r bg-neutral-800 group hover:bg-neutral-700" onPointerEnter={this.pointerEnter} onPointerLeave={this.pointerLeave} onPointerDown={this.pointerDown} tabIndex={-1}>
-                    <plasticity-icon name={_.dasherize(c3d.CreatorType[this.creator.IsA()])}></plasticity-icon>
-                    <plasticity-tooltip placement="top">{c3d.CreatorType[this.creator.IsA()]}</plasticity-tooltip>
+                    <solidify-icon name={_.dasherize(c3d.CreatorType[this.creator.IsA()])}></solidify-icon>
+                    <solidify-tooltip placement="top">{c3d.CreatorType[this.creator.IsA()]}</solidify-tooltip>
                 </button>
                 , this);
         }
@@ -174,11 +174,11 @@ export default (editor: Editor) => {
             }
         }
     }
-    customElements.define('plasticity-creator', Creator);
+    customElements.define('solidify-creator', Creator);
 
     for (const key in c3d.CreatorType) {
         class Anon extends Creator { };
-        customElements.define(`plasticity-creator-${_.dasherize(key)}`, Anon);
+        customElements.define(`solidify-creator-${_.dasherize(key)}`, Anon);
     }
 }
 

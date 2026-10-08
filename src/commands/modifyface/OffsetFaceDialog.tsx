@@ -20,19 +20,19 @@ export class OffsetFaceDialog extends AbstractDialog<OffsetFaceParams> {
                 <ul>
                     {agent === 'user' &&
                         <ol>
-                            <plasticity-prompt name="Select edges" description="to fillet or chamfer"></plasticity-prompt>
+                            <solidify-prompt name="Select edges" description="to fillet or chamfer"></solidify-prompt>
                         </ol>
                     }
                     <li>
                         <label for="distance">Distance</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="distance" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="distance" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="degrees">Degrees</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="degrees" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="degrees" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

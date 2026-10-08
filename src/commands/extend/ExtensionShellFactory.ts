@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { composeMainName, unit } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
 import { GeometryFactory } from '../../command/GeometryFactory';

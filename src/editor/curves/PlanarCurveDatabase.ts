@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { origin, X, Z } from '../../util/Constants';
 import { curve3d2curve2d, isSamePlacement, normalizePlacement, polyline2contour } from '../../util/Conversion';
 import * as visual from "../../visual_model/VisualModel";
@@ -302,14 +302,15 @@ export class PlanarCurveDatabase implements MementoOriginator<CurveMemento> {
             info2.joints.stop = new Joint(on2, on1);
     }
 
+    // CurveInfos are updated in place (e.g., a curve's fragments when a new curve cuts it), so mementos hold copies.
     saveToMemento(): CurveMemento {
         return new CurveMemento(
-            new Map(this.curve2info),
+            copyInfos(this.curve2info),
             new Set(this.placements));
     }
 
     restoreFromMemento(m: CurveMemento) {
-        (this.curve2info as PlanarCurveDatabase['curve2info']) = new Map(m.curve2info);
+        (this.curve2info as PlanarCurveDatabase['curve2info']) = copyInfos(m.curve2info);
         (this.placements as PlanarCurveDatabase['placements']) = new Set(m.placements);
     }
 
@@ -334,6 +335,21 @@ export class CurveInfo {
     fragments = new Array<Promise<c3d.SimpleName>>();
     readonly joints = new Joints();
     constructor(readonly planarCurve: c3d.Curve, readonly placement: c3d.Placement3D) { }
+
+    clone(): CurveInfo {
+        const result = new CurveInfo(this.planarCurve, this.placement);
+        for (const t of this.touched) result.touched.add(t);
+        result.fragments = [...this.fragments];
+        result.joints.start = this.joints.start;
+        result.joints.stop = this.joints.stop;
+        return result;
+    }
+}
+
+function copyInfos(curve2info: ReadonlyMap<c3d.SimpleName, CurveInfo>): Map<c3d.SimpleName, CurveInfo> {
+    const result = new Map<c3d.SimpleName, CurveInfo>();
+    for (const [name, info] of curve2info) result.set(name, info.clone());
+    return result;
 }
 
 export class Joint {

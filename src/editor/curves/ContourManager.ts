@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { DatabaseProxy } from '../DatabaseProxy';
 import { GeometryDatabase } from '../GeometryDatabase';
 import * as visual from "../../visual_model/VisualModel";
@@ -88,8 +88,9 @@ export default class ContourManager extends DatabaseProxy {
         switch (this.state.tag) {
             case 'none':
                 await this.curves.add(curve);
+                // Only planar curves are tracked (a spiral, for example, is not).
                 const info = this.curves.lookup(curve);
-                await this.regions.updatePlacement(info.placement);
+                if (info !== undefined) await this.regions.updatePlacement(info.placement);
                 return;
             case 'transaction':
                 this.state.transaction.added.add(curve.simpleName);
@@ -101,7 +102,7 @@ export default class ContourManager extends DatabaseProxy {
             case 'none':
                 const info = this.curves.lookup(curve);
                 this.curves.remove(curve);
-                await this.regions.updatePlacement(info.placement);
+                if (info !== undefined) await this.regions.updatePlacement(info.placement);
                 break;
             case 'transaction':
                 this.curves.cascade(curve, this.state.transaction);

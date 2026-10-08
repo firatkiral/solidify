@@ -17,10 +17,11 @@ export default (editor: Editor) => {
                 title: this.innerHTML,
                 placement: this.getAttribute('placement') ?? undefined,
                 keyBindingCommand: this.getAttribute('command'),
+                class: this.getAttribute('tooltip-class') ?? undefined,
             });
         }
 
         disconnectedCallback() { this.dispose!.dispose() }
     }
-    customElements.define('plasticity-tooltip', Tooltip);
+    customElements.define('solidify-tooltip', Tooltip);
 }

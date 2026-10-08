@@ -3,7 +3,7 @@ import { Viewport } from "../../components/viewport/Viewport";
 import { RaycastableTopologyItem } from "../../visual_model/Intersectable";
 import * as visual from "../../visual_model/VisualModel";
 import { BetterRaycastingPoints } from "../../visual_model/VisualModelRaycasting";
-import { Empty } from "../Empties";
+import { Empty, MeshEmpty } from "../Empties";
 import { Scene } from "../Scene";
 import { PointSnap } from "./PointSnap";
 import { GridLike, Snap } from "./Snap";
@@ -125,6 +125,8 @@ export abstract class SnapPickerStrategy {
             } else if (object instanceof BetterRaycastingPoints) {
                 const snaps = object.userData.points as PointSnap[];
                 snap = snaps[intersection.index!];
+            } else if (object instanceof MeshEmpty) {
+                snap = object.snapAt(intersection);
             } else if (object instanceof Empty) {
                 continue;
             } else {

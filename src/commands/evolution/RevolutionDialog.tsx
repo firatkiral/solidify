@@ -19,25 +19,25 @@ export class RevolutionDialog extends AbstractDialog<RevolutionParams> {
                     <li>
                         <label for="thickness1">Thickness 1 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="thickness2">Thickness 1 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="side">Side 1 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="side1" value={side1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="side1" value={side1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="side2">Side 2 </label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="side2" value={side2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="side2" value={side2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -53,4 +53,4 @@ export class RevolutionDialog extends AbstractDialog<RevolutionParams> {
                 </ul></>, this);
     }
 }
-customElements.define('plasticity-revolution-dialog', RevolutionDialog);
+customElements.define('solidify-revolution-dialog', RevolutionDialog);

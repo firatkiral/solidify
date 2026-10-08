@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
-import { deunit, inst2curve, isSmoothlyConnected, point2point, unit, vec2vec } from '../../util/Conversion';
+import { contour2circle, deunit, inst2curve, isSmoothlyConnected, point2point, unit, vec2vec } from '../../util/Conversion';
 import { GeometryFactory, NoOpError, ValidationError } from '../../command/GeometryFactory';
 import { SegmentAngle } from "./ContourFilletFactory";
 import { ModifyContourFactory } from "./ModifyContourFactory";
@@ -44,7 +44,7 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
     get segment() { return this._segment }
     set segment(segment: number) {
         this._segment = segment;
-        this.precompute()
+        this.info = this.precompute(segment);
     }
 
     private _contour!: c3d.Contour3D;
@@ -62,12 +62,40 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
         this._segmentAngles = this.computeSegmentAngles();
     }
 
+    // A full circle is a single closed segment with no neighbors to extend; pushing it changes its radius
+    private get circle(): c3d.Arc3D | undefined { return contour2circle(this.contour) }
+
+    // A lone open arc has no neighbors to extend; pushing its middle changes its bulge, keeping its endpoints
+    private get arc(): c3d.Arc3D | undefined {
+        const { contour } = this;
+        const segments = contour.GetSegments();
+        if (segments.length !== 1 || contour.IsClosed()) return;
+        const segment = segments[0].Cast<c3d.Curve3D>(segments[0].IsA());
+        if (segment instanceof c3d.Arc3D && Math.abs(segment.GetRadiusA() - segment.GetRadiusB()) < 1e-6) return segment;
+    }
+
     private _segmentAngles!: SegmentAngle[];
     get segmentAngles() { return this._segmentAngles }
     private computeSegmentAngles(): SegmentAngle[] {
         const result: SegmentAngle[] = [];
         const contour = this.contour;
         const segments = contour.GetSegments();
+
+        const circle = this.circle;
+        if (circle !== undefined) {
+            // The weight centre of a circle is its center, so put the handle on the edge, pointing outward
+            const origin = point2point(circle.GetLimitPoint(1));
+            const normal = origin.clone().sub(point2point(circle.GetCentre())).normalize();
+            return [{ origin, normal, pushable: true }];
+        }
+
+        const arc = this.arc;
+        if (arc !== undefined) {
+            // The weight centre of an arc is off the arc, so put the handle on its middle, pointing away from its centre
+            const origin = point2point(arc.PointOn((arc.GetTMin() + arc.GetTMax()) / 2));
+            const normal = origin.clone().sub(point2point(arc.GetCentre())).normalize();
+            return [{ origin, normal, pushable: true }];
+        }
 
         // NOTE: when this code was written there was a bug in normal computation SD#7281936 ... The manhattanLength() checks are a workaround
         for (const [i, segment] of segments.entries()) {
@@ -79,7 +107,8 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
                 const after = segments[(i + 1) % segments.length];
                 const after_tangent_begin = vec2vec(after.Tangent(after.GetTMin()), 1).multiplyScalar(-1);
                 const after_tangent_end = vec2vec(after.Tangent(after.GetTMax()), 1).multiplyScalar(-1);
-                if (i + 1 >= segments.length) {
+                // On an open contour the last segment has no real successor; on a closed one it wraps to a true neighbor
+                if (i + 1 >= segments.length && !contour.IsClosed()) {
                     after_tangent_begin.multiplyScalar(-1);
                     after_tangent_end.multiplyScalar(-1);
                 }
@@ -97,14 +126,24 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
             result.push({
                 origin: point2point(center),
                 normal,
+                pushable: this.canPush(i),
             });
         }
         return result;
     }
 
+    // Only lines, polylines and arcs can be pushed, and only next to the neighbors process() handles
+    private canPush(index: number): boolean {
+        try {
+            return pushable.has(patternOf(this.precompute(index)));
+        } catch {
+            return false;
+        }
+    }
+
     private info!: OffsetPrecomputeInfo;
-    protected precompute() {
-        const { contour, segment: index, distance } = this;
+    protected precompute(index: number): OffsetPrecomputeInfo {
+        const { contour } = this;
 
         const segments = contour.GetSegments();
 
@@ -230,13 +269,33 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
         }
 
         const beforeIsAfter = segments.length === 2 && contour.IsClosed();
-        this.info = { before, active, after, before_tangent_end, active_tangent_begin, active_tangent_end, after_tangent_begin, before_tmax, after_tmin, before_pmax, after_pmin, before_tmin, after_tmax, radiusBefore, radiusAfter, beforeIsAfter };
+        return { before, active, after, before_tangent_end, active_tangent_begin, active_tangent_end, after_tangent_begin, before_tmax, after_tmin, before_pmax, after_pmin, before_tmin, after_tmax, radiusBefore, radiusAfter, beforeIsAfter };
     }
 
     async calculate() {
         const { contour, segment: index, distance, info } = this;
 
         if (distance === 0) throw new NoOpError();
+
+        const circle = this.circle;
+        if (circle !== undefined) {
+            const radius = deunit(circle.GetRadius()) + distance;
+            if (radius <= 0) throw new ValidationError("Radius must be positive");
+            const result = circle.Duplicate().Cast<c3d.Arc3D>(c3d.SpaceType.Arc3D);
+            result.SetRadius(unit(radius));
+            return new c3d.SpaceInstance(result);
+        }
+
+        const arc = this.arc;
+        if (arc !== undefined) {
+            // The new arc passes through the pushed middle; pushing past flat flips it to bulge the other way
+            const { origin: middle, normal } = this.segmentAngles[0];
+            const start = point2point(arc.GetLimitPoint(1)), end = point2point(arc.GetLimitPoint(2));
+            const chord = start.clone().add(end).multiplyScalar(0.5);
+            if (Math.abs(middle.clone().sub(chord).dot(normal) + distance) < 1e-6) throw new ValidationError("Arc cannot be flat");
+            const through = middle.clone().add(normal.clone().multiplyScalar(distance));
+            return new c3d.SpaceInstance(new c3d.Arc3D(point2point(start), point2point(through), point2point(end), 1, false));
+        }
 
         const result = this.process(info);
         const { before_extended, active_new, after_extended } = result;
@@ -274,7 +333,7 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
         const after_pmin = info.after_pmin.clone();
 
         const { distance } = this;
-        const pattern = `${c3d.SpaceType[before.GetBasisCurve().IsA()]}:${c3d.SpaceType[active.GetBasisCurve().IsA()]}:${c3d.SpaceType[after.GetBasisCurve().IsA()]}`;
+        const pattern = patternOf(info);
 
         switch (pattern) {
             case 'Line3D:Polyline3D:Polyline3D':
@@ -648,3 +707,16 @@ export class ContourRebuilder {
 }
 
 function asc(a: number, b: number) { return a - b }
+
+function patternOf({ before, active, after }: OffsetPrecomputeInfo) {
+    return `${c3d.SpaceType[before.GetBasisCurve().IsA()]}:${c3d.SpaceType[active.GetBasisCurve().IsA()]}:${c3d.SpaceType[after.GetBasisCurve().IsA()]}`;
+}
+
+// The before:active:after patterns ModifyContourSegmentFactory.process() handles; keep in sync with its cases
+const pushable = new Set([
+    'Line3D:Polyline3D:Polyline3D', 'Polyline3D:Polyline3D:Line3D', 'Polyline3D:Polyline3D:Polyline3D',
+    'Line3D:Arc3D:Line3D', 'Line3D:Arc3D:Polyline3D', 'Polyline3D:Arc3D:Line3D', 'Polyline3D:Arc3D:Polyline3D',
+    'Arc3D:Arc3D:Polyline3D', 'Polyline3D:Arc3D:Arc3D', 'Arc3D:Polyline3D:Arc3D',
+    'Polyline3D:Polyline3D:Arc3D', 'Line3D:Polyline3D:Arc3D',
+    'Arc3D:Polyline3D:Polyline3D', 'Arc3D:Polyline3D:Line3D',
+]);

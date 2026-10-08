@@ -516,19 +516,24 @@ export default (editor: Editor) => {
                             <path d="M19.5 9H20.4C20.7314 9 21 9.26863 21 9.6V10.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M16.5 9H9.6C9.26863 9 9 9.26863 9 9.6V16.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
+                case 'plane-from-selection':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 3.6V12.4C13 12.7314 12.7314 13 12.4 13H3.6C3.26863 13 3 12.7314 3 12.4V3.6C3 3.26863 3.26863 3 3.6 3H12.4C12.7314 3 13 3.26863 13 3.6Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M15 15L21 17.2L18.2 18.2L17.2 21L15 15Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M18.2 18.2L20.5 20.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'plane-from-camera':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 19V9C2 7.89543 2.89543 7 4 7H4.5C5.12951 7 5.72229 6.70361 6.1 6.2L8.32 3.24C8.43331 3.08892 8.61115 3 8.8 3H15.2C15.3889 3 15.5667 3.08892 15.68 3.24L17.9 6.2C18.2777 6.70361 18.8705 7 19.5 7H20C21.1046 7 22 7.89543 22 9V19C22 20.1046 21.1046 21 20 21H4C2.89543 21 2 20.1046 2 19Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M12 17C14.2091 17 16 15.2091 16 13C16 10.7909 14.2091 9 12 9C9.79086 9 8 10.7909 8 13C8 15.2091 9.79086 17 12 17Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
                 case 'duplicate':
                     return render(
                         <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M19.4 20H9.6C9.26863 20 9 19.7314 9 19.4V9.6C9 9.26863 9.26863 9 9.6 9H19.4C19.7314 9 20 9.26863 20 9.6V19.4C20 19.7314 19.7314 20 19.4 20Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M15 9V4.6C15 4.26863 14.7314 4 14.4 4H4.6C4.26863 4 4 4.26863 4 4.6V14.4C4 14.7314 4.26863 15 4.6 15H9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>, this);
-                case 'slot':
-                    return render(
-                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M21 7.35304L21 16.647C21 16.8649 20.8819 17.0656 20.6914 17.1715L12.2914 21.8381C12.1102 21.9388 11.8898 21.9388 11.7086 21.8381L3.30861 17.1715C3.11814 17.0656 3 16.8649 3 16.647L2.99998 7.35304C2.99998 7.13514 3.11812 6.93437 3.3086 6.82855L11.7086 2.16188C11.8898 2.06121 12.1102 2.06121 12.2914 2.16188L20.6914 6.82855C20.8818 6.93437 21 7.13514 21 7.35304Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M3.52844 7.29363L8.40002 10.0001M20.5 7.27783L15.6 10.0001" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M12 21V16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
                 case 'eye':
                     return render(
@@ -629,6 +634,34 @@ export default (editor: Editor) => {
                             <path d="M16.918 14.5737C16.5184 14.324 16 14.6113 16 15.0825V17.9175C16 18.3887 16.5184 18.676 16.918 18.4263L19.1859 17.0088C19.5619 16.7738 19.5619 16.2262 19.1859 15.9912L16.918 14.5737Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M2 10V3.6C2 3.26863 2.26863 3 2.6 3H8.77805C8.92127 3 9.05977 3.05124 9.16852 3.14445L12.3315 5.85555C12.4402 5.94876 12.5787 6 12.722 6H21.4C21.7314 6 22 6.26863 22 6.6V9M2 10V18.4C2 18.7314 2.26863 19 2.6 19H10M2 10H10" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
+                case 'snap-grid':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 9H21M3 15H21M9 3V21M15 3V21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M3 3.6V20.4C3 20.7314 3.26863 21 3.6 21H20.4C20.7314 21 21 20.7314 21 20.4V3.6C21 3.26863 20.7314 3 20.4 3H3.6C3.26863 3 3 3.26863 3 3.6Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'snap-gizmo':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 20L20 4M20 4H14.5M20 4V9.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M6.5 15.5L8.5 17.5M10 12L12 14M13.5 8.5L15.5 10.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'snap-angle':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 20H4L16 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M12 20C12 17.8 11.1 15.6 9.2 13.9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'minus':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12H18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'plus':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12H12M18 12H12M12 12V6M12 12V18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
                 case 'add-circled-outline':
                     return render(
                         <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -640,5 +673,5 @@ export default (editor: Editor) => {
             }
         }
     }
-    customElements.define('plasticity-icon', Icon);
+    customElements.define('solidify-icon', Icon);
 }

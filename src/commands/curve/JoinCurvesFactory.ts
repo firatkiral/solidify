@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
 import { normalizeCurve } from '../../util/Conversion';
 import { GeometryFactory } from '../../command/GeometryFactory';
@@ -21,7 +21,9 @@ export default class JoinCurvesFactory extends GeometryFactory {
         const { models } = this;
         if (models.length < 2) throw new Error("not enough curves");
 
-        const contours = c3d.ActionCurve3D.CreateContours(models, 10);
+        // Match normalizeCurve's endpoint tolerance. A 10 mm tolerance can
+        // chain unrelated nearby endpoints, especially in small profiles.
+        const contours = c3d.ActionCurve3D.CreateContours(models, 1e-4);
         const promises = [];
         for (const contour of contours) {
             promises.push(normalizeCurve(contour));

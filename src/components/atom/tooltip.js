@@ -1,8 +1,9 @@
 'use strict';
 
-const EventKit = require('event-kit');
+import * as EventKit from 'event-kit';
+import { listen } from './delegated-listener';
+
 const tooltipComponentsByElement = new WeakMap();
-const listen = require('./delegated-listener').listen;
 
 // This tooltip class is derived from Bootstrap 3, but modified to not require
 // jQuery, which is an expensive dependency we want to eliminate.
@@ -691,4 +692,4 @@ function extend() {
     return target;
 }
 
-module.exports = Tooltip;
+export default Tooltip;

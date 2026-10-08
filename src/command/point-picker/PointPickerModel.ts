@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import CommandRegistry from '../../components/atom/CommandRegistry';
 import { CrossPoint, CrossPointDatabase } from '../../editor/curves/CrossPointDatabase';
 import { DatabaseLike } from "../../editor/DatabaseLike";
@@ -24,6 +24,7 @@ export class PointPickerModel {
     private readonly pickedPointSnaps = new Array<PointResult>(); // Snaps inferred from points the user actually picked
     readonly straightSnaps = new Set(XYZ); // Snaps going straight off the last picked point
     private readonly otherAddedSnaps = new SnapCollection();
+    private readonly essentialSnaps = new SnapCollection(); // Added snaps that still apply with snapping turned off
     private readonly disabled = new Set<Snap>();
 
     private _restriction?: Restriction;
@@ -158,11 +159,18 @@ export class PointPickerModel {
 
     clearAddedSnaps() {
         this.otherAddedSnaps.clear();
+        this.essentialSnaps.clear();
     }
 
     addSnap(...snaps: (PointSnap | RaycastableSnap)[]) {
         this.otherAddedSnaps.push(...snaps);
         this.otherAddedSnaps.update();
+    }
+
+    // Unlike addSnap, these keep snapping when the user turns snapping off (e.g., the start point that closes a curve)
+    addEssentialSnap(...snaps: PointSnap[]) {
+        this.essentialSnaps.push(...snaps);
+        this.essentialSnaps.update();
     }
 
     private counter = -1; // counter descends from -1 to avoid conflicting with objects in the geometry database
@@ -201,30 +209,34 @@ export class PointPickerModel {
             this.addAxis(axis, into, other);
     }
 
-    get snaps(): { disabled: Set<Snap>; snapsForLastPickedPoint: SnapCollection; activatedSnaps: SnapCollection; otherAddedSnaps: SnapCollection; } {
-        const { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps } = this;
-        return { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps };
+    get snaps(): { disabled: Set<Snap>; snapsForLastPickedPoint: SnapCollection; activatedSnaps: SnapCollection; otherAddedSnaps: SnapCollection; essentialSnaps: SnapCollection; } {
+        const { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps, essentialSnaps } = this;
+        return { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps, essentialSnaps };
     }
 
     restrictToPlaneThroughPoint(point: THREE.Vector3, snap?: Snap) {
         this.restrictionPoint = point;
         if (snap !== undefined) {
             this._restriction = snap.restrictionFor(point);
+            this.lineChoice = undefined;
         }
     }
 
     restrictToPlane(plane: PlaneSnap) {
         this._restriction = plane;
         this.restrictionPlane = plane;
+        this.lineChoice = undefined;
     }
 
     restrictToLine(origin: THREE.Vector3, direction: THREE.Vector3) {
         const line = new LineAxisSnap(direction, origin);
         this._restriction = line;
-        this._choice = { snap: line, sticky: false };
-        this.choose(line, undefined, false);
-        // FIXME: the user is able to hit shift and make this choice disappear, which is a bug; introduce another boolean?
+        this.lineChoice = { snap: line, sticky: false };
+        this._choice = this.lineChoice;
     }
+
+    // The line a point is restricted to stays chosen: un-choosing (e.g. releasing the lock key) falls back to it.
+    private lineChoice?: Choice;
 
     restrictToEdges(edges: visual.CurveEdge[]): OrRestriction<CurveEdgeSnap> {
         const restrictions = [];
@@ -237,6 +249,7 @@ export class PointPickerModel {
         }
         const restriction = new OrRestriction(restrictions);
         this._restriction = restriction;
+        this.lineChoice = undefined;
         return restriction;
     }
 
@@ -249,7 +262,7 @@ export class PointPickerModel {
     get choice() { return this._choice; }
     choose(which: Choices | Snap | undefined, info?: { position: THREE.Vector3; orientation: THREE.Quaternion; }, sticky = false) {
         if (which === undefined) {
-            this._choice = undefined;
+            this._choice = this.lineChoice;
         } else if (which instanceof Snap) {
             if (which instanceof AxisSnap || which instanceof FaceSnap)
                 this._choice = { snap: which, info, sticky };

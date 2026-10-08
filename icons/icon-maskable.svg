@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#18181b"/>
+  <!-- logo.svg, centred -->
+  <g transform="translate(76 76) scale(0.8)">
+    <defs>
+      <linearGradient id="sf-sketch" gradientUnits="userSpaceOnUse" x1="183" y1="17.15" x2="183" y2="432.85">
+        <stop offset="0" stop-color="#3e4f63"/>
+        <stop offset="1" stop-color="#192535"/>
+      </linearGradient>
+      <linearGradient id="sf-top" gradientUnits="userSpaceOnUse" x1="267" y1="121.08" x2="327" y2="121.08">
+        <stop offset="0" stop-color="#04a6fc"/>
+        <stop offset="1" stop-color="#00d7fe"/>
+      </linearGradient>
+      <linearGradient id="sf-floor-up" gradientUnits="userSpaceOnUse" x1="231" y1="225" x2="291" y2="225">
+        <stop offset="0" stop-color="#04a6fc"/>
+        <stop offset="1" stop-color="#00d7fe"/>
+      </linearGradient>
+      <linearGradient id="sf-floor-low" gradientUnits="userSpaceOnUse" x1="159" y1="266.57" x2="219" y2="266.57">
+        <stop offset="0" stop-color="#04a6fc"/>
+        <stop offset="1" stop-color="#00d7fe"/>
+      </linearGradient>
+      <linearGradient id="sf-right" gradientUnits="userSpaceOnUse" x1="387" y1="225" x2="207" y2="432.84">
+        <stop offset="0" stop-color="#0a8ff9"/>
+        <stop offset="0.3" stop-color="#0766e2"/>
+        <stop offset="0.65" stop-color="#0553cc"/>
+        <stop offset="1" stop-color="#06379c"/>
+      </linearGradient>
+      <linearGradient id="sf-wall" gradientUnits="userSpaceOnUse" x1="267" y1="100.29" x2="183" y2="141.86">
+        <stop offset="0" stop-color="#0a8ff9"/>
+        <stop offset="0.3" stop-color="#0766e2"/>
+        <stop offset="0.65" stop-color="#0553cc"/>
+        <stop offset="1" stop-color="#06379c"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#sf-floor-low)" d="M111 183.43L207 349.71L231 308.14L159 183.43Z"/>
+    <path fill="url(#sf-floor-up)" d="M183 141.86L279 308.14L339 308.14L315 266.57L303 266.57L231 141.86Z"/>
+    <path fill="url(#sf-wall)" d="M183 141.86L231 141.86L207 100.29Z"/>
+    <path fill="url(#sf-right)" d="M327 225L387 225L363 266.57L303 266.57ZM279 308.14L339 308.14L267 432.85L207 432.84Z"/>
+    <path fill="url(#sf-top)" d="M207 17.15L267 17.15L387 225L327 225Z"/>
+    <path fill="#eaf7ff" d="M327 225L387 225L385 228.47L325 228.46ZM279 308.14L339 308.14L337 311.6L277 311.6Z"/>
+    <path fill="none" stroke="#56708e" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="5.5 4" d="M183 17.15L207 17.15M303 225L327 225M279 266.57L303 266.57M159 141.86L183 141.86M255 308.14L279 308.14M183 432.85L207 432.84M87 183.43L111 183.43"/>
+    <path fill="url(#sf-sketch)" d="M183 17.15L303 225L279 266.57L183 100.29L159 141.86L255 308.14L183 432.85L63 225L87 183.43L183 349.71L207 308.14L111 141.86Z"/>
+  </g>
+</svg>

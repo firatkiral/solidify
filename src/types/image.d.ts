@@ -18,7 +18,12 @@ declare module "*.svg" {
     export default value;
 }
 
-declare module "dot-plasticity" {
+declare module "dot-solidify" {
+    const value: string;
+    export default value;
+}
+// Vite gives the URL of a file imported with ?url
+declare module "*?url" {
     const value: string;
     export default value;
 }

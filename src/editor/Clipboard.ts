@@ -1,4 +1,3 @@
-import { Item } from 'electron/main';
 import c3d from '../build/Release/c3d.node';
 import * as cmd from "../command/Command";
 

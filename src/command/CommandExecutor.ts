@@ -84,7 +84,7 @@ export class CommandExecutor {
     private async execute(command: Command) {
         const { snaps, signals, registry, originator, history, selection, contours, db, meshCreator, copier, helpers } = this.editor;
         signals.commandStarted.dispatch(command);
-        const disposable = registry.add('plasticity-viewport', {
+        const disposable = registry.add('solidify-viewport', {
             'command:finish': () => command.finish(),
             'command:abort': () => command.cancel(),
         });
@@ -105,7 +105,7 @@ export class CommandExecutor {
             });
             if (command.state === 'Finished') {
                 if (selectionChanged) signals.selectionChanged.dispatch({ selection: selection.selected });
-                if (command.shouldAddToHistory(selectionChanged)) history.add(command.pretty, state);
+                if (command.shouldAddToHistory(selectionChanged)) history.add(command.pretty, state, command.changesDocument);
                 signals.commandFinishedSuccessfully.dispatch(command);
             } else {
                 originator.discardSideEffects(state);
@@ -122,7 +122,6 @@ export class CommandExecutor {
                 }
                 disposable.dispose();
                 db.clearTemporaryObjects();
-                snaps.xor = false;
                 PlaneDatabase.ScreenSpace.reset();
                 if (helpers.scene.children.length > 0) {
                     console.error("Helpers scene is not empty");
@@ -150,7 +149,7 @@ export class CommandExecutor {
 
     private decorateBody(command: Command) {
         document.body.setAttribute("command", command.identifier);
-        const buttons = document.querySelectorAll(`plasticity-command[name=${command.identifier}] > div`);
+        const buttons = document.querySelectorAll(`solidify-command[name=${command.identifier}] > div`);
         for (const button of Array.from(buttons)) {
             button.classList.add('active');
         }
@@ -162,6 +161,7 @@ export class CommandExecutor {
     }
 
     private disableViewportSelector(command: Command) {
+        if (command.keepsViewportSelection) return;
         if (command.agent === 'automatic') {
             command.factoryChanged.addOnce(() => {
                 for (const viewport of this.editor.viewports) {
@@ -175,10 +175,13 @@ export class CommandExecutor {
         }
     }
 
-    cancelActiveCommand() {
+    // Returns whether the cancelled command had drawn something it hadn't committed; read before cancelling, which
+    // changes its factories too
+    cancelActiveCommand(): boolean {
         const active = this.active;
+        const hadChanges = active?.hasChanges ?? false;
         if (active) active.cancel();
-        return active;
+        return hadChanges;
     }
 
     async enqueueDefaultCommand() {

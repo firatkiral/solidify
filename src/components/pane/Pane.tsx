@@ -23,7 +23,7 @@ export class PaneAxis extends HTMLElement {
         return Number(this.style.flexGrow);
     }
 }
-customElements.define('plasticity-pane-axis', PaneAxis);
+customElements.define('solidify-pane-axis', PaneAxis);
 
 export class Pane extends HTMLElement {
     signals: PaneSignals = {
@@ -36,7 +36,7 @@ export class Pane extends HTMLElement {
     }
 
     connectedCallback() {
-        const axis = this.closest("plasticity-pane-axis")! as PaneAxis;
+        const axis = this.closest("solidify-pane-axis")! as PaneAxis;
         axis.signals.flexScaleChanged.add(this.signals.flexScaleChanged.dispatch);
     }
 
@@ -49,7 +49,7 @@ export class Pane extends HTMLElement {
         return Number(this.style.flexGrow);
     }
 }
-customElements.define('plasticity-pane', Pane);
+customElements.define('solidify-pane', Pane);
 
 export class PaneResizeHandle extends HTMLElement {
     constructor() {
@@ -78,7 +78,7 @@ export class PaneResizeHandle extends HTMLElement {
         const previousSibling = this.previousElementSibling as Pane | PaneAxis;
         const nextSibling = this.nextElementSibling as Pane | PaneAxis;
 
-        const direction = this.closest("plasticity-pane-axis")!.className;
+        const direction = this.closest("solidify-pane-axis")!.className;
         if (direction == "horizontal") {
             const totalWidth = previousSibling.clientWidth + nextSibling.clientWidth;
 
@@ -106,4 +106,4 @@ export class PaneResizeHandle extends HTMLElement {
         }
     }
 }
-customElements.define('plasticity-pane-resize-handle', PaneResizeHandle);
+customElements.define('solidify-pane-resize-handle', PaneResizeHandle);

@@ -11,6 +11,7 @@ export type NavigationTarget =
     { tag: 'orientation', cplane: ConstructionPlaneSnap }
     | { tag: 'face', targets: Set<visual.Face | visual.CurveEdge>, cplane: FaceConstructionPlaneSnap }
     | { tag: 'region', target: visual.PlaneInstance<visual.Region>, cplane: ConstructionPlaneSnap }
+    | { tag: 'selection', targets: ReadonlySet<Intersectable>, cplane: ConstructionPlaneSnap }
     | { tag: 'cplane', cplane: ConstructionPlaneSnap | FaceConstructionPlaneSnap }
 
 export class ViewportGeometryNavigator extends ViewportNavigatorExecutor {
@@ -21,6 +22,7 @@ export class ViewportGeometryNavigator extends ViewportNavigatorExecutor {
         const cplane = to.cplane;
         switch (to.tag) {
             case 'face':
+            case 'selection':
                 if (mode === 'align-camera') {
                     controls.target.copy(cplane.p);
                     this.animateToPositionAndQuaternion(cplane.orientation);
@@ -50,6 +52,8 @@ export class ViewportGeometryNavigator extends ViewportNavigatorExecutor {
 }
 
 export class NavigateCommand extends cmd.CommandLike {
+    readonly changesDocument = false;
+
     constructor(
         editor: cmd.EditorLike,
         private readonly to: ReadonlySet<Intersectable | visual.Solid>

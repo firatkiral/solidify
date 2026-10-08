@@ -1,6 +1,6 @@
 import { CompositeDisposable, Disposable } from 'event-kit';
 import signals from 'signals';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { Agent, DatabaseLike } from "../editor/DatabaseLike";
 import { EditorSignals } from '../editor/EditorSignals';
 import { Empty } from '../editor/Empties';

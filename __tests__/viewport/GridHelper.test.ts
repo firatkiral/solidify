@@ -30,23 +30,36 @@ test('getOverlay(false, ....)', () => {
     expect(result).toBeInstanceOf(CustomGrid);
 })
 
-test('resizeGrid', () => {
+test('resizeGrid steps along the grid sizes, and the plane snaps to the size', () => {
     const cplane = new ConstructionPlaneSnap();
-    expect(cplane.gridFactor).toBe(1);
-    grids.resizeGrid(2, cplane);
-    expect(cplane.gridFactor).toBe(2);
-    grids.resizeGrid(2, cplane);
-    expect(cplane.gridFactor).toBe(4);
-    grids.resizeGrid(0.5, cplane);
-    expect(cplane.gridFactor).toBe(2);
-    grids.resizeGrid(0.5, cplane);
-    expect(cplane.gridFactor).toBe(1);
+    expect(grids.spacing).toBe(0.1);
+    grids.resizeGrid(1, cplane);
+    expect(grids.spacing).toBe(0.2);
+    expect(cplane.gridFactor).toBe(0.5);
+    grids.resizeGrid(1, cplane);
+    grids.resizeGrid(1, cplane);
+    expect(grids.spacing).toBe(1);
+    grids.resizeGrid(-1, cplane);
+    expect(grids.spacing).toBe(0.5);
+    grids.resizeGrid(0, cplane);
+    expect(grids.spacing).toBe(0.5);
 });
 
-test('resizeGrid edge cases', () => {
+test('resizeGrid stops at the smallest and largest sizes', () => {
     const cplane = new ConstructionPlaneSnap();
-    grids.resizeGrid(-1, cplane);
-    expect(cplane.gridFactor).toBe(0.25);
-    grids.resizeGrid(100000, cplane);
-    expect(cplane.gridFactor).toBe(8);
+    for (let i = 0; i < 20; i++) grids.resizeGrid(-1, cplane);
+    expect(grids.spacing).toBe(0.01);
+    expect(cplane.gridFactor).toBe(10);
+    for (let i = 0; i < 20; i++) grids.resizeGrid(1, cplane);
+    expect(grids.spacing).toBe(10);
+    expect(cplane.gridFactor).toBe(0.01);
+})
+
+test('snapping to the plane steps by the grid size', () => {
+    const cplane = new ConstructionPlaneSnap();
+    grids.resizeGrid(1, cplane); grids.resizeGrid(1, cplane); grids.resizeGrid(1, cplane); // 1 m
+    const p = new THREE.Vector3(2.4, -3.6, 0);
+    cplane.snapToGrid(p, cplane);
+    expect(p.x).toBeCloseTo(2);
+    expect(p.y).toBeCloseTo(-4);
 })

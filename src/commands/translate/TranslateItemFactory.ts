@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GeometryFactory, NoOpError } from '../../command/GeometryFactory';
 import { TemporaryObject } from "../../editor/DatabaseLike";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { identityMatrix, X } from "../../util/Constants";
 import { composeMainName, deunit, mat2mat, point2point, unit, vec2vec } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
@@ -30,7 +30,7 @@ abstract class TranslateFactory extends GeometryFactory {
         return _matrix;
     }
 
-    // This is confusing. But view units are meters and model units are centimeters, as per usual.
+    // This is confusing. But view units are millimeters and model units are hundredths of a millimeter, as per usual.
     // this.matrix pivot is in model units. So any view level transforms (e.g., update) need to deunit just that part.
     private readonly tmp = new THREE.Matrix4();
     get deunitMatrix() {

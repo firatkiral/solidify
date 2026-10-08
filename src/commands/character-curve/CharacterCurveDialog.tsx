@@ -17,13 +17,13 @@ export class CharacterCurveDialog extends AbstractDialog<CharacterCurveParams> {
                 <li>
                     <label for="tMin">tMin</label>
                     <div class="fields">
-                        <plasticity-number-scrubber name="tMin" value={tMin} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                        <solidify-number-scrubber name="tMin" value={tMin} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                     </div>
                 </li>
                 <li>
                     <label for="tMax">tMax</label>
                     <div class="fields">
-                        <plasticity-number-scrubber name="tMax" value={tMax} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                        <solidify-number-scrubber name="tMax" value={tMax} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                     </div>
                 </li>
                 <li>

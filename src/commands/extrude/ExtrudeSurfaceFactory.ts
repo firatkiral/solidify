@@ -1,4 +1,4 @@
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
 import { vec2vec } from '../../util/Conversion';
 import { GeometryFactory } from '../../command/GeometryFactory';

@@ -21,7 +21,7 @@ import { Helper, Helpers } from "../../util/Helpers";
 import { MaterialMode, RenderedSceneBuilder } from "../../visual_model/RenderedSceneBuilder";
 import * as visual from '../../visual_model/VisualModel';
 import { Pane } from '../pane/Pane';
-import { ConstructionPlaneGenerator } from "./ConstructionPlaneGenerator";
+import { ConstructionPlaneGenerator, PlaneContext } from "./ConstructionPlaneGenerator";
 import { GridHelper } from "./GridHelper";
 import { OrbitControls } from "./OrbitControls";
 import { OutlinePass } from "./OutlinePass";
@@ -30,6 +30,7 @@ import { ViewportControlMultiplexer } from "./ViewportControlMultiplexer";
 import { NavigationTarget, ViewportGeometryNavigator } from "./ViewportGeometryNavigator";
 import { Orientation, ViewportNavigatorGizmo, ViewportNavigatorPass } from "./ViewportNavigator";
 import { ViewportPointControl } from "./ViewportPointControl";
+import { isLinux } from "../../util/Os";
 
 export interface EditorLike extends selector.EditorLike {
     db: DatabaseLike,
@@ -153,16 +154,16 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
                 'viewport:navigate:back': () => this._navigate(this.cplanes.constructionPlaneForOrientation(Orientation.posY)),
                 'viewport:navigate:left': () => this._navigate(this.cplanes.constructionPlaneForOrientation(Orientation.negX)),
                 'viewport:navigate:bottom': () => this._navigate(this.cplanes.constructionPlaneForOrientation(Orientation.negZ)),
-                'viewport:navigate:selection': () => this._navigate(this.cplanes.constructionPlaneForSelection(this.editor.selection.selected)),
+                'viewport:navigate:selection': () => this.navigateToSelection(),
                 'viewport:focus': () => this.focus(),
                 'viewport:toggle-orthographic': () => this.togglePerspective(),
                 'viewport:toggle-edges': () => this.toggleEdges(),
                 'viewport:toggle-faces': () => this.toggleFaces(),
                 'viewport:toggle-x-ray': () => this.toggleXRay(),
                 'viewport:toggle-overlays': () => this.toggleOverlays(),
-                'viewport:grid:selection': () => this.constructionPlane = this.cplanes.constructionPlaneForSelection(this.editor.selection.selected),
-                'viewport:grid:incr': () => this.resizeGrid(2),
-                'viewport:grid:decr': () => this.resizeGrid(0.5),
+                'viewport:grid:selection': () => this.cplaneToSelection(),
+                'viewport:grid:incr': () => this.resizeGrid(-1),
+                'viewport:grid:decr': () => this.resizeGrid(1),
             })
         );
 
@@ -313,6 +314,21 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         }
     }
 
+    // A square picture of the view, cut from its middle. It's drawn right after rendering, while the canvas still holds the frame.
+    snapshot(size: number, background: string): HTMLCanvasElement {
+        this.setNeedsRender();
+        this.render(this.lastFrameNumber + 1);
+        const source = this.renderer.domElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const context = canvas.getContext('2d')!;
+        context.fillStyle = background;
+        context.fillRect(0, 0, size, size);
+        const side = Math.min(source.width, source.height);
+        context.drawImage(source, (source.width - side) / 2, (source.height - side) / 2, side, side, 0, 0, size, size);
+        return canvas;
+    }
+
     private addOverlays(scene: THREE.Scene) {
         if (!this.showOverlays) return;
         const { grid, isOrthoMode, constructionPlane, camera, editor: { helpers } } = this;
@@ -421,7 +437,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         this.camera.setMode(this.orthoState.oldCameraMode);
         this.constructionPlane = this.orthoState.oldConstructionPlane;
         this.orthoState = undefined;
-        this.resizeGrid(1);
+        this.resizeGrid(0);
         this.changed.dispatch();
     }
 
@@ -454,6 +470,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             this.navigator.navigate(input, 'keep-camera-position');
             plane = input.cplane;
         }
+        this.grid.applyTo(plane);
         this._constructionPlane = plane;
         this.setNeedsRender();
         this.changed.dispatch();
@@ -543,16 +560,36 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         this.changed.dispatch();
     }
 
-    resizeGrid(factor: number) {
-        this.grid.resizeGrid(factor, this.constructionPlane);
+    // One grid size finer (-1) or coarser (+1); 0 re-applies the current size to the construction plane.
+    resizeGrid(direction: -1 | 0 | 1) {
+        this.grid.resizeGrid(direction, this.constructionPlane);
         this.setNeedsRender();
+        this.changed.dispatch();
     }
+
+    // In millimeters; also the snap-to-grid increment.
+    get gridSize() { return this.grid.spacing }
 
     navigate(to?: visual.Face | visual.PlaneInstance<visual.Region> | Orientation) {
         if (to === undefined) this._navigate();
         else if (to instanceof visual.Face) this._navigate(this.cplanes.constructionPlaneForFace(to));
         else if (to instanceof visual.PlaneInstance) this._navigate(this.cplanes.constructionPlaneForRegion(to));
         else this._navigate(this.cplanes.constructionPlaneForOrientation(to));
+    }
+
+    navigateToSelection() {
+        const to = this.cplanes.constructionPlaneForSelection(this.editor.selection.selected, this.planeContext);
+        this._navigate(to);
+        // Unlike the standard views, a plane from the selection stays after orbiting away; only the camera mode is restored.
+        if (to !== undefined && this.orthoState !== undefined) this.orthoState.oldConstructionPlane = to.cplane;
+    }
+
+    cplaneToSelection() {
+        this.constructionPlane = this.cplanes.constructionPlaneForSelection(this.editor.selection.selected, this.planeContext);
+    }
+
+    private get planeContext(): PlaneContext {
+        return { cplane: this.constructionPlane, cameraOrientation: this.camera.quaternion };
     }
 
     private _navigate(to?: NavigationTarget) {
@@ -722,13 +759,13 @@ export default (editor: Editor) => {
         }
     }
 
-    customElements.define('plasticity-viewport', ViewportElement);
+    customElements.define('solidify-viewport', ViewportElement);
 }
 
 function makeRenderTarget(renderer: THREE.WebGLRenderer): THREE.WebGLRenderTarget {
     const size = renderer.getSize(new THREE.Vector2());
 
-    if (process.platform === 'linux') {
+    if (isLinux) {
         // Linux seems to require an explicity float depth texture otherwise there are zbuffer artifacts
         const depthTexture = new THREE.DepthTexture(size.width, size.height, THREE.FloatType);
         // @ts-expect-error('three.js @types are out of date')

@@ -322,7 +322,7 @@ describe('Integration test', () => {
                 })
 
                 test('with snaps disabled & choice & restriction', () => {
-                    snaps.enabled = false;
+                    for (const layer of SnapManager.objectLayers) snaps.layers.disable(layer);
                     pointPicker.addAxesAt(new THREE.Vector3(1, 1, 0));
                     pointPicker.choose("x");
                     pointPicker.restrictToPlaneThroughPoint(new THREE.Vector3(1, 1, 0));

@@ -156,11 +156,11 @@ export default (editor: Editor) => {
                         const color = getColor(mat);
                         const id = object instanceof Group || object instanceof Empty ? object.simpleName : editor.db.lookupId(object.simpleName);
                         const name = scene.getName(object) ?? `${klass} ${id}`;
-                        return <plasticity-outliner-item
+                        return <solidify-outliner-item
                             class={`block ${firstSelected.has(i) ? 'rounded-t' : ''}  ${lastSelected.has(i) ? 'rounded-b' : ''} overflow-clip`}
                             key={nodeKey} nodeKey={nodeKey} klass={klass} name={name} indent={indent} isvisible={visible} ishidden={hidden} selectable={selectable} isdisplayed={isDisplayed} isSelected={isSelected} color={color}
                             onexpand={this.expand} onselect={this.select} onhover={this.hover}
-                        ></plasticity-outliner-item>
+                        ></solidify-outliner-item>
                     case 'SolidSection':
                     case 'CurveSection':
                     case 'EmptySection': {
@@ -176,8 +176,8 @@ export default (editor: Editor) => {
                         const visible = scene.isVisible(virtual);
                         const isDisplayed = item.displayed;
                         return <div class={`${isDisplayed ? '' : 'opacity-50'} flex gap-1 pl-1 pr-3 overflow-hidden items-center rounded-md group`} style={`padding-left: ${4 + indentSize * indent}px`}>
-                            <plasticity-icon name="nav-arrow-down" class="text-neutral-500"></plasticity-icon>
-                            <plasticity-icon name="folder-solids" class="text-neutral-500 group-hover:text-neutral-200"></plasticity-icon>
+                            <solidify-icon name="nav-arrow-down" class="text-neutral-500"></solidify-icon>
+                            <solidify-icon name="folder-solids" class="text-neutral-500 group-hover:text-neutral-200"></solidify-icon>
                             <div class="py-0.5 flex-1">
                                 <div class="w-full text-neutral-300 text-xs group-hover:text-neutral-100 h-6 p-0.5 bg-transparent rounded pointer-events-none overflow-hidden overflow-ellipsis whitespace-nowrap">{name}</div>
                             </div>
@@ -185,8 +185,8 @@ export default (editor: Editor) => {
                                 class="py-0.5 rounded group text-neutral-300 group-hover:visible invisible hover:text-neutral-100"
                                 onClick={e => this.setVisibility(e, virtual, !visible)}
                             >
-                                <plasticity-tooltip placement="top">Disable in viewport</plasticity-tooltip>
-                                <plasticity-icon key={visible} name={visible ? 'light-bulb-on' : 'light-bulb-off'}></plasticity-icon>
+                                <solidify-tooltip placement="top">Disable in viewport</solidify-tooltip>
+                                <solidify-icon key={visible} name={visible ? 'light-bulb-on' : 'light-bulb-off'}></solidify-icon>
                             </button>
                         </div>
                     }
@@ -199,8 +199,8 @@ export default (editor: Editor) => {
                         class="py-0.5 rounded group text-neutral-300 hover:text-neutral-100"
                         onClick={this.createGroup}
                     >
-                        <plasticity-icon name='add-circled-outline'></plasticity-icon>
-                        <plasticity-tooltip placement="top" command="command:group-selected">Create group (of selected items)</plasticity-tooltip>
+                        <solidify-icon name='add-circled-outline'></solidify-icon>
+                        <solidify-tooltip placement="top" command="command:group-selected">Create group (of selected items)</solidify-tooltip>
                     </button>
                 </div>
                 <div class="pl-3 pr-3">
@@ -242,7 +242,7 @@ export default (editor: Editor) => {
             editor.enqueue(command);
         }
     }
-    customElements.define('plasticity-outliner', OutlinerElement);
+    customElements.define('solidify-outliner', OutlinerElement);
 }
 
 function getColor(material: THREE.Material | undefined): string | undefined {

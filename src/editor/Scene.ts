@@ -12,7 +12,7 @@ import { TypeManager } from "./TypeManager";
 
 /**
  * The Scene (not to be confused with THREE.Scene) is a collection of all the visible/selectable objects in the
- * Plasticity universe. It coordinates the GeometryDatabase (NURBS solids and curves) and the Empties database (image planes)
+ * Solidify universe. It coordinates the GeometryDatabase (NURBS solids and curves) and the Empties database (image planes)
  * with the Nodes (visibility/selectablility modifiers) and Groups (organization) stuff.
  * 
  * A Node is EITHER an NURBS item OR an Empty OR a Group. Nodes can be visible/hidden and have group membership relationships.

@@ -1,5 +1,6 @@
+import { Disposable } from "event-kit";
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { cornerInfo, inst2curve, point2point, vec2vec } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
 import { CrossPointDatabase } from "../curves/CrossPointDatabase";
@@ -26,25 +27,83 @@ type SnapMap = Map<c3d.SimpleName, ReadonlySet<PointSnap>>;
 type BasicSnap = PointSnap | RaycastableSnap;
 
 export class SnapManager implements MementoOriginator<SnapMemento> {
-    private _enabled = true;
-    set enabled(enabled: boolean) { this._enabled = enabled }
-    get enabled() {
-        return this._enabled !== this.xor;
+    // The setters and the *Setting getters are the panel toggles; the plain getters are what is in effect, which is
+    // the toggle OR a held key (Shift for the grid and handle-drag steps, Ctrl for objects). Held keys only ever turn snapping on.
+
+    // Snapping to objects: on while any of Face/Curve/Edge is; with all three off nothing snaps (not even the origin,
+    // axes, crossings or guide lines). Ctrl turns all three on while held.
+    static readonly objectLayers: readonly visual.Layers[] = [visual.Layers.Face, visual.Layers.Curve, visual.Layers.CurveEdge];
+    get enabled() { return this.heldObjects || this.forcedMask !== 0 || SnapManager.objectLayers.some(layer => this.isLayerOn(layer)) }
+    isLayerOn(layer: visual.Layers) { return (this.layers.mask & (1 << layer)) !== 0 }
+
+    // The layers snapping raycasts against: the toggled ones, plus Face/Curve/Edge while Ctrl is held, plus any a
+    // command forces on.
+    get activeLayers(): THREE.Layers {
+        if (!this.heldObjects && this.forcedMask === 0) return this.layers;
+        const layers = new THREE.Layers();
+        layers.mask = this.layers.mask | this.forcedMask;
+        if (this.heldObjects) for (const layer of SnapManager.objectLayers) layers.enable(layer);
+        return layers;
+    }
+
+    // For a command whose picks only make sense on some objects (e.g. points on curves): those layers snap until
+    // disposed, whatever the panel toggles say.
+    private forcedMask = 0;
+    forceLayers(...layers: visual.Layers[]): Disposable {
+        const before = this.forcedMask;
+        for (const layer of layers) this.forcedMask |= 1 << layer;
+        this.heldChanged(true);
+        return new Disposable(() => {
+            this.forcedMask = before;
+            this.heldChanged(false);
+        });
     }
 
     private _snapToGrid = false;
     set snapToGrid(snapToGrid: boolean) { this._snapToGrid = snapToGrid }
-    get snapToGrid() {
-        return this._snapToGrid && !this.xor;
+    get snapToGrid() { return this._snapToGrid || this.heldGrid }
+    get snapToGridSetting() { return this._snapToGrid }
+
+    // Dragging a gizmo handle steps its value: lengths (and moves) by lengthStep in millimeters, angles by angleStep in degrees.
+    // Gizmo drags read Shift straight off the pointer event, since the Shift hold below only applies while picking points.
+    private _gizmoSnapping = false;
+    set gizmoSnapping(gizmoSnapping: boolean) { this._gizmoSnapping = gizmoSnapping }
+    get gizmoSnapping() { return this._gizmoSnapping || this.heldGrid }
+    get gizmoSnappingSetting() { return this._gizmoSnapping }
+
+    private _angleSnapping = false;
+    set angleSnapping(angleSnapping: boolean) { this._angleSnapping = angleSnapping }
+    get angleSnapping() { return this._angleSnapping || this.heldGrid }
+    get angleSnappingSetting() { return this._angleSnapping }
+
+    static readonly lengthSteps: readonly number[] = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
+    static readonly angleSteps: readonly number[] = [1, 5, 10, 15, 30, 45, 90];
+    lengthStep = 0.1;
+    angleStep = 5;
+    stepLengthStep(direction: 1 | -1) { this.lengthStep = nextOnLadder(SnapManager.lengthSteps, this.lengthStep, direction) }
+    stepAngleStep(direction: 1 | -1) { this.angleStep = nextOnLadder(SnapManager.angleSteps, this.angleStep, direction) }
+
+    private heldObjects = false;
+    holdObjects(held: boolean) {
+        if (this.heldObjects === held) return;
+        this.heldObjects = held;
+        this.heldChanged(held);
     }
 
-    private _xor = false;
-    get xor() { return this._xor }
-    set xor(xor: boolean) {
-        if (this._xor === xor) return;
+    private heldGrid = false;
+    holdGrid(held: boolean) {
+        if (this.heldGrid === held) return;
+        this.heldGrid = held;
+        this.heldChanged(held);
+    }
 
-        this._xor = xor;
-        if (xor) this.signals.snapsEnabled.dispatch();
+    releaseHolds() {
+        this.holdObjects(false);
+        this.holdGrid(false);
+    }
+
+    private heldChanged(held: boolean) {
+        if (held) this.signals.snapsEnabled.dispatch();
         else this.signals.snapsDisabled.dispatch();
     }
 
@@ -397,6 +456,13 @@ export const originSnap = new PointSnap("Origin");
 export const xAxisSnap = new AxisSnap("X", X, origin, Z);
 export const yAxisSnap = new AxisSnap("Y", Y, origin, Z);
 export const zAxisSnap = new AxisSnap("Z", Z, origin, Z);
+
+// The neighbor of `value` on the ladder, staying at the ends.
+function nextOnLadder(ladder: readonly number[], value: number, direction: 1 | -1): number {
+    const index = ladder.findIndex(v => Math.abs(v - value) < 1e-9);
+    const next = (index === -1 ? ladder.indexOf(ladder.find(v => v > value) ?? ladder[ladder.length - 1]) : index) + direction;
+    return ladder[Math.min(ladder.length - 1, Math.max(0, next))];
+}
 
 function copyId2Snaps(id2snaps: ReadonlyMap<DisablableType, ReadonlyMap<c3d.SimpleName, ReadonlySet<PointSnap>>>) {
     const id2snapsCopy = new Map<DisablableType, SnapMap>();

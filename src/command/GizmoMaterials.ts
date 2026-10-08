@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { EditorSignals } from "../editor/EditorSignals";
 import { Theme } from "../startup/ConfigFiles";
-import theme from '../startup/default-theme';
+import theme from '../startup/default-theme.json';
 
 const depthInfo: THREE.MaterialParameters = {
     depthTest: true,

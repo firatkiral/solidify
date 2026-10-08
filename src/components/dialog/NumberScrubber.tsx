@@ -232,6 +232,9 @@ export default (editor: Editor) => {
 
         render() {
             const stringValue = this.getAttribute('value')!;
+            // The unit attribute (e.g. "mm" or "°") is shown after the value; typing edits the bare number
+            const unit = this.getAttribute('unit');
+            const suffix = unit === null || this.isDisabled ? '' : unit === '°' ? unit : `\u00a0${unit}`;
             const startValue = +stringValue;
             const precisionDigits = this.precision - 1;
             const displayValue = startValue.toFixed(precisionDigits);
@@ -253,11 +256,11 @@ export default (editor: Editor) => {
                     input = <div class={classes} onPointerDown={this.onPointerDown} disabled={this.isDisabled} tabIndex={0} onFocus={this.onFocus}>
                         <span class="prefix"></span>
                         <span class="value">{full}</span>
-                        <span class="suffix"></span>
+                        <span class="suffix">{suffix}</span>
                     </div>
                     break;
                 case 'cancel':
-                    input = <input type="text" value={displayValue} ref={i => { i?.focus(); i?.select() }} onBlur={onBlur} onChange={this.change} disabled={this.isDisabled} onKeyDown={e => e.stopPropagation()} class={classes} />
+                    input = <input type="text" value={displayValue} ref={i => { i?.focus(); i?.select() }} onBlur={onBlur} onChange={this.change} onPointerDown={collapseSelection} disabled={this.isDisabled} onKeyDown={e => e.stopPropagation()} class={classes} />
                     break;
                 default: throw new Error('invalid state: ' + this.state.tag);
             }
@@ -280,5 +283,13 @@ export default (editor: Editor) => {
             return !this._enabled || stringValue === stringDisabled;
         }
     }
-    customElements.define('plasticity-number-scrubber', Scrubber);
+    customElements.define('solidify-number-scrubber', Scrubber);
+}
+
+// Pressing on selected text would start dragging it; collapsing the selection first makes the press start a new one.
+function collapseSelection(e: PointerEvent) {
+    if (e.button !== 0) return;
+    const input = e.currentTarget as HTMLInputElement;
+    if (input.selectionStart === input.selectionEnd) return;
+    input.setSelectionRange(input.selectionEnd, input.selectionEnd);
 }

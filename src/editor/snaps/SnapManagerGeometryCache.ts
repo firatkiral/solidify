@@ -20,7 +20,7 @@ export class SnapManagerGeometryCache {
     private _basic: THREE.Object3D[] = [];
     get basic() { return this._basic }
 
-    get layers() { return this.snaps.layers }
+    get layers() { return this.snaps.activeLayers }
 
     private _geometrySnaps!: PointSnapCache;
     get geometrySnaps() { return this._geometrySnaps }

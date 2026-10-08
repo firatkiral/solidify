@@ -5,7 +5,7 @@ import { ColorRepresentation } from "three";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 import { DatabaseLike } from "../editor/DatabaseLike";
 import { EditorSignals } from "../editor/EditorSignals";
-import { Empty, ImageEmpty } from "../editor/Empties";
+import { Empty, SurfaceEmpty } from "../editor/Empties";
 import { Scene } from "../editor/Scene";
 import { TextureLoader } from "../editor/TextureLoader";
 import basic_side from '../img/matcap/basic_side.exr';
@@ -181,10 +181,10 @@ export class RenderedSceneBuilder {
         empty.quaternion.copy(transform.quaternion);
         empty.scale.copy(transform.scale);
         empty.layers.set(visual.Layers.Empty);
-        if (empty instanceof ImageEmpty) {
+        if (empty instanceof SurfaceEmpty) {
             const particularMaterial = this.scene.getMaterial(empty, true);
             if (particularMaterial !== undefined) {
-                const material = empty.plane.material as THREE.MeshBasicMaterial;
+                const material = empty.surface.material as THREE.Material;
                 material.opacity = particularMaterial.opacity;
                 material.transparent = particularMaterial.opacity < 1;
                 material.depthWrite = particularMaterial!.depthFunc !== THREE.NeverDepth; 
@@ -323,13 +323,13 @@ export class RenderedSceneBuilder {
 
     get outlineSelection(): Iterable<visual.Outlineable> {
         const solids = this.selection.selected.solids
-        const empties = [...this.selection.selected.empties].filter(e => e instanceof ImageEmpty) as ImageEmpty[];
+        const empties = [...this.selection.selected.empties].filter(e => e instanceof SurfaceEmpty) as SurfaceEmpty[];
         return [...solids, ...empties];
     }
 
     get outlineHover(): Iterable<visual.Outlineable> {
         const solids = this.selection.hovered.solids
-        const empties = [...this.selection.hovered.empties].filter(e => e instanceof ImageEmpty) as ImageEmpty[];
+        const empties = [...this.selection.hovered.empties].filter(e => e instanceof SurfaceEmpty) as SurfaceEmpty[];
         return [...solids, ...empties];
     }
 

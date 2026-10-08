@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Command from "../../command/Command";
+import { ModifiesSelection } from "../../selection/SelectionDatabase";
 import * as visual from "../../visual_model/VisualModel";
 import { AbstractFreestyleMoveCommand, AbstractFreestyleRotateCommand, AbstractFreestyleScaleCommand } from "../translate/FreestyleTranslateCommand";
 import { MoveDialog } from "../translate/MoveDialog";
@@ -77,11 +78,13 @@ export class MoveControlPointCommand extends Command {
         await this.finished;
 
         const result = await move.commit() as visual.SpaceInstance<visual.Curve3D>;
-        selected.addCurve(result);
+        selectControlPoints(selected, result, move.controlPoints);
     }
 }
 
 export class FreestyleMoveControlPointCommand extends AbstractFreestyleMoveCommand {
+    private move!: MoveContourPointFactory;
+
     protected async makeFactory(): Promise<MoveFactoryLike> {
         const { editor } = this;
         const selected = editor.selection.selected;
@@ -93,7 +96,11 @@ export class FreestyleMoveControlPointCommand extends AbstractFreestyleMoveComma
         move.originalItem = curve;
         move.contour = await move.prepare(curve);
 
-        return move;
+        return this.move = move;
+    }
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        selectControlPoints(this.editor.selection.selected, selection as visual.SpaceInstance<visual.Curve3D>, this.move.controlPoints);
     }
 }
 
@@ -140,11 +147,13 @@ export class RotateControlPointCommand extends Command {
         await this.finished;
 
         const result = await rotate.commit() as visual.SpaceInstance<visual.Curve3D>;
-        selected.addCurve(result);
+        selectControlPoints(selected, result, rotate.controlPoints);
     }
 }
 
 export class FreestyleRotateControlPointCommand extends AbstractFreestyleRotateCommand {
+    private rotate!: RotateContourPointFactory;
+
     protected async makeFactory(): Promise<RotateFactoryLike> {
         const { editor } = this;
         const selected = editor.selection.selected;
@@ -156,7 +165,11 @@ export class FreestyleRotateControlPointCommand extends AbstractFreestyleRotateC
         rotate.originalItem = curve;
         rotate.contour = await rotate.prepare(curve);
 
-        return rotate;
+        return this.rotate = rotate;
+    }
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        selectControlPoints(this.editor.selection.selected, selection as visual.SpaceInstance<visual.Curve3D>, this.rotate.controlPoints);
     }
 }
 
@@ -201,11 +214,13 @@ export class ScaleControlPointCommand extends Command {
         await this.finished;
 
         const result = await scale.commit() as visual.SpaceInstance<visual.Curve3D>;
-        selected.addCurve(result);
+        selectControlPoints(selected, result, scale.controlPoints);
     }
 }
 
 export class FreestyleScaleControlPointCommand extends AbstractFreestyleScaleCommand {
+    private scale!: FreestyleScaleContourPointFactory;
+
     protected async makeFactory() {
         const { editor, editor: { selection: { selected } } } = this;
         const points = [...selected.controlPoints];
@@ -220,6 +235,16 @@ export class FreestyleScaleControlPointCommand extends AbstractFreestyleScaleCom
         scale.controlPoints = points;
         scale.originalItem = curve;
         scale.contour = await scale.prepare(curve);
-        return scale;
+        return this.scale = scale;
     }
+
+    protected select(selection: visual.Item | visual.Item[]) {
+        selectControlPoints(this.editor.selection.selected, selection as visual.SpaceInstance<visual.Curve3D>, this.scale.controlPoints);
+    }
+}
+
+// Editing vertices keeps them selected on the edited curve (vertex count and order don't change), rather than selecting the
+// whole curve, which would start the curve-editing command
+export function selectControlPoints(selected: ModifiesSelection, curve: visual.SpaceInstance<visual.Curve3D>, indices: number[]) {
+    for (const i of indices) selected.addControlPoint(curve.underlying.points.get(i));
 }

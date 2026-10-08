@@ -6,6 +6,7 @@ import { GizmoMaterial } from "../../command/GizmoMaterials";
 import { AbstractAxisGizmo, arrowGeometry, AxisHelper, CircularGizmo, CompositeHelper, lineGeometry, MagnitudeStateMachine, NumberHelper, PlanarGizmo, VectorStateMachine } from "../../command/MiniGizmos";
 import { ProxyCamera } from "../../components/viewport/ProxyCamera";
 import { CancellablePromise } from "../../util/CancellablePromise";
+import { roundToStep } from "../../util/Conversion";
 import { MoveParams } from "./TranslateItemFactory";
 
 const X = new THREE.Vector3(1, 0, 0);
@@ -107,6 +108,8 @@ export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
             const planeIntersect = intersect.raycast(plane);
             if (planeIntersect === undefined) return; // this only happens when the user is dragging through different viewports.
             delta = planeIntersect.point.clone().sub(startMousePosition).add(state.original);
+            // Step along the plane's own two axes, so the move stays in the plane.
+            stepVector(this.editor, delta, state.original, info.event, this.getWorldQuaternion(new THREE.Quaternion()));
         }
 
         this.state.current = delta;
@@ -126,6 +129,7 @@ export class CircleMoveGizmo extends CircularGizmo<THREE.Vector3> {
 
     onPointerMove(cb: (delta: THREE.Vector3) => void, intersect: Intersector, info: MovementInfo) {
         this.delta.copy(info.pointEnd3d).sub(info.pointStart3d).add(this.state.original);
+        stepVector(this.editor, this.delta, this.state.original, info.event, new THREE.Quaternion());
         this.state.current = this.delta.clone();
         cb(this.state.current);
         return this.state.current;
@@ -168,3 +172,13 @@ export class MoveAxisGizmo extends AbstractAxisGizmo {
 const localY = new THREE.Vector3();
 
 const AXIS_HIDE_TRESHOLD = 0.99;
+// While gizmo snapping is on or Shift is held, step each component of a move by the gizmo length step, counted from
+// where the drag started and measured in the given frame.
+function stepVector(editor: EditorLike, delta: THREE.Vector3, start: THREE.Vector3, event: MouseEvent, frame: THREE.Quaternion) {
+    const { snaps } = editor;
+    if (!(snaps.gizmoSnapping || event?.shiftKey)) return;
+    const step = snaps.lengthStep;
+    const moved = delta.clone().sub(start).applyQuaternion(frame.clone().invert());
+    moved.set(roundToStep(moved.x, step), roundToStep(moved.y, step), roundToStep(moved.z, step));
+    delta.copy(moved.applyQuaternion(frame)).add(start);
+}

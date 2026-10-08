@@ -7,7 +7,7 @@ import { GizmoMaterial } from "../../command/GizmoMaterials";
 import { AngleGizmo, AxisHelper, CompositeHelper, DashedLineMagnitudeHelper, NumberHelper, QuaternionStateMachine } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { X, Y, Z } from "../../util/Constants";
-import { rad2deg } from "../../util/Conversion";
+import { formatAngle } from "../../util/Units";
 import { RotateParams } from "./TranslateItemFactory";
 
 const planeGeometry = new THREE.PlaneGeometry(100_000, 100_000, 2, 2);
@@ -103,7 +103,7 @@ const localZ = new THREE.Vector3();
 export class AxisAngleGizmo extends AngleGizmo {
     private sign: number;
     private readonly lineHelper = new AxisHelper(this.material.line);
-    private readonly numberHelper = new NumberHelper(rad2deg);
+    private readonly numberHelper = new NumberHelper(formatAngle);
     readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), this.lineHelper, this.numberHelper]);
 
     constructor(name: string, editor: EditorLike, material: GizmoMaterial) {

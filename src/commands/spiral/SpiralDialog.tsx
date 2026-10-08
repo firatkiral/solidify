@@ -19,22 +19,22 @@ export class SpiralDialog extends AbstractDialog<SpiralParams> {
                     <li>
                         <label for="step">Step</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="step" value={step} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="step" value={step} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="step">Radius</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="radius" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="mm" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="degrees">Angle</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="degrees" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="degrees" unit="°" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);
     }
 }
-customElements.define('plasticity-spiral-dialog', SpiralDialog);
+customElements.define('solidify-spiral-dialog', SpiralDialog);

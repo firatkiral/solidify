@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 import { delegate } from '../../command/FactoryBuilder';
 import { GeometryFactory, PhantomInfo } from '../../command/GeometryFactory';
 import { MaterialOverride } from "../../editor/DatabaseLike";

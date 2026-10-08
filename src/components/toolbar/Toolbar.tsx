@@ -113,7 +113,7 @@ export default (editor: Editor) => {
         render = () => {
             const { model: { commands: { sections, trash } } } = this;
 
-            // preact's diffing algorithm will mutate plasticity-tooltips rather than create new ones, which leads to corruption;
+            // preact's diffing algorithm will mutate solidify-tooltips rather than create new ones, which leads to corruption;
             // So, force things to be cleared first.
             render('', this);
             const result = (
@@ -125,7 +125,7 @@ export default (editor: Editor) => {
                                     section.map(command => {
                                         const tooltip = tooltips.get(command);
                                         if (!tooltip) console.error("invalid tooltip for " + command);
-                                        return <plasticity-command name={command.identifier} class="shadow-lg first:rounded-l last:rounded-r overflow-clip" tooltipPlacement="top"></plasticity-command>
+                                        return <solidify-command name={command.identifier} class="shadow-lg first:rounded-l last:rounded-r overflow-clip" tooltipPlacement="top"></solidify-command>
                                     })
                                 }
                             </section>
@@ -133,7 +133,7 @@ export default (editor: Editor) => {
                     }
                     {
                         trash !== undefined &&
-                        <plasticity-command name="delete" class="rounded-full overflow-clip" tooltipPlacement="top"></plasticity-command>
+                        <solidify-command name="delete" class="rounded-full overflow-clip" tooltipPlacement="top"></solidify-command>
                     }
                 </div>
             );
@@ -141,5 +141,5 @@ export default (editor: Editor) => {
         }
 
     }
-    customElements.define('plasticity-toolbar', Toolbar);
+    customElements.define('solidify-toolbar', Toolbar);
 }

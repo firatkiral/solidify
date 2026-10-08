@@ -106,7 +106,7 @@ test("two overlapping coplanar circles, adding and removing creates the right re
     makeCircle2.center = new THREE.Vector3(0, 0, 0);
     makeCircle2.radius = 1;
     circle2 = await makeCircle2.commit() as visual.SpaceInstance<visual.Curve3D>;
-    expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(_db.find(visual.PlaneInstance, true).length).toBe(3);
 
     await contours.removeItem(circle2);
     expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
@@ -125,7 +125,7 @@ test("two overlapping coplanar circles, adding and hiding creates the right regi
     makeCircle2.center = new THREE.Vector3(0, 0, 0);
     makeCircle2.radius = 1;
     circle2 = await makeCircle2.commit() as visual.SpaceInstance<visual.Curve3D>;
-    expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(_db.find(visual.PlaneInstance, true).length).toBe(3);
 
     await contours.transaction(async () => {
         await scene.makeHidden(circle2, true);
@@ -140,7 +140,7 @@ test("two overlapping coplanar circles, adding and hiding creates the right regi
     await contours.transaction(async () => {
         await scene.unhideAll();
     })
-    expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(_db.find(visual.PlaneInstance, true).length).toBe(3);
 });
 
 test("two overlapping coplanar circles, visible and invisible creates the right regions", async () => {
@@ -153,7 +153,7 @@ test("two overlapping coplanar circles, visible and invisible creates the right 
     makeCircle2.center = new THREE.Vector3(0, 0, 0);
     makeCircle2.radius = 1;
     circle2 = await makeCircle2.commit() as visual.SpaceInstance<visual.Curve3D>;
-    expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(_db.find(visual.PlaneInstance, true).length).toBe(3);
 
     await contours.transaction(async () => {
         await scene.makeVisible(circle2, false);
@@ -171,5 +171,5 @@ test("two overlapping coplanar circles, visible and invisible creates the right 
     await contours.transaction(async () => {
         await scene.makeVisible(circle1, true);
     })
-    expect(_db.find(visual.PlaneInstance, true).length).toBe(1);
+    expect(_db.find(visual.PlaneInstance, true).length).toBe(3);
 });

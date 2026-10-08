@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import controlPointIcon from '../components/viewport/img/control-point.svg';
 import { face_unhighlighted_matcap, region_unhighlighted } from "../visual_model/RenderedSceneBuilder";
 import { BetterRaycastingPointsMaterial } from "../visual_model/VisualModelRaycasting";

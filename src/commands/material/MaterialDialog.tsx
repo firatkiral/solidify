@@ -37,43 +37,43 @@ export class MaterialDialog extends AbstractDialog<MaterialParams> {
                     <li>
                         <label for="metalness">Metalness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="metalness" value={metalness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="metalness" value={metalness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="roughness">Roughness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="roughness" value={roughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="roughness" value={roughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="ior">IOR</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="ior" value={ior} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="ior" value={ior} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="clearcoat">Clearcoat</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="clearcoat" value={clearcoat} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="clearcoat" value={clearcoat} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="clearcoatRoughness">Clearcoat Roughness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="clearcoatRoughness" value={clearcoatRoughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="clearcoatRoughness" value={clearcoatRoughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="sheen">Sheen</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="sheen" value={sheen} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="sheen" value={sheen} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="sheenRoughness">Sheen roughness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="sheenRoughness" value={sheenRoughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="sheenRoughness" value={sheenRoughness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -85,7 +85,7 @@ export class MaterialDialog extends AbstractDialog<MaterialParams> {
                     <li>
                         <label for="specularIntensity">Specular intensity</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="specularIntensity" value={specularIntensity} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="specularIntensity" value={specularIntensity} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -97,13 +97,13 @@ export class MaterialDialog extends AbstractDialog<MaterialParams> {
                     <li>
                         <label for="transmission">Transmission</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="transmission" value={transmission} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="transmission" value={transmission} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="thickness">Thickness</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="thickness" value={thickness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="thickness" value={thickness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);
@@ -131,11 +131,11 @@ export class MaterialDialog extends AbstractDialog<MaterialParams> {
                 <li>
                     <label for="opacity">Opacity</label>
                     <div class="fields">
-                        <plasticity-number-scrubber name="opacity" disabled={1.0} default={0.5} min={0} max={1} value={opacity} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                        <solidify-number-scrubber name="opacity" disabled={1.0} default={0.5} min={0} max={1} value={opacity} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                     </div>
                 </li>
             </ul>
         </>, this);
     }
 }
-customElements.define('plasticity-material-dialog', MaterialDialog);
+customElements.define('solidify-material-dialog', MaterialDialog);

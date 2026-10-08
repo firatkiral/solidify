@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import Command from "../../command/Command";
+import { height, Measurements, rectangleOf } from "../../command/Measurements";
 import { PointPicker, PointResult } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import * as visual from "../../visual_model/VisualModel";
 import { PossiblyBooleanKeyboardGizmo } from "../boolean/BooleanKeyboardGizmo";
-import { PossiblyBooleanCenterBoxFactory, PossiblyBooleanCornerBoxFactory, PossiblyBooleanThreePointBoxFactory } from './BoxFactory';
+import { PossiblyBooleanCenterBoxFactory, PossiblyBooleanCornerBoxFactory, PossiblyBooleanThreePointBoxFactory, ThreePointBoxFactory } from './BoxFactory';
 import LineFactory from '../line/LineFactory';
 import { CenterRectangleFactory, CornerRectangleFactory, ThreePointRectangleFactory } from '../rect/RectangleFactory';
 import { EditBoxGizmo } from "./BoxGizmo";
@@ -34,9 +35,11 @@ export class ThreePointBoxCommand extends Command {
         const rect = new ThreePointRectangleFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
         rect.p1 = p1;
         rect.p2 = p2;
+        const measurements = new Measurements(this.editor).resource(this);
         const { point: p3 } = await pointPicker.execute(({ point: p3 }) => {
             rect.p3 = p3;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }).resource(this);
         rect.cancel();
 
@@ -46,11 +49,16 @@ export class ThreePointBoxCommand extends Command {
         box.p1 = p1;
         box.p2 = p2;
         box.p3 = p3;
+        const base = ThreePointRectangleFactory.orthogonal(p1, p2, p3);
+        const baseCenter = base.p1.clone().lerp(base.p3, 0.5), baseCorner = base.p3.clone();
+        const heightNormal = ThreePointBoxFactory.heightNormal(base.p1, base.p2, base.p3).clone();
         await pointPicker.execute(({ point: p4 }) => {
             box.p4 = p4;
             box.update();
             keyboard.toggle(box.isOverlapping);
+            measurements.set(height(baseCenter, heightNormal, p4.clone().sub(baseCorner).dot(heightNormal)));
         }).resource(this);
+        measurements.reset();
 
         const results = await box.commit() as visual.Solid[];
         selection.add(results);
@@ -92,6 +100,7 @@ export class CornerBoxCommand extends Command {
             }
         }).resource(this);
 
+        const measurements = new Measurements(this.editor).resource(this);
         const rect = new CornerRectangleFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
         rect.p1 = p1;
         const { point: p2, info: { orientation } } = pr2 = await pointPicker.execute(result => {
@@ -99,6 +108,7 @@ export class CornerBoxCommand extends Command {
             rect.p2 = p2;
             rect.orientation = orientation;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }, { result: pr2 }).resource(this);
         rect.cancel();
         m.finish();
@@ -112,11 +122,14 @@ export class CornerBoxCommand extends Command {
 
         pointPicker = new PointPicker(this.editor);
         pointPicker.restrictToLine(p2, box.heightNormal);
+        const heightNormal = box.heightNormal.clone(), baseCenter = p1.clone().lerp(p2, 0.5);
         await pointPicker.execute(({ point: p3 }) => {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);
+            measurements.set(height(baseCenter, heightNormal, p3.clone().sub(p2).dot(heightNormal)));
         }).resource(this);
+        measurements.reset();
 
         dialog.execute(params => {
             gizmo.render(params);
@@ -183,12 +196,14 @@ export class CenterBoxCommand extends Command {
             }
         }).resource(this);
 
+        const measurements = new Measurements(this.editor).resource(this);
         const rect = new CenterRectangleFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
         rect.p1 = p1;
         const { point: p2, info: { orientation } } = pr2 = await pointPicker.execute(({ point: p2, info: { orientation } }) => {
             rect.p2 = p2;
             rect.orientation = orientation;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }, { result: pr2 }).resource(this);
         rect.cancel();
         m.finish();
@@ -202,11 +217,14 @@ export class CenterBoxCommand extends Command {
 
         pointPicker = new PointPicker(this.editor);
         pointPicker.restrictToLine(p2, box.heightNormal);
+        const heightNormal = box.heightNormal.clone();
         await pointPicker.execute(({ point: p3 }) => {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);
+            measurements.set(height(p1, heightNormal, p3.clone().sub(p2).dot(heightNormal)));
         }).resource(this);
+        measurements.reset();
 
         const results = await box.commit() as visual.Solid[];
         selection.add(results);

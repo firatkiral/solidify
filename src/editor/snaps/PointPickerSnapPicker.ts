@@ -32,13 +32,14 @@ export class PointPickerSnapPicker {
     }
 
     private collectPickerSnaps(pointPicker: PointPickerModel) {
-        const { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps } = pointPicker.snaps;
+        const { disabled, snapsForLastPickedPoint, activatedSnaps, otherAddedSnaps, essentialSnaps } = pointPicker.snaps;
         const notPoints = [
             ...snapsForLastPickedPoint.other,
             ...otherAddedSnaps.other,
             ...activatedSnaps.other
         ].filter(item => !disabled.has(item));
         const points = [
+            essentialSnaps.cache,
             otherAddedSnaps.cache,
             snapsForLastPickedPoint.cache,
             activatedSnaps.cache,
@@ -55,6 +56,8 @@ export class PointPickerSnapPicker {
                 const chosen = strategy.intersectChoice(choice, raycaster);
                 return strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, chosen);
             } else {
+                const essential = picker.intersectPoints([pointPicker.snaps.essentialSnaps.cache], snaps);
+                if (essential.length > 0) return strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, essential);
                 return strategy.intersectConstructionPlane(snaps.snapToGrid, pointPicker, raycaster, viewport);
             }
         }

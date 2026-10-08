@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { ProxyCamera } from '../components/viewport/ProxyCamera';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { RefCounter } from '../util/Util';
 import * as visual from "../visual_model/VisualModel";
 import ContourManager from './curves/ContourManager';
@@ -10,9 +10,10 @@ import { ControlPointData, TopologyData } from "./DatabaseLike";
 import { EditorSignals } from './EditorSignals';
 import { Empty, EmptyId, EmptyInfo } from "./Empties";
 import { Images } from "./Images";
+import { Meshes } from "./Meshes";
 import { GroupId } from "./Groups";
 import { NodeKey, NodeTransform } from "./Nodes";
-import { EmptyJSON } from "./serialization/PlasticityDocument";
+import { EmptyJSON } from "./serialization/SolidifyDocument";
 import { PointSnap } from "./snaps/PointSnap";
 import { DisablableType } from "./TypeManager";
 
@@ -40,7 +41,7 @@ export class GeometryMemento {
         readonly automatics: ReadonlySet<c3d.SimpleName>,
     ) { }
 
-    async serialize(): Promise<Buffer> {
+    async serialize(): Promise<Uint8Array> {
         const { memory } = await c3d.Writer.WriteItems_async(this.model);
         return memory;
     }
@@ -183,6 +184,7 @@ export class EditorOriginator {
         readonly contours: ContourManager,
         readonly viewports: Iterable<MementoOriginator<ViewportMemento>>,
         readonly images: Images,
+        readonly meshes = new Meshes(),
     ) { }
 
     saveToMemento(): Memento {
@@ -270,14 +272,15 @@ export interface MementoOriginator<T> {
 }
 
 export interface Serializable {
-    serialize(): Promise<Buffer>;
-    deserialize(data: Buffer): Promise<visual.Item[]>;
+    serialize(): Promise<Uint8Array>;
+    deserialize(data: Uint8Array): Promise<visual.Item[]>;
 }
 
 type HistoryStackItem = {
     name: String,
     before: Memento,
     after: Memento,
+    revision: number,
 }
 
 export class History {
@@ -286,6 +289,14 @@ export class History {
 
     private readonly _redoStack: HistoryStackItem[] = [];
     get redoStack(): readonly HistoryStackItem[] { return this._redoStack }
+
+    // Each entry that changes the document gets a new revision; selection-only entries keep the one before them.
+    // Comparing revisions tells whether the document differs from when it was last saved, even after undo/redo.
+    private lastRevision = 0;
+    get revision() {
+        const top = this._undoStack[this._undoStack.length - 1];
+        return top === undefined ? 0 : top.revision;
+    }
 
     constructor(
         private readonly originator: EditorOriginator,
@@ -297,11 +308,12 @@ export class History {
         else return this.undoStack[this.undoStack.length - 1].after;
     }
 
-    add(name: String, before: Memento) {
+    add(name: String, before: Memento, changesDocument = true) {
         if (this._undoStack.length > 0 &&
             this._undoStack[this._undoStack.length - 1].before === before) return;
         const after = this.originator.saveToMemento();
-        const item = { name, before, after };
+        const revision = changesDocument ? ++this.lastRevision : this.revision;
+        const item = { name, before, after, revision };
         this._undoStack.push(item);
         this._redoStack.length = 0;
         this.signals.historyAdded.dispatch();
@@ -329,5 +341,12 @@ export class History {
         this.signals.historyChanged.dispatch();
 
         return true;
+    }
+
+    // For a document opened in place of another, whose states mustn't be undone into it.
+    clear() {
+        this._undoStack.length = 0;
+        this._redoStack.length = 0;
+        this.signals.historyChanged.dispatch();
     }
 }

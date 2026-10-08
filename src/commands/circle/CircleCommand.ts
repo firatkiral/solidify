@@ -1,8 +1,10 @@
 import Command from "../../command/Command";
+import { diameter, length, Measurements, radius, sweep } from "../../command/Measurements";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import * as visual from "../../visual_model/VisualModel";
 import { CenterPointArcFactory } from "../arc/ArcFactory";
+import { EditCenterPointArcCommand } from "../arc/EditArcCommand";
 import LineFactory from '../line/LineFactory';
 import { CircleDialog } from "./CircleDialog";
 import { CenterCircleFactory, EditCircleFactory, ThreePointCircleFactory, TwoPointCircleFactory } from './CircleFactory';
@@ -29,12 +31,15 @@ export class CenterCircleCommand extends Command {
             }
         }).resource(this);
 
+        const measurements = new Measurements(this.editor).resource(this);
         pointPicker.restrictToPlaneThroughPoint(p1, snap);
         await pointPicker.execute(({ point: p2, info: { orientation, viewport } }) => {
             circle.point = p2;
             circle.orientation = orientation;
             circle.update();
+            measurements.set(diameter(p1, p2));
         }).resource(this);
+        measurements.reset();
 
         const result = await circle.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -48,6 +53,7 @@ export class CenterCircleCommand extends Command {
 export class EditCircleCommand extends Command {
     circle!: visual.SpaceInstance<visual.Curve3D>;
     remember = false;
+    keepsViewportSelection = true;
 
     async execute(): Promise<void> {
         const edit = new EditCircleFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
@@ -55,12 +61,13 @@ export class EditCircleCommand extends Command {
 
         const dialog = new CircleDialog(edit, this.editor.signals);
         const gizmo = new CircleGizmo(edit, this.editor);
-        
+
+        // Clicking elsewhere keeps the user's edits; with no edits there is nothing to commit
         dialog.execute(params => {
             edit.update();
             dialog.render();
             gizmo.render(edit);
-        }).rejectOnInterrupt().resource(this);
+        }).rejectOnInterrupt(() => edit.state.tag === 'none').resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.position.copy(edit.center);
         gizmo.quaternion.setFromUnitVectors(Z, edit.axis);
@@ -95,12 +102,15 @@ export class TwoPointCircleCommand extends Command {
         const { point: p1, info: { snap } } = await pointPicker.execute().resource(this);
         circle.p1 = p1;
 
+        const measurements = new Measurements(this.editor).resource(this);
         pointPicker.restrictToPlaneThroughPoint(p1, snap);
         await pointPicker.execute(({ point: p2, info: { orientation, viewport } }) => {
             circle.p2 = p2;
             circle.orientation = orientation;
             circle.update();
+            measurements.set(radius(circle.center, p1));
         }).resource(this);
+        measurements.reset();
 
         const result = await circle.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -122,10 +132,14 @@ export class ThreePointCircleCommand extends Command {
         const { point: p2 } = await pointPicker.execute().resource(this);
         circle.p2 = p2;
 
+        const measurements = new Measurements(this.editor).resource(this);
         await pointPicker.execute(({ point: p3, info: { viewport } }) => {
             circle.p3 = p3;
             circle.update();
+            try { measurements.set(radius(circle.center, p1)) }
+            catch { measurements.reset() } // collinear points have no circle
         }).resource(this);
+        measurements.reset();
 
         const result = await circle.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -147,23 +161,32 @@ export class CenterPointArcCommand extends Command {
 
         pointPicker.restrictToPlaneThroughPoint(p1, snap);
 
+        const measurements = new Measurements(this.editor).resource(this);
         const line = new LineFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
         line.p1 = p1;
-        const { point: p2 } = await pointPicker.execute(({ point }) => {
+        const { point: p2 } = await pointPicker.execute(({ point, info: { orientation } }) => {
             line.p2 = point;
             line.update();
+            measurements.set(length(p1, point, Z.clone().applyQuaternion(orientation)));
         }).resource(this);
         line.cancel();
         arc.p2 = p2;
 
-        await pointPicker.execute(({ point: p3, info: { orientation } }) => {
+        await pointPicker.execute(async ({ point: p3, info: { orientation } }) => {
             arc.p3 = p3;
             arc.orientation = orientation;
-            arc.update();
+            await arc.update();
+            const { axis, angle } = arc.sweep;
+            measurements.set(sweep(p1, p2, axis, angle));
         }).resource(this);
+        measurements.reset();
 
         const result = await arc.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
+
+        const next = new EditCenterPointArcCommand(this.editor);
+        next.arc = result;
+        this.editor.enqueue(next, false);
     }
 }
 

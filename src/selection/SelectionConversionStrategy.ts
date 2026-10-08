@@ -111,6 +111,8 @@ export class SelectionConversionStrategy {
     }
 }
 export class ConvertCommand extends cmd.CommandLike {
+    readonly changesDocument = false;
+
     constructor(
         editor: cmd.EditorLike,
         private readonly mode: SelectionMode

@@ -11,7 +11,7 @@ import { GeometryDatabase } from '../../src/editor/GeometryDatabase';
 import MaterialDatabase from '../../src/editor/MaterialDatabase';
 import { ParallelMeshCreator } from "../../src/editor/MeshCreator";
 import { SolidCopier } from "../../src/editor/SolidCopier";
-import { inst2curve } from "../../src/util/Conversion";
+import { inst2curve, point2point } from "../../src/util/Conversion";
 import * as visual from '../../src/visual_model/VisualModel';
 import { FakeMaterials } from "../../__mocks__/FakeMaterials";
 import '../matchers';
@@ -37,28 +37,55 @@ describe(MoveContourPointFactory, () => {
         changePoint = new MoveContourPointFactory(db, materials, signals);
     })
 
-    describe.skip('Arc3D', () => {
+    describe('Arc3D', () => {
         beforeEach(async () => {
             const makeCircle = new CenterCircleFactory(db, materials, signals);
             makeCircle.center = new THREE.Vector3();
             makeCircle.radius = 1;
             curve = await makeCircle.commit() as visual.SpaceInstance<visual.Curve3D>;
-        });
 
-        test('moving point', async () => {
             changePoint.controlPoints = [curve.underlying.points.get(0)];
             const contour = await changePoint.prepare(curve);
             changePoint.contour = contour;
             changePoint.originalItem = curve;
+        });
+
+        test('moving point', async () => {
             changePoint.move = new THREE.Vector3(2, 0, 0);
             const newCurve = await changePoint.commit() as visual.SpaceInstance<visual.Curve3D>;
+
+            const model = inst2curve(db.lookup(newCurve)) as c3d.Arc3D;
+            expect(model.IsA()).toBe(c3d.SpaceType.Arc3D);
+            expect(model.IsClosed()).toBe(true);
 
             bbox.setFromObject(newCurve);
             bbox.getCenter(center);
             expect(center).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
-            expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-3, 0, 0));
-            expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(3, 0, 0));
+            expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-3, -3, 0));
+            expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(3, 3, 0));
             expect(db.items.length).toBe(1);
+        });
+
+        test('moving point off the radius puts the vertex at the new position', async () => {
+            changePoint.move = new THREE.Vector3(0, 2, 0);
+            const newCurve = await changePoint.commit() as visual.SpaceInstance<visual.Curve3D>;
+
+            const model = inst2curve(db.lookup(newCurve)) as c3d.Arc3D;
+            expect(point2point(model.GetLimitPoint(1))).toApproximatelyEqual(new THREE.Vector3(1, 2, 0));
+            expect(point2point(model.GetCentre())).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
+            expect(model.GetRadius()).toBeCloseTo(100 * Math.sqrt(5));
+        });
+
+        test('repeated updates do not compound', async () => {
+            changePoint.move = new THREE.Vector3(1, 0, 0);
+            await changePoint.update();
+            changePoint.move = new THREE.Vector3(2, 0, 0);
+            await changePoint.update();
+            const newCurve = await changePoint.commit() as visual.SpaceInstance<visual.Curve3D>;
+
+            bbox.setFromObject(newCurve);
+            expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-3, -3, 0));
+            expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(3, 3, 0));
         });
     });
 
@@ -254,6 +281,23 @@ describe(MoveContourPointFactory, () => {
             expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-2, 0, 0));
             expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 0.5, 0));
             expect(db.items.length).toBe(1);
+        })
+
+        it('changes the line/arc junction the same way after several updates', async () => {
+            changePoint.originalItem = curve;
+            changePoint.controlPoints = [curve.underlying.points.get(1)];
+            const contour = await changePoint.prepare(curve);
+            changePoint.contour = contour;
+            changePoint.move = new THREE.Vector3(-0.5, 0, 0);
+            await changePoint.update();
+            changePoint.move = new THREE.Vector3(-1, 0, 0);
+            const result = await changePoint.commit() as visual.SpaceInstance<visual.Curve3D>;
+
+            bbox.setFromObject(result);
+            bbox.getCenter(center);
+            expect(center).toApproximatelyEqual(new THREE.Vector3(-0.5, 0.25, 0));
+            expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-2, 0, 0));
+            expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 0.5, 0));
         })
     });
 

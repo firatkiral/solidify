@@ -64,5 +64,5 @@ export default (editor: Editor) => {
             this.render();
         }
     }
-    customElements.define('plasticity-keybindings', Keybindings);
+    customElements.define('solidify-keybindings', Keybindings);
 };

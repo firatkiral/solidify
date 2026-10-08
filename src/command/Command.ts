@@ -16,6 +16,8 @@ import { RenderedSceneBuilder } from "../visual_model/RenderedSceneBuilder";
 import { GizmoMaterialDatabase } from "./GizmoMaterials";
 import { Scene } from "../editor/Scene";
 import { ImporterExporter } from "../editor/ImporterExporter";
+import { Platform } from "../platform/Platform";
+import { CurrentDocument } from "../editor/CurrentDocument";
 import { Outliner } from "../components/outliner/Outliner";
 
 /**
@@ -61,6 +63,9 @@ export interface EditorLike {
     highlighter: RenderedSceneBuilder,
     scene: Scene,
     importer: ImporterExporter,
+    platform: Platform,
+    document: CurrentDocument,
+    thumbnail(): Promise<Uint8Array | undefined>,
 }
 
 export default abstract class Command extends CancellableRegistor {
@@ -73,6 +78,10 @@ export default abstract class Command extends CancellableRegistor {
 
     remember: boolean = true;
     agent: Agent = 'automatic';
+    // Keep viewport clicks enabled even after the user edits values, so clicking elsewhere interrupts (and thus ends) the command
+    keepsViewportSelection: boolean = false;
+    // False for commands that only change the selection, which isn't part of the saved document
+    readonly changesDocument: boolean = true;
 
     constructor(protected readonly editor: EditorLike) {
         super();

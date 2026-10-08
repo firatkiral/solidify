@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ImageEmpty } from "../editor/Empties";
+import { SurfaceEmpty } from "../editor/Empties";
 import { Boxcastable, Boxcaster } from "../selection/Boxcaster";
 import { ControlPointGroup, Curve3D, CurveEdge, CurveGroup, CurveSegment, Face, FaceGroup, PlaneInstance, Region, Solid, SpaceInstance } from './VisualModel';
 
@@ -14,7 +14,6 @@ declare module './VisualModel' {
     interface Region extends Boxcastable { }
     interface ControlPointGroup extends Boxcastable { }
     interface ControlPoint extends Boxcastable { }
-    interface ImageEmpty extends Boxcastable { }
     interface SpaceItem extends Boxcastable { }
 }
 
@@ -484,7 +483,7 @@ Regions: {
 }
 
 Empties: {
-    ImageEmpty.prototype.boxcast = function (type: 'intersected' | 'contained', boxcaster: Boxcaster, selects: Boxcastable[]) {
+    SurfaceEmpty.prototype.boxcast = function (type: 'intersected' | 'contained', boxcaster: Boxcaster, selects: Boxcastable[]) {
         if (type == 'contained') {
             selects.push(this);
         } else if (type == 'intersected') {
@@ -492,8 +491,8 @@ Empties: {
         }
     }
 
-    ImageEmpty.prototype.intersectsBounds = function (boxcaster: Boxcaster) {
-        const { matrixWorld, geometry } = this.plane;
+    SurfaceEmpty.prototype.intersectsBounds = function (boxcaster: Boxcaster) {
+        const { matrixWorld, geometry } = this.surface;
 
         if (geometry.boundingBox === null) geometry.computeBoundingBox();
         _box.copy(geometry.boundingBox!);
@@ -509,16 +508,16 @@ Empties: {
         }
     }
 
-    ImageEmpty.prototype.containsGeometry = function (boxcaster: Boxcaster) {
-        const { matrixWorld, geometry } = this.plane;
+    SurfaceEmpty.prototype.containsGeometry = function (boxcaster: Boxcaster) {
+        const { matrixWorld, geometry } = this.surface;
         const { drawRange, index } = geometry;
         const start = drawRange.start;
         const end = Math.min(index!.count, drawRange.start + drawRange.count);
         return containsGeometry(boxcaster, geometry, matrixWorld, start, end);
     }
 
-    ImageEmpty.prototype.intersectsGeometry = function (boxcaster: Boxcaster) {
-        const { matrixWorld, geometry } = this.plane;
+    SurfaceEmpty.prototype.intersectsGeometry = function (boxcaster: Boxcaster) {
+        const { matrixWorld, geometry } = this.surface;
         const { drawRange, index } = geometry;
         const start = drawRange.start;
         const end = Math.min(index!.count, drawRange.start + drawRange.count);

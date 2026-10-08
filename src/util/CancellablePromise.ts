@@ -142,8 +142,11 @@ export class CancellablePromise<T> extends CancellableRegisterable implements Pr
         return this;
     }
 
-    rejectOnInterrupt(): this {
-        return this.onInterrupt(reject => reject(new Interrupt()));
+    rejectOnInterrupt(when: () => boolean = () => true): this {
+        return this.onInterrupt(reject => {
+            if (when()) reject(new Interrupt());
+            else this._finish();
+        });
     }
 
     rejectOnFinish(): this {

@@ -4,38 +4,38 @@
 
 @layer components {
 
-    plasticity-pane-axis,
-    plasticity-pane {
+    solidify-pane-axis,
+    solidify-pane {
         @apply flex-1 min-w-0;
     }
 
-    plasticity-pane-axis.horizontal {
+    solidify-pane-axis.horizontal {
         @apply flex w-full h-full;
     }
 
-    plasticity-pane-axis.vertical {
+    solidify-pane-axis.vertical {
         @apply flex flex-col h-full;
     }
 
-    plasticity-pane {
+    solidify-pane {
         @apply relative overflow-y-auto bg-transparent rounded-lg min-h-20;
     }
 
-    plasticity-pane-axis.horizontal plasticity-pane-resize-handle {
+    solidify-pane-axis.horizontal solidify-pane-resize-handle {
         @apply w-2 h-full cursor-col-resize;
     }
 
-    plasticity-pane-axis.vertical plasticity-pane-resize-handle {
+    solidify-pane-axis.vertical solidify-pane-resize-handle {
         @apply w-full h-2 cursor-row-resize;
     }
 
-    plasticity-viewport {
+    solidify-viewport {
         @apply overflow-clip bg-viewport;
     }
 
-    plasticity-viewport,
-    plasticity-outliner,
-    plasticity-undo-history {
+    solidify-viewport,
+    solidify-outliner,
+    solidify-undo-history {
         @apply block w-full h-full;
     }
 
@@ -54,6 +54,10 @@
 
     .tooltip .tooltip-inner {
         @apply max-w-xs px-2 py-1 text-center border-[0.5px] rounded text-neutral-50 bg-neutral-500 border-neutral-400 shadow-black/20 shadow-md;
+    }
+
+    .tooltip.nowrap .tooltip-inner {
+        @apply max-w-none text-left whitespace-nowrap;
     }
 
     .tooltip.top {
@@ -80,109 +84,106 @@
         @apply border border-dashed border-supporting-600 bg-supporting-400 opacity-30;
     }
 
-    plasticity-button-group {
+    solidify-button-group {
         @apply relative;
     }
 
-    plasticity-button-group::before {
+    solidify-button-group::before {
         content: "";
         @apply absolute bottom-0 left-0 w-full h-1 rotate-45 -translate-x-4 bg-neutral-500;
     }
 
-    plasticity-dialog>div {
+    solidify-dialog>div {
         @apply box-content border-2 border-transparent;
     }
 
-    plasticity-dialog.failure>div {
+    solidify-dialog.failure>div {
         @apply border-2 border-red-700 border-dashed;
     }
 
-    plasticity-dialog plasticity-icon.alert {
+    solidify-dialog solidify-icon.alert {
         @apply hidden;
     }
 
-    plasticity-dialog.failure plasticity-icon.alert {
+    solidify-dialog.failure solidify-icon.alert {
         @apply block;
     }
 
-    plasticity-dialog ol {
+    solidify-dialog ol {
         @apply flex flex-col py-2 m-3 my-1 space-y-1.5 text-xs border-b border-neutral-900;
     }
 
-    plasticity-dialog ul,
-    .plasticity-menu ul {
+    solidify-dialog ul,
+    .solidify-menu ul {
         @apply flex flex-col mx-3 my-2 space-y-1;
     }
 
-    plasticity-dialog ul>li,
-    .plasticity-menu ul>li {
+    solidify-dialog ul>li,
+    .solidify-menu ul>li {
         @apply flex items-center p-1 space-x-1;
     }
 
-    plasticity-dialog ul>li>label,
-    .plasticity-menu ul>li>label {
+    solidify-dialog ul>li>label,
+    .solidify-menu ul>li>label {
         @apply block w-1/4 px-1 text-xs text-neutral-200;
     }
 
-    plasticity-dialog ul>li>label+.fields,
-    .plasticity-menu ul>li>label+.fields {
+    solidify-dialog ul>li>label+.fields,
+    .solidify-menu ul>li>label+.fields {
         @apply flex w-3/4 space-x-2;
     }
 
-    plasticity-dialog ul>li>.fields>*,
-    .plasticity-menu ul>li>.fields>* {
+    /* A row that has no effect with the current settings */
+    solidify-dialog ul>li.disabled {
+        @apply opacity-40 pointer-events-none;
+    }
+
+    solidify-dialog ul>li>.fields>*,
+    .solidify-menu ul>li>.fields>* {
         @apply grow;
     }
 
-    plasticity-dialog ul>li>.fields>plasticity-number-scrubber,
-    .plasticity-menu ul>li>.fields>plasticity-number-scrubber {
+    solidify-dialog ul>li>.fields>solidify-number-scrubber,
+    .solidify-menu ul>li>.fields>solidify-number-scrubber {
         @apply flex items-center space-x-1 cursor-pointer min-w-[5em];
     }
 
-    plasticity-dialog ul>li>.fields>input[type="color"]::-webkit-color-swatch-wrapper {
+    solidify-dialog ul>li>.fields>input[type="color"]::-webkit-color-swatch-wrapper {
         padding: 0;
     }
 
-    plasticity-dialog ul>li>.fields>input[type="radio"],
-    plasticity-dialog ul>li>.fields>input[type="checkbox"],
-    .plasticity-menu ul>li>.fields>input[type="radio"],
-    .plasticity-menu ul>li>.fields>input[type="checkbox"] {
+    solidify-dialog ul>li>.fields>input[type="radio"],
+    solidify-dialog ul>li>.fields>input[type="checkbox"],
+    .solidify-menu ul>li>.fields>input[type="radio"],
+    .solidify-menu ul>li>.fields>input[type="checkbox"] {
         @apply absolute hidden;
     }
 
-    plasticity-dialog ul>li>.fields>input[type="radio"]+label,
-    plasticity-dialog ul>li>.fields>input[type="checkbox"]+label,
-    .plasticity-menu ul>li>.fields>input[type="radio"]+label,
-    .plasticity-menu ul>li>.fields>input[type="checkbox"]+label {
+    solidify-dialog ul>li>.fields>input[type="radio"]+label,
+    solidify-dialog ul>li>.fields>input[type="checkbox"]+label,
+    .solidify-menu ul>li>.fields>input[type="radio"]+label,
+    .solidify-menu ul>li>.fields>input[type="checkbox"]+label {
         @apply block w-full px-3 py-1 text-xs text-center rounded cursor-pointer bg-neutral-500 text-neutral-100;
     }
 
-    plasticity-dialog ul>li>.fields>input[type="radio"]:checked+label,
-    plasticity-dialog ul>li>.fields>input[type="checkbox"]:checked+label,
-    .plasticity-menu ul>li>.fields>input[type="radio"]:checked+label,
-    .plasticity-menu ul>li>.fields>input[type="checkbox"]:checked+label {
+    solidify-dialog ul>li>.fields>input[type="radio"]:checked+label,
+    solidify-dialog ul>li>.fields>input[type="checkbox"]:checked+label,
+    .solidify-menu ul>li>.fields>input[type="radio"]:checked+label,
+    .solidify-menu ul>li>.fields>input[type="checkbox"]:checked+label {
         @apply bg-accent-600 text-accent-100;
     }
 
-    plasticity-dialog plasticity-prompt.executing {
+    solidify-dialog solidify-prompt.executing {
         @apply bg-neutral-800;
     }
 
-    plasticity-dialog plasticity-prompt.finished {
+    solidify-dialog solidify-prompt.finished {
         @apply bg-neutral-800;
     }
 
-    .plasticity-menu {
+    .solidify-menu {
         @apply absolute z-50 p-10 -mt-4 bg-transparent;
     }
-}
-
-.drag {
-    -webkit-app-region: drag;
-}
-
-.no-drag {
-    -webkit-app-region: no-drag;
 }
 
 * {
@@ -197,6 +198,53 @@ body {
     user-select: none;
 }
 
-plasticity-command > div.active {
+solidify-command > div.active {
     @apply bg-accent-500 !important 
+}
+/* Installed, with the window's title bar given over to the app (Window Controls Overlay): the menu and the document's
+   name go in it, beside the window's own buttons, and the workspace starts below it */
+@media (display-mode: window-controls-overlay) {
+    .titlebar {
+        position: fixed;
+        left: env(titlebar-area-x, 0);
+        top: env(titlebar-area-y, 0);
+        width: env(titlebar-area-width, 100%);
+        height: env(titlebar-area-height, 33px);
+        align-items: center;
+        app-region: drag;
+        -webkit-app-region: drag;
+    }
+
+    .titlebar .titlebar-menu {
+        margin: 0 0 0 8px;
+    }
+
+    .titlebar button,
+    .titlebar solidify-menu {
+        app-region: no-drag;
+        -webkit-app-region: no-drag;
+    }
+
+    /* Centred on the window, not on what's left of the title bar */
+    .titlebar .titlebar-title {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: env(titlebar-area-y, 0);
+        height: env(titlebar-area-height, 33px);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #workspace {
+        top: env(titlebar-area-height, 33px);
+        height: calc(100% - env(titlebar-area-height, 33px));
+    }
+
+    /* The menu has moved up out of the space kept for it */
+    #workspace .below-menu {
+        padding-top: 0;
+    }
 }

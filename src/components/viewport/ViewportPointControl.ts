@@ -4,6 +4,7 @@ import { GizmoLike } from "../../command/AbstractGizmo";
 import Command, * as cmd from "../../command/Command";
 import { DashedLineMagnitudeHelper } from "../../command/MiniGizmos";
 import { SnapPresentation, SnapPresenter } from "../../command/SnapPresenter";
+import { selectControlPoints } from "../../commands/modify_contour/ModifyContourCommand";
 import { MoveContourPointFactory } from "../../commands/modify_contour/ModifyContourPointFactory";
 import { GizmoSnapPicker } from "../../editor/snaps/GizmoSnapPicker";
 import { SelectionKeypressStrategy } from "../../selection/SelectionKeypressStrategy";
@@ -207,6 +208,6 @@ export class MoveControlPointCommand extends cmd.CommandLike {
         }).resource(this);
 
         const result = await modify.commit() as visual.SpaceInstance<visual.Curve3D>;
-        this.editor.selection.selected.addCurve(result);
+        selectControlPoints(this.editor.selection.selected, result, modify.controlPoints);
     }
 }

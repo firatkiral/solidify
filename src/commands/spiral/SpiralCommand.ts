@@ -1,6 +1,8 @@
 import Command from "../../command/Command";
+import { length, Measurements } from "../../command/Measurements";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
+import { Z } from "../../util/Constants";
 import * as visual from "../../visual_model/VisualModel";
 import LineFactory from '../line/LineFactory';
 import { SpiralDialog } from "./SpiralDialog";
@@ -16,11 +18,14 @@ export class SpiralCommand extends Command {
         const { point: p1 } = await pointPicker.execute().resource(this);
         spiral.p1 = p1;
 
+        // The axis length, then the radius, each beside its segment
+        const measurements = new Measurements(this.editor).resource(this);
         const line = new LineFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
         line.p1 = p1;
-        const { point: p2 } = await pointPicker.execute(({ point }) => {
+        const { point: p2 } = await pointPicker.execute(({ point, info: { orientation } }) => {
             line.p2 = point;
             line.update();
+            measurements.set(length(p1, point, Z.clone().applyQuaternion(orientation)));
         }).resource(this);
         line.cancel();
         spiral.p2 = p2;
@@ -28,11 +33,13 @@ export class SpiralCommand extends Command {
         pointPicker.straightSnaps.delete(AxisSnap.Z);
         pointPicker.restrictToPlaneThroughPoint(p2);
 
-        await pointPicker.execute(({ point }) => {
+        await pointPicker.execute(({ point, info: { orientation } }) => {
             spiral.radius = point.distanceTo(p2);
             spiral.p3 = point;
             spiral.update();
+            measurements.set(length(p2, point, Z.clone().applyQuaternion(orientation)));
         }).resource(this);
+        measurements.reset();
 
         const dialog = new SpiralDialog(spiral, this.editor.signals);
         dialog.execute(params => {

@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { EditorSignals } from "../../editor/EditorSignals";
 import { AbstractDialog } from "../../command/AbstractDialog";
 import { MultilineParams } from './MultilineFactory';
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 
 export class MultilineDialog extends AbstractDialog<MultilineParams> {
     name = "Multiline";
@@ -21,7 +21,7 @@ export class MultilineDialog extends AbstractDialog<MultilineParams> {
                         <label for="radius">Radius</label>
 
                         <div class="fields">
-                            <plasticity-number-scrubber name="radius" value={radius} min={0} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="radius" value={radius} min={0} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -48,4 +48,4 @@ export class MultilineDialog extends AbstractDialog<MultilineParams> {
             </>, this);
     }
 }
-customElements.define('plasticity-multiline-dialog', MultilineDialog);
+customElements.define('solidify-multiline-dialog', MultilineDialog);

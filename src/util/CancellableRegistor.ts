@@ -15,6 +15,9 @@ export type State = 'None' | 'Awaiting' | 'Cancelled' | 'Finished' | 'Interrupte
 
 export abstract class CancellableRegistor implements Cancellable {
     readonly factoryChanged = new signal.Signal();
+    // Whether any of its factories has changed, i.e., it has drawn something it hasn't committed yet
+    private _hasChanges = false;
+    get hasChanges() { return this._hasChanges }
     private _state: State = 'None';
     get state() { return this._state }
     private set state(state: State) { this._state = state }
@@ -79,7 +82,10 @@ export abstract class CancellableRegistor implements Cancellable {
         if (x instanceof CancellablePromise)
             this.promises.push(x);
         if (x instanceof GeometryFactory) {
-            x.changed.add(() => this.factoryChanged.dispatch());
+            x.changed.add(() => {
+                this._hasChanges = true;
+                this.factoryChanged.dispatch();
+            });
         }
         return x;
     }

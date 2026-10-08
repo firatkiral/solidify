@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as c3d from '../kernel/kernel';
+import c3d from '../kernel/kernel';
 import { Measure } from "../components/stats/Measure";
 import { unit } from '../util/Conversion';
 import { SequentialExecutor } from '../util/SequentialExecutor';
@@ -428,11 +428,11 @@ export class GeometryDatabase implements DatabaseLike, MementoOriginator<Geometr
         this.negativeCounter = -1;
     }
 
-    async serialize(): Promise<Buffer> {
+    async serialize(): Promise<Uint8Array> {
         return this.saveToMemento().serialize();
     }
 
-    async deserialize(data: Buffer): Promise<visual.Item[]> {
+    async deserialize(data: Uint8Array): Promise<visual.Item[]> {
         const everything = await c3d.Writer.ReadItems_async(data);
         return this.load(everything);
     }

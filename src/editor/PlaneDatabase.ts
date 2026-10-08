@@ -35,7 +35,7 @@ export class PlaneDatabase {
     }
 
     add(plane: ConstructionPlaneSnap | FaceConstructionPlaneSnap) {
-        this._all.add(new ConstructionPlaneSnap(plane.n, plane.p, undefined, `Custom plane ${this.counter++}`));
+        this._all.add(new ConstructionPlaneSnap(plane.n, plane.p, plane.x, `Custom plane ${this.counter++}`));
         this.signals.constructionPlanesChanged.dispatch();
     }
 }

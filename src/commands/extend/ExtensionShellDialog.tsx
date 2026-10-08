@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { EditorSignals } from "../../editor/EditorSignals";
 import { AbstractDialog } from "../../command/AbstractDialog";
 import { ExtensionShellParams } from "./ExtensionShellFactory";
-import * as c3d from '../../kernel/kernel';
+import c3d from '../../kernel/kernel';
 
 export class ExtensionShellDialog extends AbstractDialog<ExtensionShellParams> {
     name = "Extension shell";
@@ -30,7 +30,7 @@ export class ExtensionShellDialog extends AbstractDialog<ExtensionShellParams> {
                     <li>
                         <label for="distance">Distance</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="distance" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="distance" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

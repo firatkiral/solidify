@@ -118,7 +118,7 @@ export class ScaleAxisGizmo extends AbstractAxialScaleGizmo {
     readonly tip: THREE.Mesh<any, any> = new THREE.Mesh(boxGeometry, this.material.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.material.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
-    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), new AxisHelper(this.material.line), new NumberHelper()]);
+    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), new AxisHelper(this.material.line), new NumberHelper(factor => factor.toFixed(2))]); // a scale factor has no unit
     protected readonly handleLength = 0;
 
     constructor(name: string, editor: EditorLike, protected readonly material: GizmoMaterial) {
@@ -130,6 +130,9 @@ export class ScaleAxisGizmo extends AbstractAxialScaleGizmo {
     protected accumulate(original: number, dist: number, denom: number): number {
         return original * dist / denom;
     }
+
+    // A scale factor, not a length, so it never steps in millimeters.
+    protected override get stepsAsLength() { return false }
 }
 
 export class PlanarScaleGizmo extends PlanarGizmo<number> {

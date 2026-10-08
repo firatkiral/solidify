@@ -1,7 +1,7 @@
-const theme = require(`./src/startup/default-theme`);
+const theme = require(`./src/startup/default-theme.json`);
 
 module.exports = {
-    content: ['./src/**/*.{html,js,ts,jsx,tsx}'],
+    content: ['./index.html', './src/**/*.{html,js,ts,jsx,tsx}'],
     theme: {
         colors: {
             viewport: `var(--viewport, ${theme.colors.viewport})`,

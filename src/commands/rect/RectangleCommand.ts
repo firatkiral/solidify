@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Command from "../../command/Command";
+import { Measurements, rectangleOf } from "../../command/Measurements";
 import { PointPicker, PointResult } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import * as visual from "../../visual_model/VisualModel";
@@ -27,10 +28,13 @@ export class ThreePointRectangleCommand extends Command {
         rect.constructionPlane = this.editor.activeViewport?.constructionPlane;
         rect.p1 = p1;
         rect.p2 = p2;
+        const measurements = new Measurements(this.editor).resource(this);
         pr3 = await pointPicker.execute(({ point: p3 }) => {
             rect.p3 = p3;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }).resource(this);
+        measurements.reset();
 
         const result = await rect.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -76,12 +80,15 @@ export class CornerRectangleCommand extends Command {
             }
         }).resource(this);
 
+        const measurements = new Measurements(this.editor).resource(this);
         pr2 = await pointPicker.execute(result => {
             const { point: p2, info: { orientation } } = pr2 = result;
             rect.p2 = p2;
             rect.orientation = orientation;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }, { result: pr2 }).resource(this);
+        measurements.reset();
 
         const result = await rect.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -126,12 +133,15 @@ export class CenterRectangleCommand extends Command {
             }
         }).resource(this);
 
+        const measurements = new Measurements(this.editor).resource(this);
         pr2 = await pointPicker.execute(result => {
             const { point: p2, info: { orientation } } = pr2 = result;
             rect.p2 = p2;
             rect.orientation = orientation;
             rect.update();
+            measurements.set(rectangleOf(rect));
         }, { result: pr2 }).resource(this);
+        measurements.reset();
 
         const result = await rect.commit() as visual.SpaceInstance<visual.Curve3D>;
         this.editor.selection.selected.addCurve(result);
@@ -146,6 +156,7 @@ export class CenterRectangleCommand extends Command {
 
 export class EditCenterRectangleCommand extends Command {
     readonly remember = false;
+    readonly keepsViewportSelection = true;
     pr1!: PointResult;
     pr2!: PointResult;
     rectangle!: visual.SpaceInstance<visual.Curve3D>;
@@ -162,11 +173,12 @@ export class EditCenterRectangleCommand extends Command {
         const dialog = new RectangleDialog(edit, this.editor.signals);
         const gizmo = new EditRectangleGizmo(edit, this.editor);
 
+        // Clicking elsewhere keeps the user's edits; with no edits there is nothing to commit
         dialog.execute(params => {
             edit.update();
             dialog.render();
             gizmo.render(edit);
-        }).rejectOnInterrupt().resource(this);
+        }).rejectOnInterrupt(() => edit.state.tag === 'none').resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.position.copy(pr1.point);
         gizmo.basis = edit.basis;
@@ -184,6 +196,7 @@ export class EditCenterRectangleCommand extends Command {
 
 export class EditCornerRectangleCommand extends Command {
     readonly remember = false;
+    readonly keepsViewportSelection = true;
     pr1!: PointResult;
     pr2!: PointResult;
     rectangle!: visual.SpaceInstance<visual.Curve3D>;
@@ -199,11 +212,12 @@ export class EditCornerRectangleCommand extends Command {
         const dialog = new RectangleDialog(edit, this.editor.signals);
         const gizmo = new EditRectangleGizmo(edit, this.editor);
 
+        // Clicking elsewhere keeps the user's edits; with no edits there is nothing to commit
         dialog.execute(params => {
             edit.update();
             dialog.render();
             gizmo.render(edit);
-        }).rejectOnInterrupt().resource(this);
+        }).rejectOnInterrupt(() => edit.state.tag === 'none').resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.position.copy(pr1.point);
         gizmo.basis = edit.basis;
@@ -221,6 +235,7 @@ export class EditCornerRectangleCommand extends Command {
 
 export class EditThreePointRectangleCommand extends Command {
     readonly remember = false;
+    readonly keepsViewportSelection = true;
     pr1!: PointResult;
     pr2!: PointResult;
     pr3!: PointResult;
@@ -237,11 +252,12 @@ export class EditThreePointRectangleCommand extends Command {
         const dialog = new RectangleDialog(edit, this.editor.signals);
         const gizmo = new EditRectangleGizmo(edit, this.editor);
 
+        // Clicking elsewhere keeps the user's edits; with no edits there is nothing to commit
         dialog.execute(params => {
             edit.update();
             dialog.render();
             gizmo.render(edit);
-        }).rejectOnInterrupt().resource(this);
+        }).rejectOnInterrupt(() => edit.state.tag === 'none').resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.position.copy(pr1.point);
         gizmo.basis = edit.basis;

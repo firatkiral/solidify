@@ -16,8 +16,8 @@ export class RadialArrayDialog extends AbstractDialog<RadialArrayParams> {
         render(
             <>
                 <ol>
-                    <plasticity-prompt name="Select solids or curves" description="to duplicate"></plasticity-prompt>
-                    <plasticity-prompt name="Select center point" description="to orient around"></plasticity-prompt>
+                    <solidify-prompt name="Select solids or curves" description="to duplicate"></solidify-prompt>
+                    <solidify-prompt name="Select center point" description="to orient around"></solidify-prompt>
                 </ol>
 
                 <ul>
@@ -32,28 +32,28 @@ export class RadialArrayDialog extends AbstractDialog<RadialArrayParams> {
                     <li>
                         <label for="degrees">Degrees</label>
                         <div class="fields">
-                            <plasticity-number-scrubber precision={1} name="degrees" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber precision={1} name="degrees" value={degrees} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="num2">Number</label>
                         <div class="fields">
-                            <plasticity-number-scrubber precision={1} name="num2" value={num2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber precision={1} name="num2" value={num2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="num1">Repeat</label>
                         <div class="fields">
-                            <plasticity-number-scrubber precision={1} name="num1" value={num1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber precision={1} name="num1" value={num1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="step1">Repeat distance</label>
                         <div class="fields">
-                            <plasticity-number-scrubber name="step1" value={step1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></plasticity-number-scrubber>
+                            <solidify-number-scrubber name="step1" value={step1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);
     }
 }
-customElements.define('plasticity-array-dialog', RadialArrayDialog);
+customElements.define('solidify-array-dialog', RadialArrayDialog);

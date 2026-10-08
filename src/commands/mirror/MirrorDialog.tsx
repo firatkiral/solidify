@@ -16,7 +16,7 @@ export class MirrorDialog extends AbstractDialog<MirrorParams> {
         render(
             <>
                 <ol>
-                    <plasticity-prompt name="Select curves or solids" description="to mirror"></plasticity-prompt>
+                    <solidify-prompt name="Select curves or solids" description="to mirror"></solidify-prompt>
                 </ol>
 
                 <ul>

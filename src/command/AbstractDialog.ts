@@ -39,7 +39,7 @@ export abstract class AbstractDialog<T> extends HTMLElement implements Executabl
                         value = new THREE.Color(e.target.value);
                 } else if (e.target instanceof HTMLSelectElement) {
                     value = e.target.value;
-                } else if (e.target instanceof HTMLElement && e.target.tagName == 'PLASTICITY-NUMBER-SCRUBBER') {
+                } else if (e.target instanceof HTMLElement && e.target.tagName == 'SOLIDIFY-NUMBER-SCRUBBER') {
                     value = Number(e.target.getAttribute('value'));
                 } else {
                     throw new Error("invalid precondition");
@@ -92,7 +92,7 @@ export abstract class AbstractDialog<T> extends HTMLElement implements Executabl
     prompt<T>(key: string, execute: () => CancellablePromise<T>, clear?: () => void, replace = false): () => CancellablePromise<T> {
         switch (this.state.tag) {
             case 'executing':
-                const element = this.querySelector(`plasticity-prompt[name='${key}']`);
+                const element = this.querySelector(`solidify-prompt[name='${key}']`);
                 if (element === null) throw new Error("invalid prompt: " + key);
                 const prompt = element as Prompt;
                 if (!replace && prompt.onclick !== null) throw new Error("Already bound");
