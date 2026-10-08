@@ -1,3 +1,7 @@
+[1.0.1]
+
+- [x] The frame rate and timing stats show only in development
+
 [1.0.0]
 
 - [x] Renamed to Solidify; documents are saved as .solidify files and settings live in ~/.solidify

@@ -7,7 +7,18 @@ export default (editor: Editor) => {
     class Anon extends HTMLElement {
         private readonly disposable = new CompositeDisposable();
 
-        connectedCallback() { this.render() }
+        connectedCallback() {
+            // The stats are for development: elsewhere their pane, and the divider above it, are hidden
+            if (process.env.NODE_ENV !== 'development') {
+                const pane = this.closest('solidify-pane') as HTMLElement | null;
+                if (pane === null) return;
+                pane.style.display = 'none';
+                const handle = pane.previousElementSibling as HTMLElement | null;
+                if (handle?.tagName === 'SOLIDIFY-PANE-RESIZE-HANDLE') handle.style.display = 'none';
+                return;
+            }
+            this.render();
+        }
         disconnectedCallback() { this.disposable.dispose() }
 
         render() {
