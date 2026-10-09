@@ -1,3 +1,7 @@
+[1.0.2]
+
+- [x] Stop autosaving on selection, and save solids without display meshes
+
 [1.0.1]
 
 - [x] The frame rate and timing stats show only in development
