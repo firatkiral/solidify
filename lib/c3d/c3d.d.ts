@@ -492,7 +492,7 @@ declare module "*c3d.node" {
 
     declare class SurfaceOffsetCurveParams {
         private _useNominal: undefined;
-        constructor(f: Face, a: Axis3D, d: number, nm: SNameMaker);
+        constructor(f: Face, a: Axis3D, d: number, nm: SNameMaker, gapFill?: OffsetGapFill);
 
         Id(): bigint;
     }
@@ -4118,6 +4118,12 @@ declare module "*c3d.node" {
         Union,
         Base,
         Variety
+    }
+
+    declare enum OffsetGapFill {
+        Round,
+        Linear,
+        Natural
     }
 
     declare enum SmoothForm {

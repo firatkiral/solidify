@@ -35,6 +35,14 @@ export class OffsetCurveGizmo extends CompositeGizmo<OffsetCurveParams> {
 
         return super.execute(cb, mode);
     }
+
+    // Shows a distance set elsewhere, such as in the dialog
+    render(distance: number) {
+        const { n, y } = this;
+        n.value = distance;
+        y.set(0, distance, 0).applyQuaternion(this.quaternion);
+        this.position.copy(this.originalPosition).add(y);
+    }
 }
 
 export class OffsetAxisGizmo extends AbstractAxisGizmo {

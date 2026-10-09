@@ -34,7 +34,7 @@ export class ShellCuttingParams {
 }
 
 // A length that reaches across a box from anywhere near it.
-function reach(box: Cube, from: CartPoint3D) {
+export function reach(box: Cube, from: CartPoint3D) {
     const { pmin, pmax } = box;
     const centre = { x: (pmin.x + pmax.x) / 2, y: (pmin.y + pmax.y) / 2, z: (pmin.z + pmax.z) / 2 };
     const diagonal = Math.hypot(pmax.x - pmin.x, pmax.y - pmin.y, pmax.z - pmin.z);
@@ -95,7 +95,7 @@ function sheetOf(params: ShellCuttingParams, box: Cube): Shape {
     return contourSheet(params.contour!, params.place!, params.direction, box);
 }
 
-function split(shapes: Shape[], tools: Shape[]): Shape {
+export function split(shapes: Shape[], tools: Shape[]): Shape {
     const splitter = new oc.BRepAlgoAPI_Splitter();
     splitter.SetArguments(shapeList(shapes));
     splitter.SetTools(shapeList(tools));

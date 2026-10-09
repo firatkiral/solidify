@@ -148,6 +148,7 @@ export default {
 
     "[command='offset-curve'] solidify-viewport": {
         "d": "gizmo:offset-curve:distance",
+        "v": "keyboard:offset-curve:gap-fill",
     },
 
     "[command='bridge-curves'] solidify-viewport": {

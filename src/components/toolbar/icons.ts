@@ -174,6 +174,7 @@ keybindings.set("gizmo:revolution:thickness", "Thickness");
 keybindings.set("gizmo:evolution:thickness", "Thickness");
 keybindings.set("gizmo:pipe:thickness", "Thickness");
 keybindings.set("gizmo:offset-curve:distance", "Distance");
+keybindings.set("keyboard:offset-curve:gap-fill", "Gap fill");
 keybindings.set("keyboard:bridge-curves:cycle", "Cycle continuity");
 keybindings.set("keyboard:bridge-curves:trim", "Trim");
 keybindings.set("gizmo:bridge-curves:tension", "G1 tension");

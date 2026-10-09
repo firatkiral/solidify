@@ -123,6 +123,12 @@ export const ModifyingType = {
     United: 8,
 } as const;
 
+export const OffsetGapFill = {
+    Round: 0,
+    Linear: 1,
+    Natural: 2,
+} as const;
+
 export const ConvResType = {
     Success: 0,
     Error: 1,

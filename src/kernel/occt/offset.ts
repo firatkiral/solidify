@@ -1,8 +1,12 @@
-// Offsets of planar curves within their plane.
+// Offsets of planar curves within their plane, and across planar faces.
 
+import { OffsetGapFill } from './constants';
 import { Arc3D, Contour3D, CubicSpline3D, Curve3D, LineSegment3D, PlaneCurve, Polyline3D } from './curve3d';
-import { Axis3D, CartPoint3D, Placement3D, Vector3D } from './math';
-import { KernelError } from './solid';
+import { reach, split } from './cutting';
+import { Axis3D, CartPoint3D, cross, dot, Matrix3D, normalized, Placement3D, Vector3D } from './math';
+import { SNameMaker } from './misc';
+import { oc } from './occt';
+import { cart, curveOfEdge, distanceToShape, edgesOf3d, explore, Face, gpPnt, KernelError, segmentEdge, Shape, transformShape, vec, wireOf } from './solid';
 
 type P2 = { x: number, y: number };
 type Line = { k: 'line', a: P2, b: P2 };
@@ -277,4 +281,133 @@ function toCurve(piece: Piece, place: Placement3D, _closed: boolean): Curve3D {
         }
         case 'points': return new CubicSpline3D(piece.pts.map(p3), false);
     }
+}
+
+// ---- Offsets across planar faces ----
+
+// C3D's parameters for offsetting a curve that lies on a face: the face, a point on the curve with the direction across
+// the face to offset towards, and the distance. How gaps at corners are filled is the OCCT kernel's own.
+export class SurfaceOffsetCurveParams {
+    constructor(readonly face: Face, readonly axis: Axis3D, readonly distance: number, _names?: SNameMaker, readonly gapFill: number = OffsetGapFill.Natural) { }
+}
+
+// Curves, as C3D returns an offset that can come apart in several.
+export class WireFrame {
+    constructor(private readonly curves: Curve3D[]) { }
+    GetCurves() { return this.curves }
+}
+
+// A curve lying on a planar face offset across it, towards the side the axis points to from a point on the curve.
+// Where the offset pieces part at a corner, the gap is closed as params.gapFill says. A closed curve (a loop of the
+// face) is offset whole; an open one is extended along its end tangents as far as the face goes, so that it divides
+// the face.
+export function offsetOnFace(curve: Curve3D, params: SurfaceOffsetCurveParams): Curve3D[] {
+    const { face, axis, gapFill } = params;
+    const distance = Math.abs(params.distance);
+    if (!face.IsPlanar()) throw new KernelError("Offset on curved faces isn't supported yet");
+    if (distance < EPS) throw new KernelError("The offset distance must not be zero");
+    const n = face.planePlacement().axisZ;
+    const d = axis.direction, along = dot(d, n);
+    const across = normalized(new Vector3D(d.x - n.x * along, d.y - n.y * along, d.z - n.z * along));
+
+    const edges = edgesOf3d(curve);
+    let offset: Shape[];
+    if (curve.IsStraight(true)) {
+        // A straight curve has no plane of its own to offset in: move it across
+        const a = curve.GetLimitPoint(1), b = curve.GetLimitPoint(2);
+        let side = normalized(cross(n, new Vector3D(b.x - a.x, b.y - a.y, b.z - a.z)));
+        if (dot(side, across) < 0) side = new Vector3D(-side.x, -side.y, -side.z);
+        const m = new Matrix3D();
+        m.Move(new Vector3D(side.x * distance, side.y * distance, side.z * distance));
+        offset = edges.map(e => transformShape(e, m));
+    } else {
+        offset = offsetWire(wireOf(edges), !curve.IsClosed(), distance, axis.origin, across, gapFill);
+    }
+    if (!curve.IsClosed()) offset.push(...extensions(offset, face));
+    return offset.map(e => curveOfEdge(oc.TopoDS.Edge(e)));
+}
+
+// The edges of a planar wire's offset to the side `across` points to from `origin`, a point on the wire.
+function offsetWire(wire: Shape, open: boolean, distance: number, origin: CartPoint3D, across: Vector3D, gapFill: number): Shape[] {
+    const join = gapFill === OffsetGapFill.Natural ? oc.GeomAbs_JoinType.GeomAbs_Intersection : oc.GeomAbs_JoinType.GeomAbs_Arc;
+    // Which way a positive distance goes depends on how the wire runs; try one, else the other
+    for (const signed of [distance, -distance]) {
+        const maker = new oc.BRepOffsetAPI_MakeOffset(wire, join, open);
+        try {
+            maker.Perform(signed, 0);
+            if (!maker.IsDone()) continue;
+            const result = maker.Shape();
+            const edges = explore(result, oc.TopAbs_ShapeEnum.TopAbs_EDGE);
+            if (edges.length === 0 || sideOf(result, origin, across) <= 0) continue;
+            return gapFill === OffsetGapFill.Linear ? chorded(maker, wire, edges) : edges;
+        } catch (e) {
+            continue;
+        } finally {
+            maker.delete();
+        }
+    }
+    throw new KernelError("The offset doesn't fit in the face");
+}
+
+// How far across the nearest point of the shape to `origin` is.
+function sideOf(shape: Shape, origin: CartPoint3D, across: Vector3D) {
+    const vertex = new oc.BRepBuilderAPI_MakeVertex(gpPnt(origin)).Vertex();
+    const nearest = new oc.BRepExtrema_DistShapeShape(vertex, shape);
+    const p = nearest.IsDone() && nearest.NbSolution() > 0 ? cart(nearest.PointOnShape2(1)) : origin;
+    nearest.delete();
+    return dot(new Vector3D(p.x - origin.x, p.y - origin.y, p.z - origin.z), across);
+}
+
+// The offset with the arcs it put round the corners of the wire replaced by straight lines.
+function chorded(maker: any, wire: Shape, edges: Shape[]): Shape[] {
+    const arcs: Shape[] = [];
+    for (const vertex of explore(wire, oc.TopAbs_ShapeEnum.TopAbs_VERTEX)) {
+        const generated = new oc.NCollection_List_TopoDS_Shape(maker.Generated(vertex));
+        while (!generated.IsEmpty()) {
+            arcs.push(generated.First());
+            generated.RemoveFirst();
+        }
+        generated.delete();
+    }
+    return edges.flatMap(e => {
+        if (!arcs.some(a => a.IsSame(e))) return [e];
+        const [start, end] = endsOf(e);
+        return segmentEdge(start.point, end.point);
+    });
+}
+
+// The two ends of an edge, each with the direction leading out of the edge there.
+function endsOf(edge: Shape): { point: CartPoint3D, out: Vector3D }[] {
+    const c = new oc.BRepAdaptor_Curve(oc.TopoDS.Edge(edge));
+    const p = new oc.gp_Pnt(), v = new oc.gp_Vec();
+    c.D1(c.FirstParameter(), p, v);
+    const start = { point: cart(p), out: normalized(vec(v.Reversed())) };
+    c.D1(c.LastParameter(), p, v);
+    const end = { point: cart(p), out: normalized(vec(v)) };
+    p.delete(); v.delete(); c.delete();
+    return [start, end];
+}
+
+// Straight extensions of an open offset from its free ends, along the tangent there, as far as the face goes.
+function extensions(edges: Shape[], face: Face): Shape[] {
+    const ends = edges.flatMap(endsOf);
+    const free = ends.filter(e => ends.filter(o => o.point.distanceTo(e.point) < 1e-6).length === 1);
+    const result: Shape[] = [];
+    for (const { point, out } of free) {
+        const L = reach(face.solid.GetCube(), point);
+        const far = new CartPoint3D(point.x + out.x * L, point.y + out.y * L, point.z + out.z * L);
+        const [ray] = segmentEdge(point, far);
+        const pieces = explore(split([ray], [face.shape]), oc.TopAbs_ShapeEnum.TopAbs_EDGE)
+            .map(piece => endsOf(piece).map(e => e.point).sort((a, b) => a.distanceTo(point) - b.distanceTo(point)))
+            .sort(([a], [b]) => a.distanceTo(point) - b.distanceTo(point));
+        // From the end outward, as long as the ray stays on the face
+        let reached: CartPoint3D | undefined;
+        for (const [a, b] of pieces) {
+            const middle = new CartPoint3D((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+            if (distanceToShape(middle, face.shape) > 1e-6) break;
+            reached = b;
+        }
+        if (reached !== undefined) result.push(...segmentEdge(point, reached));
+    }
+    return result;
 }

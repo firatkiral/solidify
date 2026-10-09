@@ -768,6 +768,13 @@ export enum ChangedType {
     Renamed     = 0x0200, ///< \ru Переименован. \en Renamed.
 };
 
+// How an offset closes the gap where the pieces of a curve part at a corner (the OCCT kernel's own).
+export enum OffsetGapFill {
+    Round = 0, ///< An arc round the corner.
+    Linear = 1, ///< A straight line between the ends of the pieces.
+    Natural = 2, ///< The pieces extended until they meet.
+}
+
 Object.assign(c3d, {
     ESides,
     StepType,
@@ -802,5 +809,6 @@ Object.assign(c3d, {
     LateralKind,
     HoleType,
     SlotType,
-    ChangedType
+    ChangedType,
+    OffsetGapFill
 });

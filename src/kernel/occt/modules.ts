@@ -11,12 +11,12 @@ import { Axis3D, CartPoint, CartPoint3D, cross, dot, FloatPoint3D, normalized, P
 import { CrossPoint, EvolutionValues, ExtrusionValues, LoftedValues, MergingFlags, ModifyValues, PointOnCurve, RevolutionValues, SmoothValues, SNameMaker, SweptData, SweptValues, TransformValues } from './misc';
 import { buildContours, correctRegions } from './regions';
 import { readItems, writeItems } from './serialize';
-import { chamfer, CurveEdge, detachParts, draft, EdgeFunction, elementary, extrude, Face, FaceShell, FaceSurface, fillet, intersects, KernelError, occ, offsetFaces, Solid, thinSolid, transformShape, union } from './solid';
+import { chamfer, CurveEdge, detachParts, draft, edgesOf3d, EdgeFunction, elementary, extrude, Face, FaceShell, FaceSurface, fillet, intersects, KernelError, occ, offsetFaces, Solid, thinSolid, transformShape, union } from './solid';
 import { evolution, loft, revolve } from './sweep';
 import { isBlend, moveFaces, refillet, removeBlends, removeFaces } from './features';
 import { commonTangents, tangentsFromPoint } from './tangent';
 import { contourFillets } from './fillets';
-import { offsetPlaneCurve } from './offset';
+import { offsetOnFace, offsetPlaneCurve, SurfaceOffsetCurveParams, WireFrame } from './offset';
 import { blendCurve } from './blend';
 import { extend } from './history';
 import { contourSheets, mirrorSolid, ShellCuttingParams, solidCutting, splitFaces, surfaceSheets, symmetrySolid } from './cutting';
@@ -95,8 +95,11 @@ export const ActionSolid = {
         return splitFaces(solid, contourSheets(place, contours, solid), faces, flags);
     },
 
-    SplitSolidBySpaceItem(solid: Solid, _sameShell: number, items: (FaceSurface | Plane)[], _same: boolean, faces: Face[], flags: MergingFlags, _names: SNameMaker): Solid {
-        return splitFaces(solid, surfaceSheets(items, solid), faces, flags);
+    // The solid with the chosen faces divided by surfaces, or by curves lying on them.
+    SplitSolidBySpaceItem(solid: Solid, _sameShell: number, items: (FaceSurface | Plane | Curve3D)[], _same: boolean, faces: Face[], flags: MergingFlags, _names: SNameMaker): Solid {
+        const curves = items.filter((i): i is Curve3D => i instanceof Curve3D);
+        const surfaces = items.filter((i): i is FaceSurface | Plane => !(i instanceof Curve3D));
+        return splitFaces(solid, [...surfaceSheets(surfaces, solid), ...curves.flatMap(edgesOf3d)], faces, flags);
     },
 
     // The mirror image of the solid in the placement's XY plane.
@@ -298,6 +301,11 @@ export const ActionSurfaceCurve = {
     // The curve moved `dist` to its left within its plane.
     OffsetPlaneCurve(curve: Curve3D, dist: number): Curve3D {
         return offsetPlaneCurve(curve, dist);
+    },
+
+    // A curve lying on a planar face offset across it (see offsetOnFace).
+    OffsetSurfaceCurve(curve: Curve3D, params: SurfaceOffsetCurveParams): WireFrame {
+        return occ("Offset", () => new WireFrame(offsetOnFace(curve, params)));
     },
 
     // A Bézier bridge from curve1 at t1 to curve2 at t2 (see blend.ts). For each end: sense is which way along the

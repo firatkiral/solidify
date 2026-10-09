@@ -6,6 +6,7 @@ export { Arc3D, Bezier3D, ConeSpiral, Contour3D, ContourOnPlane, ContourOnSurfac
 export { Assembly, FormNote, Grid, Instance, Mesh, Model, PlaneInstance, Polygon3D, Primitive, SpaceInstance, StepData } from './items';
 export { Axis3D, CartPoint, CartPoint3D, Cube, Direction, FloatAxis3D, FloatPoint3D, Homogeneous3D, Matrix, Matrix3D, Placement, Placement3D, Rect, Vector, Vector3D } from './math';
 export { ShellCuttingParams } from './cutting';
+export { SurfaceOffsetCurveParams, WireFrame } from './offset';
 export { CharacterCurve3D, FunctionFactory } from './character';
 export { Creator } from './history';
 export { MLTipParams, Multiline, VertexOfMultilineInfo } from './multiline';
