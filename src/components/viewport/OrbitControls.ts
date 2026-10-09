@@ -105,12 +105,17 @@ export class OrbitControls extends THREE.EventDispatcher {
         domElement.addEventListener('pointerdown', this.onPointerDown);
         domElement.addEventListener('pointercancel', this.onPointerCancel);
         domElement.addEventListener('wheel', this.onMouseWheel, { passive: false });
+        // Safari's own trackpad pinch events, which zoom the page unless prevented
+        domElement.addEventListener('gesturestart', preventDefault);
+        domElement.addEventListener('gesturechange', preventDefault);
 
         this.disposable.add(new Disposable(() => {
             domElement.removeEventListener('contextmenu', this.onContextMenu);
             domElement.removeEventListener('pointerdown', this.onPointerDown);
             domElement.removeEventListener('pointercancel', this.onPointerCancel);
             domElement.removeEventListener('wheel', this.onMouseWheel);
+            domElement.removeEventListener('gesturestart', preventDefault);
+            domElement.removeEventListener('gesturechange', preventDefault);
         }))
     }
 
@@ -433,6 +438,8 @@ export class OrbitControls extends THREE.EventDispatcher {
     }
 
     onMouseWheel(event: WheelEvent) {
+        // The page must never scroll, bounce, zoom or swipe-navigate under the viewport, even when the wheel is ignored
+        event.preventDefault();
         const { state, enabled } = this;
         if (!enabled || state.tag !== 'none') return;
 
@@ -446,7 +453,6 @@ export class OrbitControls extends THREE.EventDispatcher {
             let deltaY = event.deltaY;
             if (deltaY === 0 && event.shiftKey && event.deltaX !== 0) deltaY = event.deltaX;
 
-            event.preventDefault();
             this.dispatchEvent(startEvent);
             this.dolly(Math.sign(deltaY) > 0 ? 1 / zoomScale : zoomScale);
             this.update();
@@ -462,7 +468,6 @@ export class OrbitControls extends THREE.EventDispatcher {
             const zoom = 1 - Math.abs(event.deltaY) / 100;
             const dolly = Math.sign(event.deltaY) > 0 ? zoomSpeed / zoom : zoom / zoomSpeed;
 
-            event.preventDefault();
             this.dispatchEvent(startEvent);
             this.dolly(dolly);
             this.update();
@@ -719,3 +724,6 @@ export class OrbitControls extends THREE.EventDispatcher {
 }
 
 export type FocusableObject = THREE.Object3D | { uuid: string, getBoundingBox(): THREE.Box3 }
+function preventDefault(event: Event) {
+    event.preventDefault();
+}

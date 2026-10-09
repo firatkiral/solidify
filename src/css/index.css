@@ -198,6 +198,12 @@ body {
     user-select: none;
 }
 
+/* Trackpad swipes must not bounce the page or navigate back and forward */
+html,
+body {
+    overscroll-behavior: none;
+}
+
 solidify-command > div.active {
     @apply bg-accent-500 !important 
 }
