@@ -128,7 +128,9 @@
         <noscript>Solidify needs JavaScript.</noscript>
     </div>
     <solidify-titlebar></solidify-titlebar>
-    <div id="workspace" class="flex absolute top-0 p-2 w-full h-full">
+    <!-- Clips the drawer while it's slid out past the window's right edge, so there's nothing to scroll the page to
+         (clip, not hidden, which focus and scrollIntoView could still scroll) -->
+    <div id="workspace" class="flex overflow-clip absolute top-0 p-2 w-full h-full">
         <solidify-viewport view="3d">
             <solidify-viewport-header></solidify-viewport-header>
             <solidify-file-menu></solidify-file-menu>
