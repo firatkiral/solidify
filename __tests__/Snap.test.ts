@@ -264,14 +264,31 @@ describe(CurveSnap, () => {
         })
     })
 
-    test('additionalSnapsForLast', () => {
-        let result;
-        result = snap.additionalSnapsGivenPreviousSnap(new THREE.Vector3(0, 10, 0), new PlaneSnap());
-        expect(result.length).toBe(1);
-        expect(result[0]).toBeInstanceOf(PointSnap);
-        expect(result[0].name).toBe("Tangent");
+    test('additionalSnapsForLast', async () => {
+        const makeCircle = new CenterCircleFactory(db, materials, signals);
+        makeCircle.center = new THREE.Vector3();
+        makeCircle.radius = 1;
+        const circle = await makeCircle.commit() as visual.SpaceInstance<visual.Curve3D>;
+        const item = db.lookup(circle).GetSpaceItem()!;
+        const circleSnap = new CurveSnap(circle, item.Cast<c3d.Curve3D>(item.IsA()));
 
-        result = snap.additionalSnapsGivenPreviousSnap(new THREE.Vector3(0, 10, 10), new PlaneSnap());
+        // From a point outside a circle, the two points where lines from it touch the circle
+        let result = circleSnap.additionalSnapsGivenPreviousSnap(new THREE.Vector3(0, 2, 0), new PlaneSnap());
+        expect(result.length).toBe(2);
+        for (const s of result) {
+            expect(s).toBeInstanceOf(PointSnap);
+            expect(s.name).toBe("Tangent");
+        }
+        const xs = result.map(s => (s as PointSnap).position).sort((a, b) => a.x - b.x);
+        expect(xs[0]).toApproximatelyEqual(new THREE.Vector3(-Math.sqrt(3) / 2, 0.5, 0));
+        expect(xs[1]).toApproximatelyEqual(new THREE.Vector3(Math.sqrt(3) / 2, 0.5, 0));
+
+        // None from a point off the circle's plane
+        result = circleSnap.additionalSnapsGivenPreviousSnap(new THREE.Vector3(0, 2, 10), new PlaneSnap());
+        expect(result.length).toBe(0);
+
+        // None to a straight line: from a point on its extension, the line itself is no tangent
+        result = snap.additionalSnapsGivenPreviousSnap(new THREE.Vector3(0, 10, 0), new PlaneSnap());
         expect(result.length).toBe(0);
     });
 
@@ -301,15 +318,17 @@ describe(CurveSnap, () => {
         }
 
         const snaps = snap1.additionalSnapsGivenPreviousSnap(new THREE.Vector3(), snap2);
+        // Two tangents from the point, then the four lines touching both circles: two outer, two crossing between them
         expect(snaps.length).toBe(6);
-        expect(snaps[2]).toBeInstanceOf(TanTanSnap);
-        expect(snaps[3]).toBeInstanceOf(TanTanSnap);
-        let tantan = snaps[2] as TanTanSnap;
-        expect(tantan.point1).toApproximatelyEqual(new THREE.Vector3(2, -1, 0));
-        expect(tantan.point2).toApproximatelyEqual(new THREE.Vector3(-2, -1, 0));
-        tantan = snaps[3] as TanTanSnap;
-        expect(tantan.point1).toApproximatelyEqual(new THREE.Vector3(2, 1, 0));
-        expect(tantan.point2).toApproximatelyEqual(new THREE.Vector3(-2, 1, 0));
+        const tantans = snaps.filter(s => s instanceof TanTanSnap) as TanTanSnap[];
+        expect(tantans.length).toBe(4);
+        // point1 is on the circle picked before, point2 on this one
+        const outer = tantans.filter(t => Math.abs(t.point1.y - t.point2.y) < 1e-6).sort((a, b) => a.point1.y - b.point1.y);
+        expect(outer.length).toBe(2);
+        expect(outer[0].point1).toApproximatelyEqual(new THREE.Vector3(2, -1, 0));
+        expect(outer[0].point2).toApproximatelyEqual(new THREE.Vector3(-2, -1, 0));
+        expect(outer[1].point1).toApproximatelyEqual(new THREE.Vector3(2, 1, 0));
+        expect(outer[1].point2).toApproximatelyEqual(new THREE.Vector3(-2, 1, 0));
     });
 })
 

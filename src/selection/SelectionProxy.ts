@@ -6,8 +6,8 @@ export class SelectionProxy implements ModifiesSelection {
     constructor(protected readonly selection: ModifiesSelection) { }
 
     has(item: Item) { return this.selection.has(item); }
-    add(items: Item | Item[] | TopologyItem[]) { this.selection.add(items); }
-    remove(selectables: Selectable[]) { this.selection.remove(selectables); }
+    add(items: Selectable | Selectable[]) { this.selection.add(items); }
+    remove(selectables: Selectable | Selectable[]) { this.selection.remove(selectables); }
     removeFace(object: Face) { this.selection.removeFace(object); }
     addFace(object: Face) { this.selection.addFace(object); }
     removeRegion(object: PlaneInstance<Region>) { this.selection.removeRegion(object); }

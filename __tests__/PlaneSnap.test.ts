@@ -106,9 +106,10 @@ test("snapToGrid(compatible axis snap)", () => {
     expect(plane.snapToGrid(new THREE.Vector3(0.123, 0.123, 0), axis)).toEqual(new THREE.Vector3(0.125, 0.125, 0));
 })
 
-test("snapToGrid(incompatible axis snap)", () => {
+test("snapToGrid(axis leaving the plane) steps along the axis from its origin", () => {
     const plane = new PlaneSnap(Z, origin);
-    plane.gridFactor = 4;
-    const axis = new AxisSnap(undefined, new THREE.Vector3(1, 2, 3), X);
-    expect(plane.snapToGrid(new THREE.Vector3(1, 2, 3), axis)).toEqual(new THREE.Vector3(1, 2, 3));
+    plane.gridFactor = 4; // 0.025 steps
+    // e.g. a box's height, up from a corner at (1, 2, 0)
+    const axis = new AxisSnap(undefined, Z, new THREE.Vector3(1, 2, 0));
+    expect(plane.snapToGrid(new THREE.Vector3(1, 2, 0.123), axis)).toApproximatelyEqual(new THREE.Vector3(1, 2, 0.125));
 })
