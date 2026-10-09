@@ -23,19 +23,19 @@ export class BoxDialog extends AbstractDialog<EditBoxParams> {
                     <li>
                         <label for="width">Width</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="width" unit="mm" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="width" unit="length" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="length">Length</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="length" unit="mm" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="length" unit="length" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="height">Height</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="height" unit="mm" value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="height" unit="length" value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

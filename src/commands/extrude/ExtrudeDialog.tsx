@@ -23,8 +23,8 @@ export class ExtrudeDialog extends AbstractDialog<ExtrudeParams> {
                     <li>
                         <label for="distance">Distance</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance1" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber name="distance2" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance1" unit="length" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance2" unit="length" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -37,8 +37,8 @@ export class ExtrudeDialog extends AbstractDialog<ExtrudeParams> {
                     <li>
                         <label>Thickness</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" unit="length" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" unit="length" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

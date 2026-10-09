@@ -4,13 +4,16 @@ import { Editor } from '../../editor/Editor';
 import { FileType } from '../../platform/Platform';
 import { ConfigFiles, OrbitMode } from '../../startup/ConfigFiles';
 import { restoreNote } from '../title-bar/TitleBar';
+import { ChangeEvent } from '../dialog/NumberScrubber';
+import { LengthUnit, lengthUnits, unitSystem, unitSystems } from '../../util/Units';
 
 const APP_VERSION = process.env.APP_VERSION;
 
-type Tab = 'navigation' | 'file' | 'privacy';
+type Tab = 'navigation' | 'units' | 'file' | 'privacy';
 
 const tabs: { id: Tab, label: string }[] = [
     { id: 'navigation', label: 'Navigation' },
+    { id: 'units', label: 'Units & grid' },
     { id: 'file', label: 'File' },
     { id: 'privacy', label: 'Privacy' },
 ];
@@ -52,6 +55,7 @@ export default (editor: Editor) => {
             // Capturing on window comes before the app's shortcuts, which listen there too
             window.addEventListener('keydown', this.onKey, true);
             window.addEventListener('keyup', this.onKey, true);
+            editor.signals.settingsChanged.add(this.render);
             this.render();
         }
 
@@ -60,6 +64,7 @@ export default (editor: Editor) => {
             this.isOpen = false;
             window.removeEventListener('keydown', this.onKey, true);
             window.removeEventListener('keyup', this.onKey, true);
+            editor.signals.settingsChanged.remove(this.render);
             this.render();
         }
 
@@ -112,12 +117,12 @@ export default (editor: Editor) => {
             this.render();
         }
 
-        render() {
+        render = () => {
             if (!this.isOpen) {
                 render(null, this);
                 return;
             }
-            const content = this.tab === 'navigation' ? this.navigation() : this.tab === 'file' ? this.file() : this.privacy();
+            const content = this.tab === 'navigation' ? this.navigation() : this.tab === 'units' ? this.units() : this.tab === 'file' ? this.file() : this.privacy();
             render(
                 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
                     <div class="flex flex-col w-[640px] h-[540px] max-w-[90vw] max-h-[90vh] rounded-lg overflow-hidden bg-neutral-800 text-neutral-200 shadow-black/30 shadow-xl ring-1 ring-neutral-600 ring-opacity-5">
@@ -159,6 +164,34 @@ export default (editor: Editor) => {
                 </ol>
                 {this.orbitMode === 'custom' &&
                     <div class="mt-3 text-xs text-neutral-400">Currently custom. Choosing one above replaces it.</div>}
+            </div>;
+        }
+
+        private units() {
+            const current = editor.settings.Units.length;
+            const { size, step } = editor.settings.Grid;
+            const { majorEvery } = unitSystems[unitSystem()];
+            const setSize = (e: ChangeEvent) => editor.setGrid(e.value, step);
+            const setStep = (e: ChangeEvent) => editor.setGrid(size, e.value);
+            return <div>
+                <div class="text-sm font-semibold text-neutral-100">Units</div>
+                <div class="mb-3 text-xs text-neutral-400">How lengths are shown and typed; a typed length can name its own unit, like 2 in. Documents and exported files aren't affected. Moving between metric and imperial sets the grid and the snap steps to round values in the new units.</div>
+                <div class="flex space-x-1">
+                    {(Object.keys(lengthUnits) as LengthUnit[]).map(unit =>
+                        <button class={`w-12 py-1 rounded-md text-sm ${unit === current ? 'bg-white/20 text-neutral-50 ring-1 ring-accent-400' : 'bg-white/5 text-neutral-300 hover:bg-white/10'}`} onClick={() => editor.setLengthUnit(unit)}>
+                            {unit}
+                            <solidify-tooltip placement="bottom">{lengthUnits[unit].name}</solidify-tooltip>
+                        </button>)}
+                </div>
+
+                <div class="mt-6 text-sm font-semibold text-neutral-100">Grid</div>
+                <div class="mb-3 text-xs text-neutral-400">On the floor and on construction planes: a line every step, and a heavier one every {majorEvery} steps. Snapping to the grid has its own step, in the Snaps panel.</div>
+                <div class="grid grid-cols-[4rem_9rem] items-center gap-x-3 gap-y-2 text-sm">
+                    <label for="size">Size</label>
+                    <solidify-number-scrubber name="size" unit="length" min={1} max={1_000_000} value={size} onchange={setSize} onscrub={setSize} onfinish={() => { }}></solidify-number-scrubber>
+                    <label for="step">Step</label>
+                    <solidify-number-scrubber name="step" unit="length" min={0.01} max={1_000_000} value={step} onchange={setStep} onscrub={setStep} onfinish={() => { }}></solidify-number-scrubber>
+                </div>
             </div>;
         }
 

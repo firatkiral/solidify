@@ -24,13 +24,13 @@ export class EvolutionDialog extends AbstractDialog<EvolutionParams> {
                     <li>
                         <label for="thickness1">Thickness 1 </label>
                         <div class="fields">
-                            <solidify-number-scrubber name="thickness1" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness1" unit="length" value={thickness1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="thickness2">Thickness 1 </label>
                         <div class="fields">
-                            <solidify-number-scrubber name="thickness2" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="thickness2" unit="length" value={thickness2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>

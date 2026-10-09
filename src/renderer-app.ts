@@ -9,7 +9,7 @@ import NumberScrubber from './components/dialog/NumberScrubber';
 import Prompt from './components/dialog/Prompt';
 import Menu from './components/menu/Menu';
 import Outliner from './components/outliner/Outliner';
-import './components/pane/Pane';
+import { restorePaneSizes } from './components/pane/Pane';
 import Planes from './components/planes/Planes';
 import Home from './components/home/Home';
 import UpdateNotice from './components/update/UpdateNotice';
@@ -31,7 +31,6 @@ import './css/index.css';
 import { Editor } from './editor/Editor';
 import { isDocument, isImportable } from './editor/ImporterExporter';
 import { OpenedFile } from './platform/Platform';
-import { SnapManager } from './editor/snaps/SnapManager';
 import { ConfigFiles } from './startup/ConfigFiles';
 
 
@@ -40,8 +39,10 @@ ConfigFiles.loadSettings();
 
 export const editor = new Editor();
 
-// Every snap starts off when the app launches (grid and handle steps already do); the snaps panel or holding Shift/Ctrl turns them on.
-for (const layer of SnapManager.objectLayers) editor.snaps.layers.disable(layer);
+// The Snaps panel and the panes come back as they were left
+editor.snaps.settings = editor.settings.Snaps;
+editor.signals.snapSettingsChanged.add(() => ConfigFiles.updateSettings('Snaps', editor.snaps.settings));
+restorePaneSizes(editor.settings.Layout.panes);
 
 Object.defineProperty(window, 'editor', {
     value: editor,

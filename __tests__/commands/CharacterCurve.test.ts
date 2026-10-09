@@ -25,8 +25,9 @@ describe('commit', () => {
     test('invokes the appropriate c3d commands', async () => {
         makeCurve.tMin = 0;
         makeCurve.tMax = 2*Math.PI;
-        makeCurve.xFunction = "1000*cos(t)";
-        makeCurve.yFunction = "1000*sin(t)";
+        // In centimeters, the length unit to begin with
+        makeCurve.xFunction = "cos(t)";
+        makeCurve.yFunction = "sin(t)";
         makeCurve.zFunction = "0";
 
         const item = await makeCurve.commit() as visual.SpaceInstance<visual.Curve3D>;

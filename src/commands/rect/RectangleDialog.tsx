@@ -19,14 +19,14 @@ export class RectangleDialog extends AbstractDialog<EditRectangleParams> {
                     <li>
                         <label for="width">Width</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="width" unit="mm" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="width" unit="length" value={width} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 
                     <li>
                         <label for="length">Length</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="length" unit="mm" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="length" unit="length" value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

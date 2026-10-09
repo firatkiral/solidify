@@ -19,6 +19,8 @@ import defaultSettings from '../startup/default-settings';
 import defaultTheme from '../startup/default-theme.json';
 import { Z } from "../util/Constants";
 import { Helpers } from "../util/Helpers";
+import { LengthUnit, lengthUnits, setLengthUnit, unitSystem, unitSystems } from "../util/Units";
+import { maxGridLines } from "../components/viewport/GridHelper";
 import { RenderedSceneBuilder } from "../visual_model/RenderedSceneBuilder";
 import { Clipboard } from "./Clipboard";
 import ContourManager from "./curves/ContourManager";
@@ -114,6 +116,10 @@ export class Editor {
 
         this.registry.attach(window);
         this.keymaps.defaultTarget = document.body;
+
+        if (!(settings.Units.length in lengthUnits)) settings.Units.length = 'cm';
+        setLengthUnit(settings.Units.length);
+        this.snaps.resetSteps();
 
         this.registerCommands();
     }
@@ -469,6 +475,29 @@ export class Editor {
         ConfigFiles.updateOrbitControls(mode);
         ConfigFiles.reloadUserKeymap(this.keymaps);
         for (const viewport of this.viewports) viewport.navigationControls.reloadBindings();
+    }
+
+    // Applies in place. Moving between metric and imperial also puts the grid and the snap steps on that system's round values.
+    setLengthUnit(unit: LengthUnit) {
+        const system = unitSystem(unit);
+        const changesSystem = system !== unitSystem(this.settings.Units.length);
+        ConfigFiles.updateSetting('Units', 'length', unit);
+        setLengthUnit(unit);
+        if (changesSystem) {
+            const { size, step } = unitSystems[system].grid;
+            this.setGrid(size, step);
+            this.snaps.resetSteps();
+        }
+        this.signals.settingsChanged.dispatch();
+    }
+
+    // In millimeters. A step finer than size / maxGridLines widens to it, so the grid never has more lines than that.
+    setGrid(size: number, step: number) {
+        if (!(size > 0) || !(step > 0)) return;
+        step = Math.max(step, size / maxGridLines);
+        ConfigFiles.updateSetting('Grid', 'size', size);
+        ConfigFiles.updateSetting('Grid', 'step', step);
+        this.signals.settingsChanged.dispatch();
     }
 
     debug() {

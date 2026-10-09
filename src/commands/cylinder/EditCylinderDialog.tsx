@@ -23,13 +23,13 @@ export class EditCylinderDialog extends AbstractDialog<EditCylinderParams> {
                     <li>
                         <label for="radius">Radius</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="radius" unit="mm" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="length" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="height">Height</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="height" unit="mm" value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="height" unit="length" value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

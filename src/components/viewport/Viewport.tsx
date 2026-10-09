@@ -20,7 +20,6 @@ import { Settings, Theme } from "../../startup/ConfigFiles";
 import { Helper, Helpers } from "../../util/Helpers";
 import { MaterialMode, RenderedSceneBuilder } from "../../visual_model/RenderedSceneBuilder";
 import * as visual from '../../visual_model/VisualModel';
-import { Pane } from '../pane/Pane';
 import { ConstructionPlaneGenerator, PlaneContext } from "./ConstructionPlaneGenerator";
 import { GridHelper } from "./GridHelper";
 import { OrbitControls } from "./OrbitControls";
@@ -31,6 +30,7 @@ import { NavigationTarget, ViewportGeometryNavigator } from "./ViewportGeometryN
 import { Orientation, ViewportNavigatorGizmo, ViewportNavigatorPass } from "./ViewportNavigator";
 import { ViewportPointControl } from "./ViewportPointControl";
 import { isLinux } from "../../util/Os";
+import { unitSystem, unitSystems } from "../../util/Units";
 
 export interface EditorLike extends selector.EditorLike {
     db: DatabaseLike,
@@ -81,7 +81,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     readonly additionalHelpers = new Set<THREE.Object3D>();
     readonly cplanes = new ConstructionPlaneGenerator(this.editor.db, this.editor.planes, this.editor.snaps);
     private readonly navigator = new ViewportGeometryNavigator(this.editor, this.navigationControls);
-    private grid = new GridHelper(this.gridColor1, this.gridColor2, this.backgroundColor);
+    private readonly grid = new GridHelper(this.gridSpec, this.gridColor1, this.gridColor2, this.backgroundColor);
 
     constructor(
         private readonly editor: EditorLike,
@@ -162,8 +162,8 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
                 'viewport:toggle-x-ray': () => this.toggleXRay(),
                 'viewport:toggle-overlays': () => this.toggleOverlays(),
                 'viewport:grid:selection': () => this.cplaneToSelection(),
-                'viewport:grid:incr': () => this.resizeGrid(-1),
-                'viewport:grid:decr': () => this.resizeGrid(1),
+                'viewport:grid:incr': () => this.editor.snaps.stepGridStep(-1),
+                'viewport:grid:decr': () => this.editor.snaps.stepGridStep(1),
             })
         );
 
@@ -213,6 +213,8 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         this.editor.signals.typeEnabled.add(this.setNeedsRender);
         this.editor.signals.typeDisabled.add(this.setNeedsRender);
         this.editor.signals.visibleLayersChanged.add(this.setNeedsRender);
+        this.editor.signals.settingsChanged.add(this.settingsChanged);
+        for (const signal of this.contentSignals) signal.add(this.contentChanged);
 
         this.navigationControls.addEventListener('change', this.setNeedsRender);
         this.navigationControls.addEventListener('start', this.navigationStart);
@@ -253,6 +255,8 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             this.editor.signals.typeEnabled.remove(this.setNeedsRender);
             this.editor.signals.typeDisabled.remove(this.setNeedsRender);
             this.editor.signals.visibleLayersChanged.remove(this.setNeedsRender);
+            this.editor.signals.settingsChanged.remove(this.settingsChanged);
+            for (const signal of this.contentSignals) signal.remove(this.contentChanged);
 
             this.navigationControls.removeEventListener('change', this.setNeedsRender);
             this.navigationControls.removeEventListener('start', this.navigationStart);
@@ -266,6 +270,45 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
     private needsRender = true;
     private setNeedsRender() { this.needsRender = true }
+
+    // The grid's size and step come from the settings; its heavier lines follow the length unit's system
+    private get gridSpec() {
+        const { size, step } = this.editor.settings.Grid;
+        return { size, step, majorEvery: unitSystems[unitSystem()].majorEvery };
+    }
+
+    private readonly settingsChanged = () => {
+        this.grid.setSpec(this.gridSpec);
+        this.setNeedsRender();
+    }
+
+    // What the camera's clipping keeps: the grid on the construction plane and everything drawn, but not helpers like the
+    // axes or gizmos. The objects are measured again only after they may have changed.
+    private readonly contentSignals: signals.Signal<any>[] = [
+        this.editor.signals.objectAdded, this.editor.signals.objectRemoved, this.editor.signals.objectReplaced,
+        this.editor.signals.emptyAdded, this.editor.signals.emptyRemoved,
+        this.editor.signals.factoryUpdated, this.editor.signals.factoryCancelled, this.editor.signals.factoryCommitted,
+        this.editor.signals.historyChanged, this.editor.signals.commandEnded, this.editor.signals.moduleReloaded,
+        this.editor.signals.typeEnabled, this.editor.signals.typeDisabled, this.editor.signals.visibleLayersChanged,
+    ];
+    private readonly contentBox = new THREE.Box3();
+    private contentMeasured = false;
+    private readonly contentChanged = () => { this.contentMeasured = false }
+    private readonly clippingBounds = new THREE.Sphere();
+    private readonly contentBounds = new THREE.Sphere();
+    private fitClipping() {
+        const { contentBox, clippingBounds, contentBounds, editor: { scene, db } } = this;
+        if (!this.contentMeasured) {
+            contentBox.makeEmpty();
+            for (const object of scene.visibleObjects) contentBox.expandByObject(object);
+            contentBox.expandByObject(db.temporaryObjects);
+            contentBox.expandByObject(db.phantomObjects);
+            this.contentMeasured = true;
+        }
+        this.grid.boundingSphere(this.constructionPlane, clippingBounds);
+        if (!contentBox.isEmpty()) clippingBounds.union(contentBox.getBoundingSphere(contentBounds));
+        this.camera.fitClipping(clippingBounds);
+    }
 
     private lastFrameNumber = -1; // FIXME: move to editor so that when there are multiple viewports, we don't redo work
     render(frameNumber: number) {
@@ -295,6 +338,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
                 helpersPass.enabled = helpers.scene.children.length > 0;
             }
 
+            this.fitClipping();
             const resolution = new THREE.Vector2(domElement.offsetWidth, domElement.offsetHeight);
             signals.renderPrepared.dispatch({ camera, resolution });
             helpersScene.traverse(child => { if (child instanceof Helper) child.update(camera); child.updateMatrixWorld() });
@@ -331,13 +375,19 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
     private addOverlays(scene: THREE.Scene) {
         if (!this.showOverlays) return;
-        const { grid, isOrthoMode, constructionPlane, camera, editor: { helpers } } = this;
+        const { grid, isOrthoMode, constructionPlane, camera, navigationControls, editor: { helpers } } = this;
 
-        scene.fog = new THREE.Fog(this.backgroundColor, 50, 300)
+        // In perspective, a plane's grid fades out toward the horizon
+        if (camera.isPerspectiveCamera) {
+            const distance = camera.position.distanceTo(navigationControls.target);
+            scene.fog = new THREE.Fog(this.backgroundColor, 2 * distance, 6 * distance);
+        } else scene.fog = null;
 
         const overlay = grid.getOverlay(isOrthoMode, constructionPlane, camera);
         scene.add(overlay);
 
+        // The axes reach the grid's edge
+        helpers.axes.scale.setScalar(grid.size / 2);
         helpers.axes.updateMatrixWorld();
         scene.add(helpers.axes);
     }
@@ -372,6 +422,23 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
         renderer.setSize(offsetWidth, offsetHeight);
         composer.setSize(offsetWidth, offsetHeight);
+        if (!this.hasView) this.fitGrid();
+        this.setNeedsRender();
+    }
+
+    // Resizing clears the canvas, so once started it draws again right away instead of showing a blank frame
+    resize(offsetWidth: number, offsetHeight: number) {
+        if (offsetWidth === this.camera.offsetWidth && offsetHeight === this.camera.offsetHeight && this.hasView) return;
+        this.setSize(offsetWidth, offsetHeight);
+        if (this.started) this.render(this.lastFrameNumber + 1);
+    }
+
+    // Whether the view is set up: fitted to the grid once the viewport has a size, unless a document's saved view came first
+    private hasView = false;
+
+    fitGrid() {
+        this.navigationControls.fit(this.grid.boundingSphere(this.constructionPlane));
+        this.hasView = true;
         this.setNeedsRender();
     }
 
@@ -437,7 +504,6 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         this.camera.setMode(this.orthoState.oldCameraMode);
         this.constructionPlane = this.orthoState.oldConstructionPlane;
         this.orthoState = undefined;
-        this.resizeGrid(0);
         this.changed.dispatch();
     }
 
@@ -470,7 +536,6 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             this.navigator.navigate(input, 'keep-camera-position');
             plane = input.cplane;
         }
-        this.grid.applyTo(plane);
         this._constructionPlane = plane;
         this.setNeedsRender();
         this.changed.dispatch();
@@ -560,16 +625,6 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         this.changed.dispatch();
     }
 
-    // One grid size finer (-1) or coarser (+1); 0 re-applies the current size to the construction plane.
-    resizeGrid(direction: -1 | 0 | 1) {
-        this.grid.resizeGrid(direction, this.constructionPlane);
-        this.setNeedsRender();
-        this.changed.dispatch();
-    }
-
-    // In millimeters; also the snap-to-grid increment.
-    get gridSize() { return this.grid.spacing }
-
     navigate(to?: visual.Face | visual.PlaneInstance<visual.Region> | Orientation) {
         if (to === undefined) this._navigate();
         else if (to instanceof visual.Face) this._navigate(this.cplanes.constructionPlaneForFace(to));
@@ -604,7 +659,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
     focus() {
         const { solids, curves, regions, controlPoints, faces, edges } = this.editor.selection.selected;
-        this.navigationControls.focus([...solids, ...curves, ...regions, ...controlPoints, ...edges, ...faces], this.editor.scene.visibleObjects);
+        this.navigationControls.focus([...solids, ...curves, ...regions, ...controlPoints, ...edges, ...faces], this.editor.scene.visibleObjects, this.grid.boundingSphere(this.constructionPlane));
     }
 
     validate() {
@@ -620,6 +675,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     }
 
     restoreFromMemento(m: ViewportMemento): void {
+        this.hasView = true;
         this.camera.restoreFromMemento(m.camera);
         this.navigationControls.target.copy(m.target);
         this.navigationControls.update();
@@ -732,30 +788,30 @@ export default (editor: Editor) => {
             );
         }
 
+        // Follows its own size, whatever changed it (the window, a pane, the panels beside it), as it changes
+        private readonly resizes = new ResizeObserver(() => this.resize());
+
         connectedCallback() {
             editor.viewports.add(this.model);
 
-            const pane = this.parentElement as Pane | null;
-            pane?.signals?.flexScaleChanged.add(this.resize);
+            this.resizes.observe(this);
             editor.signals.windowLoaded.add(this.resize);
-            editor.signals.windowResized.add(this.resize);
 
             if (editor.windowLoaded) this.model.start();
         }
 
         disconnectedCallback() {
+            this.resizes.disconnect();
+            editor.signals.windowLoaded.remove(this.resize);
             editor.viewports.delete(this.model);
             this.model.dispose()
         }
 
-        private debounce?: NodeJS.Timeout;
         resize = () => {
-            if (this.debounce !== undefined) clearTimeout(this.debounce);
-
-            this.debounce = setTimeout(() => {
-                this.model.setSize(this.offsetWidth, this.offsetHeight);
-                this.model.start();
-            }, 30);
+            const { offsetWidth, offsetHeight } = this;
+            if (offsetWidth === 0 || offsetHeight === 0) return;
+            this.model.resize(offsetWidth, offsetHeight);
+            if (editor.windowLoaded) this.model.start();
         }
     }
 

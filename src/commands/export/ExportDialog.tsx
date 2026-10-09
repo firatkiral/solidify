@@ -68,7 +68,7 @@ export class ExportDialog extends AbstractDialog<ExportParams> {
                                 <solidify-tooltip>How far the triangles may stray from the surface.</solidify-tooltip>
                             </label>
                             <div class="fields">
-                                <solidify-number-scrubber name="tolerance" unit="mm" precision={4} min={0.0001} value={tolerance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                                <solidify-number-scrubber name="tolerance" unit="length" precision={4} min={0.0001} value={tolerance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                             </div>
                         </li>
                         <li>

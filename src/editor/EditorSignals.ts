@@ -76,6 +76,8 @@ export class EditorSignals {
     snapsCleared: signals.Signal<Snap[]> = new signals.Signal();
     snapsDisabled: signals.Signal = new signals.Signal();
     snapsEnabled: signals.Signal = new signals.Signal();
+    snapSettingsChanged: signals.Signal = new signals.Signal();
+    settingsChanged: signals.Signal = new signals.Signal();
     clipboardChanged: signals.Signal = new signals.Signal();
     typeDisabled: signals.Signal<DisablableType> = new signals.Signal();
     typeEnabled: signals.Signal<DisablableType> = new signals.Signal();

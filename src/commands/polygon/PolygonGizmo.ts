@@ -7,6 +7,7 @@ import { lineGeometry, MagnitudeStateMachine, NumberHelper, sphereGeometry } fro
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { deg2rad, rad2deg, roundToStep } from "../../util/Conversion";
 import { Helper } from "../../util/Helpers";
+import { fromLengthUnit } from "../../util/Units";
 import { EditPolygonParams, minDiameter } from "./PolygonFactory";
 
 // Sits at the polygon's centre, with its XY in the drawing plane
@@ -129,8 +130,10 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
         this.state.push();
     }
 
+    // Typed in the length unit
     override onKeyPress(cb: (diameter: number) => void, text: KeyboardInterpreter) {
-        const diameter = TextCalculator.calculate(text.state);
+        const typed = TextCalculator.calculate(text.state);
+        const diameter = typed === undefined ? undefined : fromLengthUnit(typed);
         if (diameter === undefined) {
             this.mode = 'pointer';
             return this.state.current;

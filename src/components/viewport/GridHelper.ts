@@ -1,34 +1,38 @@
 import * as THREE from 'three';
 import { PlaneDatabase } from '../../editor/PlaneDatabase';
 import { ConstructionPlane } from '../../editor/snaps/ConstructionPlaneSnap';
-import { FloorHelper, OrthoModeGrid, CustomGrid } from './FloorHelper';
+import { CustomGrid, FloorHelper, GridSpec, OrthoModeGrid } from './FloorHelper';
 
-const floorSize = 120;
-const planeGridSize = floorSize * 10;
+// The most lines a grid has each way; a finer step widens to size / maxGridLines
+export const maxGridLines = 2000;
 
-// Grid sizes in millimeters: the spacing of the construction plane grid's lines, which is also the snap-to-grid increment.
-// Each one divides the grids' half-widths evenly, so grid lines always pass through the plane's origin, like the snap points.
-export const gridSizes: readonly number[] = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
-
+// The grid drawn on the floor, on other construction planes, and behind orthographic views. Its size and step come from
+// Settings › Units & grid; snapping to the grid has a step of its own (SnapManager.gridStep).
 export class GridHelper {
-    private size = 0.1;
     private floor!: FloorHelper;
     private gridBackground!: OrthoModeGrid;
     private customGrid!: CustomGrid;
 
-    constructor(private readonly color1: THREE.Color, private readonly color2: THREE.Color, private readonly backgroundColor: THREE.Color) {
+    constructor(private spec: GridSpec, private readonly color1: THREE.Color, private readonly color2: THREE.Color, private readonly backgroundColor: THREE.Color) {
         this.build();
     }
 
-    // Every grid, the floor included, draws a line every size (thicker every 10). The floor grows with the size so coarse
-    // grids still cover enough of it.
     private build() {
-        const { size, color1, color2, backgroundColor } = this;
-        const planeDivisions = Math.round(planeGridSize / size);
-        this.gridBackground = new OrthoModeGrid(planeGridSize, planeDivisions, color1, color2, backgroundColor);
-        this.customGrid = new CustomGrid(planeGridSize, planeDivisions, color1, color2, backgroundColor);
-        const floorExtent = Math.max(floorSize, floorSize * 10 * size);
-        this.floor = new FloorHelper(floorExtent, Math.round(floorExtent / size), color1, color2);
+        const { spec, color1, color2, backgroundColor } = this;
+        this.gridBackground = new OrthoModeGrid(spec, color1, color2, backgroundColor);
+        this.customGrid = new CustomGrid(spec, color1, color2);
+        this.floor = new FloorHelper(spec, color1, color2);
+    }
+
+    // Rebuilds the grids when the size, step or heavier-line rhythm changed
+    setSpec(spec: GridSpec) {
+        const { size, step, majorEvery } = this.spec;
+        if (spec.size === size && spec.step === step && spec.majorEvery === majorEvery) return;
+        this.spec = spec;
+        this.gridBackground.dispose();
+        this.customGrid.dispose();
+        this.floor.dispose();
+        this.build();
     }
 
     getOverlay(isOrthoMode: boolean, constructionPlane: ConstructionPlane, camera: THREE.Camera): THREE.Object3D {
@@ -50,28 +54,12 @@ export class GridHelper {
         }
     }
 
-    // One size finer (-1) or coarser (+1) along gridSizes; 0 only re-applies the size to the plane.
-    resizeGrid(direction: -1 | 0 | 1, constructionPlane: ConstructionPlane) {
-        const index = gridSizes.indexOf(this.size);
-        const size = gridSizes[Math.min(gridSizes.length - 1, Math.max(0, index + direction))];
-        if (size !== this.size) {
-            this.size = size;
-            this.gridBackground.dispose();
-            this.customGrid.dispose();
-            this.floor.dispose();
-            this.build();
-        }
-        this.applyTo(constructionPlane);
+    // Around the grid on a plane, e.g. to fit the view to it or to keep it inside the camera's clipping
+    boundingSphere(constructionPlane: ConstructionPlane, into = new THREE.Sphere()) {
+        into.center.copy(constructionPlane.p);
+        into.radius = this.spec.size / 2 * Math.SQRT2;
+        return into;
     }
 
-    // Make the plane snap to this grid's spacing (PlaneSnap.snapToGrid steps by 1 / (10 * gridFactor)).
-    applyTo(constructionPlane: ConstructionPlane) {
-        constructionPlane.gridFactor = Math.min(10, 0.1 / this.size);
-    }
-
-    // Distance between grid lines in millimeters, which is also the snap-to-grid increment.
-    get spacing() { return this.size }
+    get size() { return this.spec.size }
 }
-
-const Z = new THREE.Vector3(0, 0, 1);
-Object.freeze(Z);

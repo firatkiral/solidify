@@ -19,9 +19,9 @@ export class MoveDialog extends AbstractDialog<MoveParams> {
                     <li>
                         <label for="move">XYZ</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="move.x" value={move.x} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber name="move.y" value={move.y} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber name="move.z" value={move.z} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="move.x" value={move.x} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="move.y" value={move.y} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="move.z" value={move.z} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

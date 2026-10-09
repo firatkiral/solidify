@@ -30,7 +30,7 @@ export class ExtensionShellDialog extends AbstractDialog<ExtensionShellParams> {
                     <li>
                         <label for="distance">Distance</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance" unit="length" value={distance} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

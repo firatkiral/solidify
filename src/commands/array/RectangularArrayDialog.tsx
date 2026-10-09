@@ -25,7 +25,7 @@ export class RectangularArrayDialog extends AbstractDialog<RectangularArrayParam
                     <li>
                         <label for="distance1">Distance 1</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance1" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance1" unit="length" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
@@ -37,7 +37,7 @@ export class RectangularArrayDialog extends AbstractDialog<RectangularArrayParam
                     <li>
                         <label for="distance2">Distance 2</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance2" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance2" unit="length" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>

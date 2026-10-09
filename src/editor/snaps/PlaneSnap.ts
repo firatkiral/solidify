@@ -1,14 +1,14 @@
 import { X, Y, Z, origin } from "../../util/Constants";
 import * as THREE from "three";
 import c3d from '../../kernel/kernel';
-import { point2point, vec2vec } from "../../util/Conversion";
+import { point2point, roundToStep, vec2vec } from "../../util/Conversion";
 import { AxisSnap } from "./AxisSnap";
 import { GridLike, RaycastableSnap, Snap } from "./Snap";
 
 const material = new THREE.MeshBasicMaterial();
 material.side = THREE.DoubleSide;
 
-export class PlaneSnap extends RaycastableSnap implements GridLike {
+export class PlaneSnap extends RaycastableSnap {
     static geometry = new THREE.PlaneGeometry(10000, 10000, 2, 2);
 
     readonly snapper: THREE.Object3D = new THREE.Mesh(PlaneSnap.geometry, material);
@@ -75,14 +75,6 @@ export class PlaneSnap extends RaycastableSnap implements GridLike {
         this.init();
     }
 
-    private _gridFactor = 1;
-    get gridFactor() { return this._gridFactor; }
-    set gridFactor(factor: number) {
-        if (factor > 10 || factor < 0)
-            throw new Error("invalid precondition");
-        this._gridFactor = factor;
-    }
-
     private readonly y = new THREE.Vector3();
     project(intersection: THREE.Vector3 | THREE.Intersection, snapToGrid?: GridLike) {
         const point = intersection instanceof THREE.Vector3 ? intersection : intersection.point;
@@ -92,23 +84,19 @@ export class PlaneSnap extends RaycastableSnap implements GridLike {
         return { position, orientation };
     }
 
-    snapToGrid(position: THREE.Vector3, compat: Snap) {
+    // Steps position by step millimeters along the plane's axes from its origin
+    snapToGrid(position: THREE.Vector3, compat: Snap, step: number) {
         if (compat instanceof PlaneSnap && compat !== this) return position;
         const { plane } = this;
         if (compat instanceof AxisSnap && !compat.isCoplanar(plane)) {
-            // A line leaving the plane, e.g. a box's height: step the distance from the line's origin by the grid size.
-            const step = 1 / (this.gridFactor * 10);
+            // A line leaving the plane, e.g. a box's height: step the distance from the line's origin.
             const distance = position.clone().sub(compat.o).dot(compat.n);
-            return position.copy(compat.n).multiplyScalar(Math.round(distance / step) * step).add(compat.o);
+            return position.copy(compat.n).multiplyScalar(roundToStep(distance, step)).add(compat.o);
         }
 
-        let { gridFactor, basis, basisInv } = this;
-        gridFactor *= 10;
+        const { basis, basisInv } = this;
         position.applyMatrix4(basisInv);
-        position.set(
-            Math.round(position.x * gridFactor) / gridFactor,
-            Math.round(position.y * gridFactor) / gridFactor,
-            0);
+        position.set(roundToStep(position.x, step), roundToStep(position.y, step), 0);
         position.applyMatrix4(basis);
         return position;
     }
@@ -137,3 +125,11 @@ export class PlaneSnap extends RaycastableSnap implements GridLike {
     isCompatibleWithSnap(_: Snap) { return true; }
 }
 
+// A plane's grid with the snap step: what snapping to the grid projects free points with
+export class PlaneGrid implements GridLike {
+    constructor(private readonly plane: { snapToGrid(position: THREE.Vector3, compat: Snap, step: number): THREE.Vector3 }, private readonly step: number) { }
+
+    snapToGrid(position: THREE.Vector3, compat: Snap) {
+        return this.plane.snapToGrid(position, compat, this.step);
+    }
+}

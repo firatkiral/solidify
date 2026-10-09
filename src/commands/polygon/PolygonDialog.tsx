@@ -26,7 +26,7 @@ export class PolygonDialog extends AbstractDialog<EditPolygonParams> {
                     <li>
                         <label for="diameter">Diameter</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="diameter" unit="mm" min={0.01} value={diameter} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="diameter" unit="length" min={0.01} value={diameter} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

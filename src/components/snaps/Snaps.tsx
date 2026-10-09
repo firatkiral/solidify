@@ -2,8 +2,8 @@ import { render } from 'preact';
 import { PointPickerModel } from "../../command/point-picker/PointPickerModel";
 import { Editor } from '../../editor/Editor';
 import { Snap } from "../../editor/snaps/Snap";
+import { formatStep } from '../../util/Units';
 import * as visual from '../../visual_model/VisualModel';
-import { Viewport } from '../viewport/Viewport';
 
 const objectLayers = [
     { layer: visual.Layers.Face, icon: 'face', name: "Face" },
@@ -11,7 +11,6 @@ const objectLayers = [
     { layer: visual.Layers.CurveEdge, icon: 'edge', name: "Edge" },
 ];
 
-const millimeters = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'millimeter', unitDisplay: 'short', maximumFractionDigits: 4 });
 const degrees = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'degree', unitDisplay: 'narrow', maximumFractionDigits: 0 });
 
 const title = "py-0.5 px-2 mb-4 text-xs font-bold truncate text-neutral-100";
@@ -20,14 +19,14 @@ export default (editor: Editor) => {
     class Anon extends HTMLElement {
         private snaps = new Set<Snap>();
         private pointPicker?: PointPickerModel;
-        private viewport?: Viewport;
 
         connectedCallback() {
             editor.signals.snapsAdded.add(this.add);
             editor.signals.snapsCleared.add(this.delete);
             editor.signals.snapsEnabled.add(this.render);
             editor.signals.snapsDisabled.add(this.render);
-            editor.signals.viewportActivated.add(this.render);
+            editor.signals.snapSettingsChanged.add(this.render);
+            editor.signals.settingsChanged.add(this.render);
             this.render();
         }
 
@@ -36,8 +35,8 @@ export default (editor: Editor) => {
             editor.signals.snapsCleared.remove(this.delete);
             editor.signals.snapsEnabled.remove(this.render);
             editor.signals.snapsDisabled.remove(this.render);
-            editor.signals.viewportActivated.remove(this.render);
-            this.viewport?.changed.remove(this.render);
+            editor.signals.snapSettingsChanged.remove(this.render);
+            editor.signals.settingsChanged.remove(this.render);
         }
 
         add = (info: { snaps: Snap[], pointPicker: PointPickerModel }) => {
@@ -52,30 +51,20 @@ export default (editor: Editor) => {
             this.render();
         }
 
-        // The grid size shown is the active viewport's, so follow that viewport's changes (e.g. shift-wheel resizing).
-        private watchActiveViewport() {
-            const viewport = editor.activeViewport;
-            if (viewport === this.viewport) return;
-            this.viewport?.changed.remove(this.render);
-            viewport?.changed.add(this.render);
-            this.viewport = viewport;
-        }
-
         // Toggles show what is in effect: their setting, or on while Shift/Ctrl is held. Clicking one changes the setting.
         render = () => {
-            this.watchActiveViewport();
             const { snaps } = editor;
-            const { viewport, pointPicker } = this;
+            const { pointPicker } = this;
             render(
                 <div class="p-4">
                     <h1 class={title}>Snaps</h1>
                     <div class="flex items-center px-2 space-x-1">
                         {this.toggle('snap-grid', snaps.snapToGrid, "Snap points to the grid (hold Shift)", this.toggleGrid)}
-                        {this.stepper(viewport !== undefined ? millimeters.format(viewport.gridSize) : '', "Grid size", true, this.shrinkGrid, this.growGrid)}
+                        {this.stepper(formatStep(snaps.gridStep), "Snap step on the grid", snaps.snapToGrid, () => this.stepGrid(-1), () => this.stepGrid(1))}
                     </div>
                     <div class="flex items-center px-2 mt-2 space-x-1">
                         {this.toggle('snap-gizmo', snaps.gizmoSnapping, "Step lengths and moves when dragging handles (hold Shift)", this.toggleGizmo)}
-                        {this.stepper(millimeters.format(snaps.lengthStep), "Handle drag step for lengths", snaps.gizmoSnapping, () => this.stepLength(-1), () => this.stepLength(1))}
+                        {this.stepper(formatStep(snaps.lengthStep), "Handle drag step for lengths", snaps.gizmoSnapping, () => this.stepLength(-1), () => this.stepLength(1))}
                     </div>
                     <div class="flex items-center px-2 mt-2 space-x-1">
                         {this.toggle('snap-angle', snaps.angleSnapping, "Step angles when dragging handles (hold Shift)", this.toggleAngle)}
@@ -112,24 +101,24 @@ export default (editor: Editor) => {
             </button>
         }
 
-        // Dimmed while its toggle is off, but still adjustable.
+        // Disabled while its snapping is off (holding Shift turns it on)
         private stepper(value: string, tooltip: string, active: boolean, minus: () => void, plus: () => void) {
-            return <div class={`flex flex-grow min-w-0 h-7 rounded-md border border-white/[0.06] text-neutral-300 ${active ? '' : 'opacity-50'}`}>
-                <button class="flex flex-none items-center px-1 rounded-l-md border-r border-white/[0.06] hover:bg-white/20" onClick={minus}>
+            return <div class={`flex flex-grow min-w-0 h-7 rounded-md border border-white/[0.06] text-neutral-300 ${active ? '' : 'opacity-40'}`} aria-disabled={!active}>
+                <button class="flex flex-none items-center px-1 rounded-l-md border-r border-white/[0.06] hover:bg-white/20 disabled:pointer-events-none" disabled={!active} onClick={minus}>
                     <solidify-icon name="minus"></solidify-icon>
                 </button>
                 <div class="flex flex-grow justify-center items-center min-w-0 text-xs">
                     <solidify-tooltip placement="left">{tooltip}</solidify-tooltip>
                     <span class="truncate">{value}</span>
                 </div>
-                <button class="flex flex-none items-center px-1 rounded-r-md border-l border-white/[0.06] hover:bg-white/20" onClick={plus}>
+                <button class="flex flex-none items-center px-1 rounded-r-md border-l border-white/[0.06] hover:bg-white/20 disabled:pointer-events-none" disabled={!active} onClick={plus}>
                     <solidify-icon name="plus"></solidify-icon>
                 </button>
             </div>
         }
 
         toggleLayer = (layer: visual.Layers) => {
-            editor.snaps.layers.toggle(layer);
+            editor.snaps.toggleLayer(layer);
             this.render();
         }
 
@@ -148,18 +137,9 @@ export default (editor: Editor) => {
             this.render();
         }
 
-        shrinkGrid = () => editor.activeViewport?.resizeGrid(-1);
-        growGrid = () => editor.activeViewport?.resizeGrid(1);
-
-        private stepLength(direction: 1 | -1) {
-            editor.snaps.stepLengthStep(direction);
-            this.render();
-        }
-
-        private stepAngle(direction: 1 | -1) {
-            editor.snaps.stepAngleStep(direction);
-            this.render();
-        }
+        private stepGrid(direction: 1 | -1) { editor.snaps.stepGridStep(direction) }
+        private stepLength(direction: 1 | -1) { editor.snaps.stepLengthStep(direction) }
+        private stepAngle(direction: 1 | -1) { editor.snaps.stepAngleStep(direction) }
 
         toggleSnap = (snap: Snap) => {
             this.pointPicker!.toggle(snap);

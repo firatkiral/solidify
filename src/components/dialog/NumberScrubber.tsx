@@ -2,6 +2,7 @@ import { CompositeDisposable, Disposable } from 'event-kit';
 import { render } from 'preact';
 import { Editor } from '../../editor/Editor';
 import * as THREE from "three";
+import { lengthUnit, lengthUnits, parseLength } from '../../util/Units';
 
 // Time thresholds are in milliseconds, distance thresholds are in pixels.
 const consummationTimeThreshold = 200; // once the mouse is down at least this long the drag is consummated
@@ -47,7 +48,22 @@ export default (editor: Editor) => {
             this.toggle = this.toggle.bind(this);
         }
 
-        connectedCallback() { this.render() }
+        connectedCallback() {
+            editor.signals.settingsChanged.add(this.render);
+            this.render();
+        }
+
+        disconnectedCallback() {
+            editor.signals.settingsChanged.remove(this.render);
+        }
+
+        // With unit="length", the value (and min, max, default and disabled) is in millimeters, while the field shows,
+        // drags and takes typing in the length unit. Typing may name a unit of its own, e.g. 2 in.
+        private get isLength() { return this.getAttribute('unit') === 'length' }
+        private get millimetersPerShown() { return this.isLength ? lengthUnits[lengthUnit()].millimeters : 1 }
+        // Decimals shown: precision - 1, and for a length, a few more in units larger than millimeters
+        private get digits() { return this.precision - 1 + (this.isLength ? lengthUnits[lengthUnit()].digits - lengthUnits.mm.digits : 0) }
+        private get shownValue() { return +this.getAttribute('value')! / this.millimetersPerShown }
 
         toggle(e: Event) {
             e.stopPropagation();
@@ -68,17 +84,20 @@ export default (editor: Editor) => {
             this.render();
         }
 
+        // value is as shown
         scrub(value: number) {
-            this.setAttribute("value", String(this.trunc(value)));
+            const truncated = this.trunc(value);
+            this.setAttribute("value", String(truncated));
             this.render();
-            const event = new ChangeEvent('scrub', value);
+            const event = new ChangeEvent('scrub', truncated);
             this.dispatchEvent(event);
         }
 
+        // From a shown value to the value, cut to the decimals shown and kept within min and max
         private trunc(value: number) {
-            const { min, max, precision } = this;
-            const exp = Math.pow(10, precision - 1);
-            value = Math.trunc(exp * value) / exp;
+            const { min, max, digits, millimetersPerShown } = this;
+            const exp = Math.pow(10, digits);
+            value = Math.trunc(exp * value) / exp * millimetersPerShown;
             value = Math.max(min, Math.min(max, value));
             return value;
         }
@@ -89,10 +108,10 @@ export default (editor: Editor) => {
 
             const value = e.target.value;
 
-            let num = Number(value);
-            if (Number.isFinite(num)) {
-                num = this.trunc(num);
-                this.setAttribute('value', value);
+            let num = this.isLength ? parseLength(value) : Number(value);
+            if (num !== undefined && Number.isFinite(num)) {
+                num = Math.max(this.min, Math.min(this.max, num));
+                this.setAttribute('value', String(num));
                 const event = new ChangeEvent('change', num);
                 this.dispatchEvent(event);
             }
@@ -132,7 +151,7 @@ export default (editor: Editor) => {
                     break;
                 }
                 case 'dragging':
-                    const { precision } = this;
+                    const precision = this.digits + 1;
                     const { downEvent } = this.state;
                     if (e.pointerId !== downEvent.pointerId) return;
 
@@ -166,8 +185,7 @@ export default (editor: Editor) => {
                     // (will focus later with the onCancel: onClick)
                     e.preventDefault();
 
-                    const stringValue = this.getAttribute('value')!;
-                    const startValue = +stringValue;
+                    const startValue = this.shownValue;
 
                     const disposables = new CompositeDisposable();
 
@@ -231,16 +249,15 @@ export default (editor: Editor) => {
         }
 
         render() {
-            const stringValue = this.getAttribute('value')!;
-            // The unit attribute (e.g. "mm" or "°") is shown after the value; typing edits the bare number
-            const unit = this.getAttribute('unit');
+            // The unit attribute ("length" for the length unit, or e.g. "°") is shown after the value; typing edits the bare number
+            const attribute = this.getAttribute('unit');
+            const unit = attribute === 'length' ? lengthUnit() : attribute;
             const suffix = unit === null || this.isDisabled ? '' : unit === '°' ? unit : `\u00a0${unit}`;
-            const startValue = +stringValue;
-            const precisionDigits = this.precision - 1;
-            const displayValue = startValue.toFixed(precisionDigits);
-            const decimalIndex = stringValue.lastIndexOf(".");
-            const rawPrecisionDigits = decimalIndex >= 0 ? stringValue.length - decimalIndex - 1 : 0;
-            const full = this.isDisabled ? '' : `${displayValue}${precisionDigits > 0 && precisionDigits < rawPrecisionDigits ? '...' : ''}`;
+            const shown = this.shownValue;
+            const { digits } = this;
+            const displayValue = shown.toFixed(digits);
+            const hidesDigits = digits > 0 && Math.abs(shown - +displayValue) > 1e-9 * Math.max(1, Math.abs(shown));
+            const full = this.isDisabled ? '' : `${displayValue}${hidesDigits ? '...' : ''}`;
 
             const stringDisabled = this.getAttribute('disabled');
             const disabled = stringDisabled !== null ? +stringDisabled : undefined;

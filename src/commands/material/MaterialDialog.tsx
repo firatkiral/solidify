@@ -103,7 +103,7 @@ export class MaterialDialog extends AbstractDialog<MaterialParams> {
                     <li>
                         <label for="thickness">Thickness</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="thickness" value={thickness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="thickness" value={thickness} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);

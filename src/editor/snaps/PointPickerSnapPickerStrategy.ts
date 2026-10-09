@@ -5,7 +5,7 @@ import { Viewport } from "../../components/viewport/Viewport";
 import * as visual from "../../visual_model/VisualModel";
 import { AxisSnap } from "./AxisSnap";
 import { ScreenSpaceConstructionPlaneSnap } from "./ConstructionPlaneSnap";
-import { PlaneSnap } from "./PlaneSnap";
+import { PlaneGrid, PlaneSnap } from "./PlaneSnap";
 import { ChoosableSnap, GridLike } from "./Snap";
 import { SnapManagerGeometryCache } from "./SnapManagerGeometryCache";
 import { SnapResult } from "./SnapPicker";
@@ -25,13 +25,13 @@ export class PointPickerSnapPickerStrategy extends SnapPickerStrategy {
         this.toggleFaceLayer(raycaster, viewport);
     }
 
-    intersectConstructionPlane(snapToGrid: boolean, pointPicker: PointPickerModel, raycaster: THREE.Raycaster, viewport: Viewport): (SnapResult & { distance: number })[] {
+    intersectConstructionPlane(gridStep: number | undefined, pointPicker: PointPickerModel, raycaster: THREE.Raycaster, viewport: Viewport): (SnapResult & { distance: number })[] {
         const constructionPlane = pointPicker.actualConstructionPlaneGiven(viewport.constructionPlane, viewport.isOrthoMode);
         const intersections = raycaster.intersectObject(constructionPlane.snapper);
         if (intersections.length === 0) return [];
         const approximatePosition = intersections[0].point;
         const distance = intersections[0].distance;
-        const grid: GridLike | undefined = snapToGrid ? constructionPlane : undefined;
+        const grid: GridLike | undefined = gridStep !== undefined ? new PlaneGrid(constructionPlane, gridStep) : undefined;
         const { position: precisePosition, orientation } = constructionPlane.project(approximatePosition, grid);
         return [{ snap: constructionPlane, position: precisePosition, cursorPosition: precisePosition, orientation, cursorOrientation: orientation, distance }];
     }
@@ -44,12 +44,12 @@ export class PointPickerSnapPickerStrategy extends SnapPickerStrategy {
         return [{ snap, orientation: orientation, position, cursorPosition: position, cursorOrientation: orientation }];
     }
 
-    applyRestrictions(snapToGrid: boolean, pointPicker: PointPickerModel, viewport: Viewport, input: SnapResult[]): SnapResult[] {
+    applyRestrictions(gridStep: number | undefined, pointPicker: PointPickerModel, viewport: Viewport, input: SnapResult[]): SnapResult[] {
         const constructionPlane = viewport.constructionPlane;
         const restriction = pointPicker.restrictionFor(constructionPlane, viewport.isOrthoMode);
         if (restriction === undefined) return input.filter(info => constructionPlane.isCompatibleWithSnap(info.snap));
 
-        const grid: GridLike | undefined = snapToGrid ? constructionPlane : undefined;
+        const grid: GridLike | undefined = gridStep !== undefined ? new PlaneGrid(constructionPlane, gridStep) : undefined;
 
         const output = [];
         for (const info of input) {

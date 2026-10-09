@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CameraMemento, MementoOriginator } from "../../editor/History";
 
+// Until fitClipping knows what there is to see
 const near = 10e-3;
 const far = 10e4;
 const frustumSize = 6;
@@ -9,7 +10,8 @@ const aspect = 1;
 
 export type CameraMode = 'orthographic' | 'perspective';
 
-const ZZZ = new THREE.Vector3(0, 0, 1).multiplyScalar(100); // FIXME: this should be a function of the GeometryDatabase LOD (mesh_precision_distance)
+// Perspective depth precision falls with far / near, so near stays within this ratio of far
+const depthRange = 2000;
 
 export class ProxyCamera extends THREE.Camera implements MementoOriginator<CameraMemento> {
     readonly orthographic = makeOrthographicCamera();
@@ -48,16 +50,28 @@ export class ProxyCamera extends THREE.Camera implements MementoOriginator<Camer
         orthographic.top = frustumSize / 2;
         orthographic.bottom = - frustumSize / 2;
 
-        perspective.near = near;
-        perspective.far = far;
-        orthographic.near = near;
-        orthographic.far = far;
+        this.updateProjectionMatrix();
+    }
 
-        // Set orthographic zoom to something that corresponds to the effective field of view of the perspective camera
-        const zoom = (orthographic.top - orthographic.bottom) * Math.atan(Math.PI * perspective.getEffectiveFOV() / 360) / 3.1;
-        orthographic.zoom = zoom;
+    // How far back from the target the orthographic camera's eye sits; fitClipping keeps everything in front of it
+    private orthographicDistance = 100;
+
+    // Fits near and far around what there is to see, e.g. the grid and the objects: everything in bounds is drawn, with
+    // as much depth precision as that leaves.
+    fitClipping(bounds: THREE.Sphere) {
+        const { orthographic, perspective, target, position } = this;
+
+        const behindTarget = bounds.center.distanceTo(target) + bounds.radius;
+        this.orthographicDistance = Math.max(behindTarget * 1.1, near);
+        orthographic.near = 0;
+        orthographic.far = 2 * this.orthographicDistance;
+
+        const farthest = position.distanceTo(bounds.center) + bounds.radius;
+        perspective.far = Math.max(farthest * 1.1, near);
+        perspective.near = Math.max(1e-4, Math.min(perspective.far / depthRange, position.distanceTo(target) / 10));
 
         this.updateProjectionMatrix();
+        this.updateMatrixWorld();
     }
 
     setViewOffset(fullWidth: number, fullHeight: number, x: number, y: number, width: number, height: number) {
@@ -118,8 +132,8 @@ export class ProxyCamera extends THREE.Camera implements MementoOriginator<Camer
         this.updateProjectionMatrix();
     }
 
-    get near() { return this.perspective.near }
-    get far() { return this.perspective.far }
+    get near() { return this.isPerspectiveCamera ? this.perspective.near : this.orthographic.near }
+    get far() { return this.isPerspectiveCamera ? this.perspective.far : this.orthographic.far }
     get aspect() { return this.perspective.aspect }
 
     getEffectiveFOV() { return this.perspective.getEffectiveFOV() }
@@ -152,13 +166,14 @@ export class ProxyCamera extends THREE.Camera implements MementoOriginator<Camer
         const { _z, quaternion, target, matrixWorld, matrixWorldInverse } = this;
         super.updateMatrixWorld(force);
         if (this.isOrthographicCamera) {
-            const pos = _z.copy(ZZZ).applyQuaternion(quaternion).add(target);
+            const pos = _z.set(0, 0, this.orthographicDistance).applyQuaternion(quaternion).add(target);
             matrixWorld.setPosition(pos);
         }
         matrixWorldInverse.copy(matrixWorld).invert();
     }
 }
 
+// Its zoom is set by fitting the view (Viewport.fitGrid) or by a document's saved view, and kept when resizing
 export function makeOrthographicCamera() {
     return new THREE.OrthographicCamera(-frustumSize / 2, frustumSize / 2, frustumSize / 2, -frustumSize / 2, near, far);
 }

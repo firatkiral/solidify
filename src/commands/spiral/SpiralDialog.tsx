@@ -19,13 +19,13 @@ export class SpiralDialog extends AbstractDialog<SpiralParams> {
                     <li>
                         <label for="step">Step</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="step" value={step} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="step" value={step} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>
                         <label for="step">Radius</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="radius" unit="mm" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="length" value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li>

@@ -23,7 +23,7 @@ export class SphereDialog extends AbstractDialog<EditSphereParams> {
                     <li>
                         <label for="radius">Radius</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="radius" unit="mm" min={0.01} value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="length" min={0.01} value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

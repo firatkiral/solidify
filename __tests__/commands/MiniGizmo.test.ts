@@ -214,12 +214,12 @@ describe(LengthGizmo, () => {
             return value;
         }
 
-        expect(drag(0.37, false)).toBeCloseTo(0.37);
-        expect(drag(0.37, true)).toBe(0.4);
+        expect(drag(37, false)).toBeCloseTo(37);
+        expect(drag(37, true)).toBe(40);
         editor.snaps.gizmoSnapping = true;
-        editor.snaps.stepLengthStep(1); // 0.2
-        expect(drag(0.37, false)).toBe(0.4);
-        expect(drag(0.29, false)).toBe(0.2);
+        editor.snaps.stepLengthStep(1); // 20
+        expect(drag(37, false)).toBe(40);
+        expect(drag(29, false)).toBe(20);
         editor.snaps.gizmoSnapping = false;
         editor.snaps.stepLengthStep(-1);
     })
@@ -227,13 +227,13 @@ describe(LengthGizmo, () => {
     test("steps count from the value the drag started at", () => {
         const intersector = { raycast: jest.fn(), snap: jest.fn() };
         const cb = jest.fn();
-        gizmo.value = 0.37;
+        gizmo.value = 37;
         gizmo.onPointerEnter(intersector);
         intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3() })
         gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
-        intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 0.23, 0) })
+        intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 23, 0) })
         gizmo.onPointerMove(cb, intersector, { viewport, event: new MouseEvent('move', { shiftKey: true }) } as MovementInfo);
-        expect(gizmo.value).toBeCloseTo(0.57);
+        expect(gizmo.value).toBeCloseTo(57);
     })
 
     test("ctrl key uses snaps", () => {

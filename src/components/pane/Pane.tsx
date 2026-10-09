@@ -1,4 +1,5 @@
 import signals from 'signals';
+import { ConfigFiles } from '../../startup/ConfigFiles';
 
 interface PaneSignals {
     flexScaleChanged: signals.Signal<number>;
@@ -69,6 +70,7 @@ export class PaneResizeHandle extends HTMLElement {
     onPointerUp(e: PointerEvent) {
         document.removeEventListener('pointermove', this.onPointerMove);
         document.removeEventListener('pointerup', this.onPointerUp);
+        ConfigFiles.updateSetting('Layout', 'panes', allPanes().map(pane => pane.flexGrow));
     }
 
     onPointerMove(e: PointerEvent) {
@@ -107,3 +109,15 @@ export class PaneResizeHandle extends HTMLElement {
     }
 }
 customElements.define('solidify-pane-resize-handle', PaneResizeHandle);
+
+// The panes' sizes are kept between sessions: saved when a resize handle is let go, and put back as the app starts,
+// unless the layout has a different number of panes than when they were saved.
+function allPanes() {
+    return Array.from(document.querySelectorAll<Pane | PaneAxis>('solidify-pane, solidify-pane-axis'));
+}
+
+export function restorePaneSizes(sizes: readonly number[]) {
+    const panes = allPanes();
+    if (panes.length !== sizes.length || !sizes.every(size => Number.isFinite(size) && size >= 0)) return;
+    panes.forEach((pane, i) => pane.flexGrow = sizes[i]);
+}

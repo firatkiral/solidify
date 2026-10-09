@@ -5,6 +5,7 @@ import { write3mf, writeObj, writeStl } from '../../editor/printing/MeshFormats'
 import { bounds, Bounds, PrintMesh, report, weld } from '../../editor/printing/PrintMesh';
 import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
+import { unitSystem } from '../../util/Units';
 
 export enum ExportFormat { STL, ThreeMF, OBJ, STEP }
 export enum ExportScope { Selection, Visible, All }
@@ -47,7 +48,8 @@ export class ExportFactory extends GeometryFactory implements ExportParams {
     quality = ExportQuality.Normal;
     tolerance = qualities[ExportQuality.Normal].tolerance;
     angle = qualities[ExportQuality.Normal].angle;
-    units = ExportUnits.Millimeters;
+    // Inches when lengths show in inches or feet
+    units = unitSystem() === 'imperial' ? ExportUnits.Inches : ExportUnits.Millimeters;
     objects = ExportObjects.Separate;
 
     hasSelection = false;

@@ -1,5 +1,7 @@
 import c3d from '../../kernel/kernel';
 import { GeometryFactory } from '../../command/GeometryFactory';
+import { unit } from '../../util/Conversion';
+import { fromLengthUnit } from '../../util/Units';
 
 export interface CharacterCurveParams {
     tMin: number;
@@ -30,6 +32,11 @@ export default class CharacterCurveFactory extends GeometryFactory {
 
         const placement = new c3d.Placement3D();
         const curve = new c3d.CharacterCurve3D(x, y, z, c3d.LocalSystemType3D.CartesianSystem, placement, tMin, tMax);
+        // The formulas give lengths in the length unit
+        const scale = unit(fromLengthUnit(1));
+        const matrix = new c3d.Matrix3D();
+        matrix.Scale(scale, scale, scale);
+        curve.Transform(matrix);
         return new c3d.SpaceInstance(curve);
     }
 }

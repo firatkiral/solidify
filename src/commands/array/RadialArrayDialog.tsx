@@ -50,7 +50,7 @@ export class RadialArrayDialog extends AbstractDialog<RadialArrayParams> {
                     <li>
                         <label for="step1">Repeat distance</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="step1" value={step1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="step1" unit="length" value={step1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul></>, this);

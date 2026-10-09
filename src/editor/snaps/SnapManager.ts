@@ -16,6 +16,10 @@ import { SnapIdentityMap } from "./SnapIdentityMap";
 import { SnapManagerGeometryCache } from "./SnapManagerGeometryCache";
 import { Scene } from "../Scene";
 import { X, Y, Z } from "../../util/Constants";
+import { fromLengthUnit, unitSystem, unitSystems } from "../../util/Units";
+import { Settings } from "../../startup/ConfigFiles";
+
+type SnapSettings = Settings['Snaps'];
 
 export enum SnapType {
     Basic = 1 << 0,
@@ -60,28 +64,64 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
     }
 
     private _snapToGrid = false;
-    set snapToGrid(snapToGrid: boolean) { this._snapToGrid = snapToGrid }
+    set snapToGrid(snapToGrid: boolean) { this._snapToGrid = snapToGrid; this.settingsChanged() }
     get snapToGrid() { return this._snapToGrid || this.heldGrid }
     get snapToGridSetting() { return this._snapToGrid }
 
+    // Snapping to the grid steps points by gridStep in millimeters, along the construction plane's axes from its origin.
     // Dragging a gizmo handle steps its value: lengths (and moves) by lengthStep in millimeters, angles by angleStep in degrees.
     // Gizmo drags read Shift straight off the pointer event, since the Shift hold below only applies while picking points.
     private _gizmoSnapping = false;
-    set gizmoSnapping(gizmoSnapping: boolean) { this._gizmoSnapping = gizmoSnapping }
+    set gizmoSnapping(gizmoSnapping: boolean) { this._gizmoSnapping = gizmoSnapping; this.settingsChanged() }
     get gizmoSnapping() { return this._gizmoSnapping || this.heldGrid }
     get gizmoSnappingSetting() { return this._gizmoSnapping }
 
     private _angleSnapping = false;
-    set angleSnapping(angleSnapping: boolean) { this._angleSnapping = angleSnapping }
+    set angleSnapping(angleSnapping: boolean) { this._angleSnapping = angleSnapping; this.settingsChanged() }
     get angleSnapping() { return this._angleSnapping || this.heldGrid }
     get angleSnappingSetting() { return this._angleSnapping }
 
-    static readonly lengthSteps: readonly number[] = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
+    // The length steps follow the length unit's system (see Units.ts); resetSteps puts them on one of the length unit.
+    static get lengthSteps(): readonly number[] { return unitSystems[unitSystem()].steps }
     static readonly angleSteps: readonly number[] = [1, 5, 10, 15, 30, 45, 90];
-    lengthStep = 0.1;
+    gridStep = fromLengthUnit(1);
+    lengthStep = fromLengthUnit(1);
     angleStep = 5;
-    stepLengthStep(direction: 1 | -1) { this.lengthStep = nextOnLadder(SnapManager.lengthSteps, this.lengthStep, direction) }
-    stepAngleStep(direction: 1 | -1) { this.angleStep = nextOnLadder(SnapManager.angleSteps, this.angleStep, direction) }
+    stepGridStep(direction: 1 | -1) { this.gridStep = nextOnLadder(SnapManager.lengthSteps, this.gridStep, direction); this.settingsChanged() }
+    stepLengthStep(direction: 1 | -1) { this.lengthStep = nextOnLadder(SnapManager.lengthSteps, this.lengthStep, direction); this.settingsChanged() }
+    stepAngleStep(direction: 1 | -1) { this.angleStep = nextOnLadder(SnapManager.angleSteps, this.angleStep, direction); this.settingsChanged() }
+    resetSteps() {
+        this.gridStep = this.lengthStep = fromLengthUnit(1);
+        this.settingsChanged();
+    }
+
+    toggleLayer(layer: visual.Layers) {
+        this.layers.toggle(layer);
+        this.settingsChanged();
+    }
+
+    private settingsChanged() { this.signals.snapSettingsChanged.dispatch() }
+
+    // What the Snaps panel is set to, to keep between sessions. Steps that aren't on the length unit's ladder start over
+    // at one of the unit.
+    get settings(): SnapSettings {
+        const { _snapToGrid: grid, _gizmoSnapping: handles, _angleSnapping: angles, gridStep, lengthStep, angleStep } = this;
+        const face = this.isLayerOn(visual.Layers.Face), curve = this.isLayerOn(visual.Layers.Curve), edge = this.isLayerOn(visual.Layers.CurveEdge);
+        return { grid, handles, angles, face, curve, edge, gridStep, lengthStep, angleStep };
+    }
+
+    set settings(settings: SnapSettings) {
+        const onLadder = (ladder: readonly number[], step: number, otherwise: number) => ladder.some(s => Math.abs(s - step) < 1e-9) ? step : otherwise;
+        this._snapToGrid = settings.grid;
+        this._gizmoSnapping = settings.handles;
+        this._angleSnapping = settings.angles;
+        const layers: [visual.Layers, boolean][] = [[visual.Layers.Face, settings.face], [visual.Layers.Curve, settings.curve], [visual.Layers.CurveEdge, settings.edge]];
+        for (const [layer, on] of layers) on ? this.layers.enable(layer) : this.layers.disable(layer);
+        this.gridStep = onLadder(SnapManager.lengthSteps, settings.gridStep, fromLengthUnit(1));
+        this.lengthStep = onLadder(SnapManager.lengthSteps, settings.lengthStep, fromLengthUnit(1));
+        this.angleStep = onLadder(SnapManager.angleSteps, settings.angleStep, 5);
+        this.settingsChanged();
+    }
 
     private heldObjects = false;
     holdObjects(held: boolean) {

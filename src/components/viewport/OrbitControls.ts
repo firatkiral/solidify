@@ -39,9 +39,10 @@ export class OrbitControls extends THREE.EventDispatcher {
     rotateSpeed = this.settings.rotateSpeed;
     panSpeed = this.settings.panSpeed;
 
+    // In millimeters for the perspective camera; for the orthographic one, a view about 100 m tall at the least zoom
     minDistance = 0.1;
-    maxDistance = 1000;
-    minZoom = 0.001;
+    maxDistance = 100_000;
+    minZoom = 0.00006;
     maxZoom = 10;
     minPolarAngle = 0;
     maxPolarAngle = Math.PI;
@@ -135,32 +136,42 @@ export class OrbitControls extends THREE.EventDispatcher {
     private readonly sphere = new THREE.Sphere();
     private readonly size = new THREE.Vector3();
     private lastFingerprint = "";
-    focus(targets: FocusableObject[], everything: THREE.Object3D[]) {
+    // Frames the targets; again, everything; with nothing to frame, the fallback (e.g. the grid)
+    focus(targets: FocusableObject[], everything: THREE.Object3D[], fallback: THREE.Sphere) {
         if (this.fingerprint(targets) == this.lastFingerprint) {
-            this.lastFingerprint = this._focus(everything);
+            this.lastFingerprint = this._focus(everything, fallback);
         } else {
-            this.lastFingerprint = (targets.length > 0) ? this._focus(targets) : this._focus(everything);
+            this.lastFingerprint = (targets.length > 0) ? this._focus(targets, fallback) : this._focus(everything, fallback);
         }
     }
 
-    private _focus(targets: FocusableObject[]) {
-        const { box, object, target, spherical, minZoom, maxZoom, sphere } = this;
+    private _focus(targets: FocusableObject[], fallback: THREE.Sphere) {
+        const { box, sphere } = this;
         box.makeEmpty();
         for (const target of targets) {
             if (target instanceof THREE.Object3D) box.expandByObject(target);
             else box.union(target.getBoundingBox())
         }
         if (box.isEmpty()) {
-            this.reset();
+            this.fit(fallback);
             return "";
         }
-        box.getCenter(target);
-        box.getBoundingSphere(sphere);
+        this.fit(box.getBoundingSphere(sphere));
+        return this.fingerprint(targets);
+    }
+
+    // Frames the sphere, looking from the same direction
+    private readonly direction = new THREE.Vector3();
+    fit(sphere: THREE.Sphere) {
+        const { object, target, direction, minZoom, maxZoom, minDistance, maxDistance } = this;
+        direction.copy(object.position).sub(target).normalize();
+        if (direction.lengthSq() === 0) direction.set(0, 0, 1);
+        target.copy(sphere.center);
 
         const fitHeightDistance = sphere.radius / Math.sin((object.getEffectiveFOV() / 2) * Math.PI / 180);
         const fitWidthDistance = sphere.radius / Math.sin((object.getEffectiveFOV() * object.aspect / 2) * Math.PI / 180);
-        const distance = Math.max(fitHeightDistance, fitWidthDistance);
-        this.scale = distance / spherical.radius;
+        const distance = Math.max(minDistance, Math.min(maxDistance, Math.max(fitHeightDistance, fitWidthDistance)));
+        object.position.copy(target).addScaledVector(direction, distance);
 
         const fitWidthZoom = (object.right - object.left) / sphere.radius / 2;
         const fitHeightZoom = (object.top - object.bottom) / sphere.radius / 2;
@@ -170,7 +181,6 @@ export class OrbitControls extends THREE.EventDispatcher {
         this.zoomChanged = true;
 
         this.update();
-        return this.fingerprint(targets);
     }
 
     private fingerprint(targets: { uuid: string }[]) {

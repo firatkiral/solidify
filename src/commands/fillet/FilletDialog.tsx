@@ -48,8 +48,8 @@ export class FilletDialog extends AbstractDialog<FilletParams> {
                     <li>
                         <label for="distance1">Distance</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance1" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber name="distance2" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="distance1" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" name="distance2" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                     <li class={this.mode === c3d.CreatorType.ChamferSolid ? 'disabled' : ''}>
@@ -65,8 +65,8 @@ export class FilletDialog extends AbstractDialog<FilletParams> {
                             <solidify-tooltip><img src={beginningLength} /></solidify-tooltip>
                         </label>
                         <div class="fields">
-                            <solidify-number-scrubber disabled={FilletFactory.LengthSentinel} min={0} default={0} name="begLength" value={begLength} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
-                            <solidify-number-scrubber disabled={FilletFactory.LengthSentinel} min={0} default={0} name="endLength" value={endLength} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" disabled={FilletFactory.LengthSentinel} min={0} default={0} name="begLength" value={begLength} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber unit="length" disabled={FilletFactory.LengthSentinel} min={0} default={0} name="endLength" value={endLength} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

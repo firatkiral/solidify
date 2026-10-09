@@ -5,7 +5,7 @@ import { BetterRaycastingPoints } from "../../visual_model/VisualModelRaycasting
 import { Scene } from "../Scene";
 import { AxisSnap, axisSnapMaterial } from "./AxisSnap";
 import { ConstructionPlaneSnap, FaceConstructionPlaneSnap } from "./ConstructionPlaneSnap";
-import { PlaneSnap } from "./PlaneSnap";
+import { PlaneGrid, PlaneSnap } from "./PlaneSnap";
 import { PointSnap } from "./PointSnap";
 import { GridLike, Snap } from "./Snap";
 import { originSnap, xAxisSnap, yAxisSnap, zAxisSnap } from "./SnapManager";
@@ -82,7 +82,7 @@ export class SnapPicker {
 
         const other_intersections_snaps = strategy.intersectWithSnaps(additional, pointss, raycaster, snaps);
 
-        const grid: GridLike | undefined = snaps.snapToGrid ? viewport.constructionPlane : undefined;
+        const grid: GridLike | undefined = snaps.snapToGrid ? new PlaneGrid(viewport.constructionPlane, snaps.gridStep) : undefined;
         let { minDistance, results } = strategy.projectIntersections(viewport, geo_intersections_snaps, other_intersections_snaps, cplane_intersection_results, restriction, grid);
         results = strategy.processXRay(viewport, results, cplane_intersection_results, minDistance);
         return this.sort(results);

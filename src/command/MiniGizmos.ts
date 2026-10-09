@@ -6,7 +6,7 @@ import { Viewport } from "../components/viewport/Viewport";
 import { CancellableRegisterable } from "../util/CancellableRegisterable";
 import { CancellableRegistor } from "../util/CancellableRegistor";
 import { deg2rad, rad2deg, roundToStep } from "../util/Conversion";
-import { formatAngle, formatLength } from "../util/Units";
+import { formatAngle, formatLength, fromLengthUnit, lengthUnit } from "../util/Units";
 import { Helper } from "../util/Helpers";
 import { CircleGeometry } from "../util/Util";
 import { AbstractGizmo, EditorLike, GizmoHelper, Intersector, MovementInfo } from "./AbstractGizmo";
@@ -284,8 +284,10 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
         return this.state.current;
     }
 
+    // Lengths are typed in the length unit
     override onKeyPress(cb: (distance: number) => void, text: KeyboardInterpreter) {
-        const distance = TextCalculator.calculate(text.state);
+        const typed = TextCalculator.calculate(text.state);
+        const distance = typed !== undefined && this.stepsAsLength ? fromLengthUnit(typed) : typed;
         if (distance === undefined) {
             this.mode = 'pointer';
             return this.state.current;
@@ -680,7 +682,7 @@ export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>,
 
     onKeyPress(value: number, text: KeyboardInterpreter): void {
         this.element.hidden = false;
-        this.element.innerHTML = text.state;
+        this.element.textContent = this.format === formatLength ? `${text.state} ${lengthUnit()}` : text.state;
         this.project();
     }
 

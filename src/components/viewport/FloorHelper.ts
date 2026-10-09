@@ -1,214 +1,124 @@
 import * as THREE from 'three';
-import { LineBasicMaterial } from 'three';
 import * as visual from "../../visual_model/VisualModel";
 import { ProxyCamera } from './ProxyCamera';
 
-export class OrthoModeGrid extends THREE.Group {
-    protected readonly grid1: THREE.GridHelper;
-    protected readonly grid2: THREE.GridHelper;
+// In millimeters: how wide the grid is and the distance between its lines; every majorEvery steps the line is heavier.
+export interface GridSpec {
+    readonly size: number;
+    readonly step: number;
+    readonly majorEvery: number;
+}
 
-    constructor(private readonly size: number, divisions: number, private readonly color1: THREE.Color, private readonly color2: THREE.Color, private readonly backgroundColor: THREE.Color) {
+// Lines in the XY plane, every step out to the last one within size / 2 each way, so they always pass through the origin
+export function gridLines({ size, step, majorEvery }: GridSpec): { minor: number[], major: number[] } {
+    const count = Math.floor(size / 2 / step + 1e-9);
+    const extent = count * step;
+    const minor: number[] = [], major: number[] = [];
+    for (let i = -count; i <= count; i++) {
+        const at = i * step;
+        const lines = i % majorEvery === 0 ? major : minor;
+        lines.push(at, -extent, 0, at, extent, 0);
+        lines.push(-extent, at, 0, extent, at, 0);
+    }
+    return { minor, major };
+}
+
+// Lines this many pixels apart or fewer are hidden; they fade in until they're fadedIn pixels apart
+const crowded = 4, fadedIn = 12;
+
+abstract class Grid extends THREE.Group {
+    protected readonly minor: THREE.LineSegments<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+    protected readonly major: THREE.LineSegments<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+
+    constructor(readonly spec: GridSpec, protected readonly color1: THREE.Color, protected readonly color2: THREE.Color) {
         super();
-
-        const grid1 = this.makeGrid1(size, divisions, color1);
-        this.grid1 = grid1;
-
-        const grid2 = this.makeGrid2(size, divisions, color2);
-        this.grid2 = grid2;
-
-        this.add(grid1, grid2);
+        const { minor, major } = gridLines(spec);
+        this.minor = this.makeLines(minor, color1);
+        this.major = this.makeLines(major, color2);
+        this.add(this.minor, this.major);
         this.layers.set(visual.Layers.Overlay);
+    }
+
+    private makeLines(positions: number[], color: THREE.Color) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        const material = new THREE.LineBasicMaterial({ color });
+        material.fog = true;
+        this.configure(material);
+        return new THREE.LineSegments(geometry, material);
+    }
+
+    protected abstract configure(material: THREE.LineBasicMaterial): void;
+
+    dispose() {
+        for (const lines of [this.minor, this.major]) {
+            lines.geometry.dispose();
+            lines.material.dispose();
+        }
+        this.removeFromParent();
+    }
+
+    // 0 while lines step millimeters apart look crowded on screen, rising to 1 once they're clearly apart
+    protected fade(step: number, camera: THREE.Camera) {
+        const height = camera instanceof ProxyCamera ? camera.offsetHeight : 1000;
+        let visibleHeight;
+        if (ProxyCamera.isOrthographic(camera)) {
+            visibleHeight = (camera.top - camera.bottom) / camera.zoom;
+        } else if (ProxyCamera.isPerspective(camera)) {
+            const distance = camera.position.distanceTo(camera instanceof ProxyCamera ? camera.target : this.position);
+            visibleHeight = 2 * distance * Math.tan(Math.PI * camera.fov / 360);
+        } else throw new Error("invalid camera type");
+        const pixels = step * height / visibleHeight;
+        return THREE.MathUtils.clamp((pixels - crowded) / (fadedIn - crowded), 0, 1);
+    }
+}
+
+// Behind orthographic views: drawn first, with colors blending into the background rather than transparency
+export class OrthoModeGrid extends Grid {
+    constructor(spec: GridSpec, color1: THREE.Color, color2: THREE.Color, private readonly backgroundColor: THREE.Color) {
+        super(spec, color1, color2);
         this.renderOrder = -1;
     }
 
-    protected makeGrid2(size: number, divisions: number, color2: THREE.Color) {
-        const grid2 = new THREE.GridHelper(size, divisions / 10, color2, color2);
-        const material = grid2.material as THREE.LineBasicMaterial;
-        material.vertexColors = false;
-        material.color.copy(color2);
+    protected configure(material: THREE.LineBasicMaterial) {
         material.depthWrite = false;
         material.depthFunc = THREE.NeverDepth;
-        material.fog = true;
-        grid2.geometry.rotateX(Math.PI / 2);
-        return grid2;
-    }
-
-    protected makeGrid1(size: number, divisions: number, color1: THREE.Color) {
-        const grid1 = new THREE.GridHelper(size, divisions, color1, color1);
-        const material = grid1.material as THREE.LineBasicMaterial;
-        material.vertexColors = false;
-        material.color.copy(color1);
-        material.depthWrite = false;
-        material.depthFunc = THREE.NeverDepth;
-        material.fog = true;
-        grid1.geometry.rotateX(Math.PI / 2);
-        return grid1;
-    }
-
-    dispose() {
-        this.grid1.geometry.dispose();
-        const material1 = this.grid1.material as LineBasicMaterial;
-        material1.dispose();
-        this.grid1.removeFromParent();
-
-        this.grid2.geometry.dispose();
-        const material2 = this.grid2.material as LineBasicMaterial;
-        material2.dispose();
     }
 
     update(camera: THREE.Camera) {
-        let factor;
-        if (ProxyCamera.isOrthographic(camera)) {
-            factor = (camera.top - camera.bottom) / camera.zoom;
-        } else throw new Error("invalid camera type");
-        const material1 = this.grid1.material as THREE.LineBasicMaterial;
-        material1.color.lerpColors(this.backgroundColor, this.color1, Math.min(1 / factor, 1));
-        this.grid1.visible = factor < 10;
+        const { minor, major, spec, backgroundColor, color1, color2 } = this;
+        const minorFade = this.fade(spec.step, camera);
+        const majorFade = this.fade(spec.step * spec.majorEvery, camera);
+        minor.material.color.lerpColors(backgroundColor, color1, minorFade);
+        major.material.color.lerpColors(backgroundColor, color2, majorFade);
+        minor.visible = minorFade > 0;
+        major.visible = majorFade > 0;
         this.updateMatrixWorld();
     }
 }
 
-
-export class FloorHelper extends THREE.Group {
-    private readonly grid1: THREE.GridHelper;
-    private readonly grid2: THREE.GridHelper;
-
-    constructor(private readonly size: number, divisions: number, private readonly color1: THREE.Color, private readonly color2: THREE.Color) {
-        super();
-
-        const grid1 = this.makeGrid1(size, divisions, color1);
-        this.grid1 = grid1;
-
-        const grid2 = this.makeGrid2(size, divisions, color2);
-        this.grid2 = grid2;
-
-        this.add(grid1, grid2);
-        this.layers.set(visual.Layers.Overlay);
+// On a plane seen in perspective: fading as the plane turns edge-on
+export class FloorHelper extends Grid {
+    protected configure(material: THREE.LineBasicMaterial) {
+        material.transparent = true;
     }
 
-    private makeGrid2(size: number, divisions: number, color2: THREE.Color) {
-        const grid2 = new THREE.GridHelper(size, divisions / 10, color2, color2);
-        const material2 = grid2.material as THREE.LineBasicMaterial;
-        material2.transparent = true;
-        material2.vertexColors = false;
-        material2.color.copy(color2);
-        material2.fog = true;
-        grid2.geometry.rotateX(Math.PI / 2);
-        return grid2;
-    }
-
-    private makeGrid1(size: number, divisions: number, color1: THREE.Color) {
-        const grid1 = new THREE.GridHelper(size, divisions, color1, color1);
-        const material1 = grid1.material as THREE.LineBasicMaterial;
-        material1.transparent = true;
-        material1.vertexColors = false;
-        material1.color.copy(color1);
-        material1.fog = true;
-        grid1.geometry.rotateX(Math.PI / 2);
-        return grid1;
-    }
-
-    dispose() {
-        this.grid1.geometry.dispose();
-        const material1 = this.grid1.material as LineBasicMaterial;
-        material1.dispose();
-        this.grid1.removeFromParent();
-
-        this.grid2.geometry.dispose();
-        const material2 = this.grid2.material as LineBasicMaterial;
-        material2.dispose();
-    }
-
-    private readonly grid = new THREE.Vector3(0, 1, 0);
-    private readonly eye = new THREE.Vector3(0, 0, 1);
+    private readonly normal = new THREE.Vector3();
+    private readonly eye = new THREE.Vector3();
     update(camera: THREE.Camera) {
-        const { grid, eye, grid1, grid2 } = this;
+        const { normal, eye, minor, major, spec } = this;
 
-        grid.set(0, 0, 1).applyQuaternion(this.quaternion);
+        normal.set(0, 0, 1).applyQuaternion(this.quaternion);
         eye.set(0, 0, 1).applyQuaternion(camera.quaternion);
-        const dot = grid.dot(eye);
-        const material1 = grid1.material as THREE.LineBasicMaterial;
-        const material2 = grid2.material as THREE.LineBasicMaterial;
-        const dotSq = dot * dot;
-        material1.opacity = material2.opacity = dotSq;
+        const dot = normal.dot(eye);
+        const facing = dot * dot;
+        minor.material.opacity = facing * this.fade(spec.step, camera);
+        major.material.opacity = facing * this.fade(spec.step * spec.majorEvery, camera);
+        minor.visible = minor.material.opacity > 0;
+        major.visible = major.material.opacity > 0;
         this.updateMatrixWorld();
     }
 }
 
-export class CustomGrid extends THREE.Group {
-    private readonly grid1: THREE.GridHelper;
-    private readonly grid2: THREE.GridHelper;
-
-    constructor(private readonly size: number, divisions: number, private readonly color1: THREE.Color, private readonly color2: THREE.Color, private readonly backgroundColor: THREE.Color) {
-        super();
-
-        const grid1 = this.makeGrid1(size, divisions, color1);
-        this.grid1 = grid1;
-
-        const grid2 = this.makeGrid2(size, divisions, color2);
-        this.grid2 = grid2;
-
-        this.add(grid1, grid2);
-        this.layers.set(visual.Layers.Overlay);
-    }
-
-    private makeGrid2(size: number, divisions: number, color2: THREE.Color) {
-        const grid2 = new THREE.GridHelper(size, divisions / 10, color2, color2);
-        const material2 = grid2.material as THREE.LineBasicMaterial;
-        material2.transparent = true;
-        material2.vertexColors = false;
-        material2.color.copy(color2);
-        material2.fog = true;
-        grid2.geometry.rotateX(Math.PI / 2);
-        return grid2;
-    }
-
-    private makeGrid1(size: number, divisions: number, color1: THREE.Color) {
-        const grid1 = new THREE.GridHelper(size, divisions, color1, color1);
-        const material1 = grid1.material as THREE.LineBasicMaterial;
-        material1.transparent = true;
-        material1.vertexColors = false;
-        material1.color.copy(color1);
-        material1.fog = true;
-        grid1.geometry.rotateX(Math.PI / 2);
-        return grid1;
-    }
-
-    dispose() {
-        this.grid1.geometry.dispose();
-        const material1 = this.grid1.material as LineBasicMaterial;
-        material1.dispose();
-        this.grid1.removeFromParent();
-
-        this.grid2.geometry.dispose();
-        const material2 = this.grid2.material as LineBasicMaterial;
-        material2.dispose();
-    }
-
-    private readonly grid = new THREE.Vector3(0, 1, 0);
-    private readonly eye = new THREE.Vector3(0, 0, 1);
-    update(camera: THREE.Camera) {
-        const { grid, eye, grid1, grid2 } = this;
-
-        grid.set(0, 0, 1).applyQuaternion(this.quaternion);
-        eye.set(0, 0, 1).applyQuaternion(camera.quaternion);
-        const dot = grid.dot(eye);
-        const material1 = grid1.material as THREE.LineBasicMaterial;
-        const material2 = grid2.material as THREE.LineBasicMaterial;
-        const dotSq = dot * dot;
-        material1.opacity = material2.opacity = dotSq;
-
-        let factor;
-        if (ProxyCamera.isOrthographic(camera)) {
-            factor = (camera.top - camera.bottom) / camera.zoom;
-        } else if (ProxyCamera.isPerspective(camera)) {
-            factor = this.position.distanceTo(camera.position) * Math.min(1.9 * Math.tan(Math.PI * camera.fov / 360), 7);
-        } else throw new Error("invalid camera type");
-
-        material1.opacity *= 1 / factor;
-        this.grid1.visible = factor < 10;
-
-        this.updateMatrixWorld();
-    }
-}
-
+// On a construction plane other than the floor
+export class CustomGrid extends FloorHelper { }

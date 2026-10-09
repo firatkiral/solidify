@@ -50,15 +50,16 @@ export class PointPickerSnapPicker {
     intersect(pointPicker: PointPickerModel, snaps: SnapManagerGeometryCache, scene: Scene): SnapResult[] {
         const { picker, picker: { viewport }, strategy, raycaster } = this;
         const { choice } = pointPicker;
+        const gridStep = snaps.snapToGrid ? snaps.gridStep : undefined;
 
         if (!snaps.enabled) {
             if (choice !== undefined) {
                 const chosen = strategy.intersectChoice(choice, raycaster);
-                return strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, chosen);
+                return strategy.applyRestrictions(gridStep, pointPicker, viewport, chosen);
             } else {
                 const essential = picker.intersectPoints([pointPicker.snaps.essentialSnaps.cache], snaps);
-                if (essential.length > 0) return strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, essential);
-                return strategy.intersectConstructionPlane(snaps.snapToGrid, pointPicker, raycaster, viewport);
+                if (essential.length > 0) return strategy.applyRestrictions(gridStep, pointPicker, viewport, essential);
+                return strategy.intersectConstructionPlane(gridStep, pointPicker, raycaster, viewport);
             }
         }
 
@@ -71,7 +72,7 @@ export class PointPickerSnapPicker {
         // NOTE: the construction plane can either act just as a fallback (when its the default floor) OR
         // it can act like a real object (when the user explicity set the cplane). When "real", it needs
         // to be ranked with other snaps/intersect/raycasting in the standard way.
-        const cplane = strategy.intersectConstructionPlane(snaps.snapToGrid, pointPicker, raycaster, viewport);
+        const cplane = strategy.intersectConstructionPlane(gridStep, pointPicker, raycaster, viewport);
         const cplaneIsFallback = !viewport.preferConstructionPlane;
         const other = !cplaneIsFallback ? cplane : [];
 
@@ -82,11 +83,11 @@ export class PointPickerSnapPicker {
             const except = intersections.filter(i => !(i.snap instanceof FaceConstructionPlaneSnap || i.snap instanceof ConstructionPlaneSnap));
             const projected = strategy.projectIntersectionOntoChoice(choice.snap, viewport, except);
             const result = projected.length > 0 ? projected : chosen;
-            return strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, result);
+            return strategy.applyRestrictions(gridStep, pointPicker, viewport, result);
         }
 
         if (cplaneIsFallback) intersections = intersections.concat(cplane);
-        const restricted = strategy.applyRestrictions(snaps.snapToGrid, pointPicker, viewport, intersections);
+        const restricted = strategy.applyRestrictions(gridStep, pointPicker, viewport, intersections);
 
         return findAllSnapsInTheSamePlace(restricted);
     }

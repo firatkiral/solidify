@@ -19,7 +19,7 @@ export class CenterPointArcDialog extends AbstractDialog<EditCenterPointArcParam
                     <li>
                         <label for="length">Length</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="length" unit="mm" min={0.01} value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="length" unit="length" min={0.01} value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 
@@ -51,14 +51,14 @@ export class ThreePointArcDialog extends AbstractDialog<EditThreePointArcParams>
                     <li>
                         <label for="length">Length</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="length" unit="mm" min={0.01} value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="length" unit="length" min={0.01} value={length} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 
                     <li>
                         <label for="height">Height</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="height" unit="mm" min={0.01} value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="height" unit="length" min={0.01} value={height} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
                 </ul>

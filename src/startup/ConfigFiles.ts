@@ -155,6 +155,18 @@ export class ConfigFiles {
         this.loadUserKeymap(into);
     }
 
+    // Changes several settings of a section, in memory and in the user's settings
+    static updateSettings<S extends keyof Settings>(section: S, values: Partial<Settings[S]>) {
+        Object.assign(defaultSettings[section], values);
+        try {
+            const parsed = this.read(this.userSettingsKey) ?? {};
+            parsed[section] = { ...parsed[section], ...values };
+            this.write(this.userSettingsKey, parsed);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
     // Changes one setting, in memory and in the user's settings
     static updateSetting<S extends keyof Settings, K extends keyof Settings[S]>(section: S, key: K, value: Settings[S][K]) {
         defaultSettings[section][key] = value;
@@ -207,7 +219,9 @@ export const orbitPresets: Record<OrbitMode, Record<string, string>> = {
 function merge(canon: Record<string, any>, custom: Record<string, any>) {
     for (const [k, v] of Object.entries(canon)) {
         if (custom[k] === undefined) continue;
-        if (typeof v === 'object') {
+        if (Array.isArray(v)) {
+            if (Array.isArray(custom[k])) canon[k] = custom[k];
+        } else if (typeof v === 'object') {
             merge(canon[k], custom[k]);
         } else {
             canon[k] = custom[k];

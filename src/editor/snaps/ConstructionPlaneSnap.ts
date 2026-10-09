@@ -2,10 +2,10 @@ import * as THREE from "three";
 import c3d from '../../kernel/kernel';
 import { PointResult } from "../../command/point-picker/PointPicker";
 import { PlaneSnap } from "./PlaneSnap";
-import { GridLike, RaycastableSnap, Snap } from "./Snap";
+import { RaycastableSnap, Snap } from "./Snap";
 import { FaceSnap } from "./Snaps";
 
-export interface ConstructionPlane extends RaycastableSnap, GridLike {
+export interface ConstructionPlane extends RaycastableSnap {
     get n(): THREE.Vector3;
     get p(): THREE.Vector3;
     get x(): THREE.Vector3 | undefined;
@@ -14,7 +14,7 @@ export interface ConstructionPlane extends RaycastableSnap, GridLike {
     move(vector: THREE.Vector3): ConstructionPlane;
     isCompatibleWithSnap(snap: Snap): boolean;
     get isTemp(): boolean;
-    gridFactor: number;
+    snapToGrid(position: THREE.Vector3, compat: Snap, step: number): THREE.Vector3;
 }
 
 // The main purpose of this class is to have a lower priority in raycasting than other, explicitly added snaps.
@@ -122,8 +122,6 @@ export class ScreenSpaceConstructionPlaneSnap extends RaycastableSnap implements
     snapToGrid(position: THREE.Vector3) {
         return position;
     }
-
-    gridFactor = 1;
 
     get placement() {
         switch (this.state.tag) {

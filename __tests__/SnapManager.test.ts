@@ -18,6 +18,7 @@ import { TypeManager } from "../src/editor/TypeManager";
 import * as visual from '../src/visual_model/VisualModel';
 import { FakeMaterials } from "../__mocks__/FakeMaterials";
 import './matchers';
+import { setLengthUnit } from '../src/util/Units';
 
 let db: GeometryDatabase;
 let scene: Scene;
@@ -296,13 +297,15 @@ test("Shift turns grid snapping and handle stepping on while held, and releasing
 })
 
 test("handle drag steps move along their ladders and stop at the ends", () => {
-    expect(snaps.lengthStep).toBe(0.1);
+    expect(snaps.lengthStep).toBe(10); // 1 cm
     snaps.stepLengthStep(1);
-    expect(snaps.lengthStep).toBe(0.2);
+    expect(snaps.lengthStep).toBe(20);
     snaps.stepLengthStep(1);
-    expect(snaps.lengthStep).toBe(0.5);
-    for (let i = 0; i < 20; i++) snaps.stepLengthStep(-1);
+    expect(snaps.lengthStep).toBe(50);
+    for (let i = 0; i < 30; i++) snaps.stepLengthStep(-1);
     expect(snaps.lengthStep).toBe(0.001);
+    for (let i = 0; i < 30; i++) snaps.stepLengthStep(1);
+    expect(snaps.lengthStep).toBe(1000);
 
     expect(snaps.angleStep).toBe(5);
     snaps.stepAngleStep(-1);
@@ -311,6 +314,52 @@ test("handle drag steps move along their ladders and stop at the ends", () => {
     expect(snaps.angleStep).toBe(1);
     for (let i = 0; i < 20; i++) snaps.stepAngleStep(1);
     expect(snaps.angleStep).toBe(90);
+})
+
+test("the grid snap step has its own ladder, in the length unit's system", () => {
+    expect(snaps.gridStep).toBe(10); // 1 cm
+    snaps.stepGridStep(-1);
+    expect(snaps.gridStep).toBe(5);
+    expect(snaps.lengthStep).toBe(10);
+
+    setLengthUnit('in');
+    try {
+        snaps.resetSteps();
+        expect(snaps.gridStep).toBeCloseTo(25.4);
+        expect(snaps.lengthStep).toBeCloseTo(25.4);
+        snaps.stepGridStep(1);
+        expect(snaps.gridStep).toBeCloseTo(2 * 25.4);
+        for (let i = 0; i < 30; i++) snaps.stepGridStep(1);
+        expect(snaps.gridStep).toBeCloseTo(10 * 304.8);
+    } finally {
+        setLengthUnit('cm');
+    }
+})
+
+test("settings keep what the panel is set to, and put it back", () => {
+    const changed = jest.fn();
+    signals.snapSettingsChanged.add(changed);
+    snaps.snapToGrid = true;
+    snaps.toggleLayer(visual.Layers.Curve);
+    snaps.stepGridStep(1);
+    snaps.stepAngleStep(1);
+    expect(changed).toHaveBeenCalledTimes(4);
+
+    const saved = snaps.settings;
+    expect(saved).toMatchObject({ grid: true, handles: false, angles: false, gridStep: 20, lengthStep: 10, angleStep: 10 });
+    expect(saved).toMatchObject({ face: true, curve: false, edge: true }); // all on to begin with, here
+
+    const restarted = new SnapManager(db, scene, new CrossPointDatabase(), signals);
+    restarted.settings = saved;
+    expect(restarted.settings).toEqual(saved);
+    expect(restarted.snapToGridSetting).toBe(true);
+})
+
+test("settings with steps off the ladder start over at one of the length unit", () => {
+    snaps.settings = { ...snaps.settings, gridStep: 3, lengthStep: 25.4, angleStep: 7 };
+    expect(snaps.gridStep).toBe(10);
+    expect(snaps.lengthStep).toBe(10);
+    expect(snaps.angleStep).toBe(5);
 })
 
 describe('undo', () => {

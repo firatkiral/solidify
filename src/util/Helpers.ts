@@ -67,7 +67,7 @@ export class Helpers {
     readonly axes: THREE.AxesHelper;
 
     constructor(signals: EditorSignals, styles: Theme) {
-        const axes = new THREE.AxesHelper(10_000);
+        const axes = new THREE.AxesHelper(1); // each viewport scales it to its grid
         axes.layers.set(visual.Layers.Overlay);
         this.axes = axes;
         axes.renderOrder = -1;
