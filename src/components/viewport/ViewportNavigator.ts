@@ -13,14 +13,24 @@ const frustrum = 1.6;
 export class ViewportNavigatorGizmo extends THREE.Object3D {
     readonly camera = new THREE.OrthographicCamera(- frustrum, frustrum, frustrum, - frustrum, 0, 4);
     private readonly interactiveObjects: THREE.Object3D[];
+    private readonly panel = document.createElement('div');
+
+    // How far it's pushed in from the viewport's right edge, past its padding: by the tab buttons, and by the drawer while
+    // that's open
+    private _inset = 0;
+    get inset() { return this._inset }
+    set inset(inset: number) {
+        this._inset = inset;
+        this.panel.style.right = `${this.padding + inset}px`;
+    }
 
     constructor(private readonly viewport: Viewport, readonly dim: number, readonly padding: number) {
         super();
 
         this.camera.position.set(0, 0, 2);
 
-        const panel = document.createElement('div');
-        panel.setAttribute('style', `position: absolute; right: ${padding}; top: ${padding}; height: ${dim}px; width: ${dim}px; z-index: 40`);
+        const { panel } = this;
+        panel.setAttribute('style', `position: absolute; right: ${padding}px; top: ${padding}px; height: ${dim}px; width: ${dim}px; z-index: 40`);
         panel.addEventListener('pointerup', e => this.onMouseUp(e));
         panel.addEventListener('pointerdown', e => e.stopPropagation());
         viewport.domElement.appendChild(panel);
@@ -118,9 +128,9 @@ export class ViewportNavigatorGizmo extends THREE.Object3D {
     private onMouseUp(event: PointerEvent) {
         event.stopPropagation();
 
-        const { mouse, dim, padding, raycaster, camera, interactiveObjects, viewport } = this;
+        const { mouse, dim, padding, inset, raycaster, camera, interactiveObjects, viewport } = this;
         const rect = viewport.domElement.getBoundingClientRect();
-        const offsetX = rect.left + (viewport.domElement.offsetWidth - dim - padding);
+        const offsetX = rect.left + (viewport.domElement.offsetWidth - dim - padding - inset);
         const offsetY = rect.top + padding;
 
         mouse.x = ((event.clientX - offsetX) / dim) * 2 - 1;
@@ -252,7 +262,7 @@ export class ViewportNavigatorPass extends Pass {
         maskActive: boolean,
     ) {
         const { scene, viewportCamera, viewportHelper, oldViewport } = this;
-        const { dim, padding, camera } = viewportHelper;
+        const { dim, padding, inset, camera } = viewportHelper;
 
         let { width, height } = this;
         width /= renderer.getPixelRatio();
@@ -266,7 +276,7 @@ export class ViewportNavigatorPass extends Pass {
         renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
         renderer.clearDepth();
         renderer.autoClear = false;
-        renderer.setViewport(width - dim - padding, height - dim - padding, dim, dim);
+        renderer.setViewport(width - dim - padding - inset, height - dim - padding, dim, dim);
 
         try {
             renderer.render(scene, camera);

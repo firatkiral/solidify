@@ -14,6 +14,7 @@ import { Viewport } from "../components/viewport/Viewport";
 import { ChangeSelectionExecutor } from "../selection/ChangeSelectionExecutor";
 import { SelectionCommandRegistrar } from "../selection/CommandRegistrar";
 import { SelectionDatabase } from "../selection/SelectionDatabase";
+import { SelectionMode, SelectionModeAll, SelectionModeSet } from "../selection/SelectionModeSet";
 import { ConfigFiles, OrbitMode } from "../startup/ConfigFiles";
 import defaultSettings from '../startup/default-settings';
 import defaultTheme from '../startup/default-theme.json';
@@ -79,7 +80,9 @@ export class Editor {
     readonly empties = new Empties(this.images, this.signals, this.meshes);
     readonly scene = new Scene(this._db, this.empties, this.materials, this.signals);
 
-    readonly selection = new SelectionDatabase(this._db, this.scene, this.materials, this.signals);
+    // Every selection mode but Point to begin with: control points show only while Point mode is on
+    readonly selection = new SelectionDatabase(this._db, this.scene, this.materials, this.signals,
+        new SelectionModeSet(SelectionModeAll.filter(mode => mode !== SelectionMode.ControlPoint), this.signals));
 
     readonly registrar = new SelectionCommandRegistrar(this);
 

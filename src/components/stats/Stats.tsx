@@ -8,15 +8,8 @@ export default (editor: Editor) => {
         private readonly disposable = new CompositeDisposable();
 
         connectedCallback() {
-            // The stats are for development: elsewhere their pane, and the divider above it, are hidden
-            if (process.env.NODE_ENV !== 'development') {
-                const pane = this.closest('solidify-pane') as HTMLElement | null;
-                if (pane === null) return;
-                pane.style.display = 'none';
-                const handle = pane.previousElementSibling as HTMLElement | null;
-                if (handle?.tagName === 'SOLIDIFY-PANE-RESIZE-HANDLE') handle.style.display = 'none';
-                return;
-            }
+            // The stats are for development: elsewhere the drawer has no tab for them
+            if (process.env.NODE_ENV !== 'development') return;
             this.render();
         }
         disconnectedCallback() { this.disposable.dispose() }
@@ -24,9 +17,15 @@ export default (editor: Editor) => {
         render() {
             const ref = createRef();
             render(
-                <div class="p-4">
-                    <div ref={ref} class="flex flex-col m-1"></div>
-                </div>, this);
+                <>
+                    <div class="panel-header">
+                        <solidify-icon name="stats"></solidify-icon>
+                        <h1 class="panel-title">Stats</h1>
+                    </div>
+                    <div class="p-4">
+                        <div ref={ref} class="flex flex-col m-1"></div>
+                    </div>
+                </>, this);
 
             FrameRate: {
                 const stats = Measure.get('frame-rate');

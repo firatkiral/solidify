@@ -21,7 +21,7 @@ function when(ms: number) {
     return new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-const button = "px-3 py-1.5 rounded-md text-sm text-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400";
+const button = "px-3 py-1.5 rounded-md text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
 
 // What a new tab shows first: a way to start, the documents from before, and work that wasn't saved
 export default (editor: Editor) => {
@@ -115,45 +115,45 @@ export default (editor: Editor) => {
             // Without a handle to its file, a document opens from its autosave, if it has one
             const openable = (d: RecentDocument) => d.handle !== undefined || autosaved.has(d.id);
             render(
-                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
-                    <div class="flex flex-col w-[760px] max-w-[92vw] max-h-[88vh] rounded-xl overflow-hidden bg-neutral-800 text-neutral-200 shadow-black/40 shadow-2xl ring-1 ring-neutral-600 ring-opacity-5">
-                        <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/10">
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-ui-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
+                    <div class="flex flex-col w-[760px] max-w-[92vw] max-h-[88vh] rounded-xl overflow-hidden bg-ui-surface text-ui-text shadow-ui-shadow shadow-2xl ring-1 ring-ui-border">
+                        <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-ui-divider">
                             <div class="flex items-center gap-3">
                                 <img src={logo} alt="" class="w-11 h-11" draggable={false} />
                                 <div>
-                                    <div class="text-lg font-semibold text-neutral-50">Solidify</div>
-                                    <div class="text-sm text-neutral-400">Sketch curves, then extrude, revolve, fillet and combine them into solids.</div>
+                                    <div class="text-lg font-semibold text-ui-title">Solidify</div>
+                                    <div class="text-sm text-ui-muted">Sketch curves, then extrude, revolve, fillet and combine them into solids.</div>
                                 </div>
                             </div>
-                            <button class="w-6 h-6 rounded text-neutral-300 hover:bg-white/20 hover:text-neutral-50" title="Close" onClick={this.close}>✕</button>
+                            <button class="w-6 h-6 rounded text-ui-text hover:bg-ui-hover hover:text-ui-title" title="Close" onClick={this.close}>✕</button>
                         </div>
 
                         <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
                             <div class="flex flex-wrap items-center gap-2">
-                                <button class={`${button} bg-accent-600 hover:bg-accent-500`} ref={el => el?.focus()} onClick={this.start}>New</button>
-                                <button class={`${button} bg-white/10 hover:bg-white/20`} onClick={() => editor.open()}>Open…</button>
-                                <button class={`${button} bg-white/10 hover:bg-white/20`} onClick={this.import}>Import…</button>
-                                <span class="pl-2 text-xs text-neutral-400">or drop a .solidify, STEP, STL, 3MF, OBJ or image file anywhere</span>
+                                <button class={`${button} text-ui-on-primary bg-ui-primary hover:bg-ui-primary-hover`} ref={el => el?.focus()} onClick={this.start}>New</button>
+                                <button class={`${button} text-ui-title bg-ui-raised hover:bg-ui-hover`} onClick={() => editor.open()}>Open…</button>
+                                <button class={`${button} text-ui-title bg-ui-raised hover:bg-ui-hover`} onClick={this.import}>Import…</button>
+                                <span class="pl-2 text-xs text-ui-muted">or drop a .solidify, STEP, STL, 3MF, OBJ or image file anywhere</span>
                             </div>
 
                             <section>
-                                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">Recent</div>
+                                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ui-muted">Recent</div>
                                 {recent.length === 0
-                                    ? <div class="text-sm text-neutral-400">Documents you open or {savesInPlace ? 'save' : 'download'} appear here.</div>
+                                    ? <div class="text-sm text-ui-muted">Documents you open or {savesInPlace ? 'save' : 'download'} appear here.</div>
                                     : <ol class="grid grid-cols-4 gap-3">
                                         {recent.map(d => {
                                             const ok = openable(d);
                                             const thumbnail = thumbnails.get(d.id);
-                                            return <li class={`group rounded-lg p-1.5 ${ok ? 'cursor-default hover:bg-white/10' : 'opacity-50'}`}
+                                            return <li class={`group rounded-lg p-1.5 ${ok ? 'cursor-default hover:bg-ui-hover' : 'opacity-50'}`}
                                                 title={ok ? d.name : `${d.name}: this browser can only open it from its file`}
                                                 onClick={() => { if (ok) editor.openRecent(d) }}>
-                                                <div class="aspect-square rounded-md overflow-hidden bg-viewport ring-1 ring-white/10 flex items-center justify-center">
+                                                <div class="aspect-square rounded-md overflow-hidden bg-ui-viewport ring-1 ring-ui-border flex items-center justify-center">
                                                     {thumbnail !== undefined
                                                         ? <img src={thumbnail} alt="" class="w-full h-full object-cover" draggable={false} />
-                                                        : <solidify-icon name="file-menu" class="text-neutral-500"></solidify-icon>}
+                                                        : <solidify-icon name="file-menu" class="text-ui-faint"></solidify-icon>}
                                                 </div>
-                                                <div class="mt-1.5 text-sm text-neutral-100 truncate">{d.name.replace(/\.solidify$/i, '')}</div>
-                                                <div class="text-xs text-neutral-400">{when(d.time)}</div>
+                                                <div class="mt-1.5 text-sm text-ui-title truncate">{d.name.replace(/\.solidify$/i, '')}</div>
+                                                <div class="text-xs text-ui-muted">{when(d.time)}</div>
                                             </li>;
                                         })}
                                     </ol>}
@@ -161,23 +161,23 @@ export default (editor: Editor) => {
 
                             {slots.length > 0 &&
                                 <section>
-                                    <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">Unsaved work</div>
+                                    <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ui-muted">Unsaved work</div>
                                     <ol class="space-y-0.5">
                                         {slots.map(slot =>
-                                            <li class="flex items-center justify-between px-3 py-1.5 rounded-md text-sm text-neutral-200 hover:bg-white/10 cursor-default"
+                                            <li class="flex items-center justify-between px-3 py-1.5 rounded-md text-sm text-ui-text hover:bg-ui-hover cursor-default"
                                                 onClick={() => editor.restore(slot)}>
                                                 <span class="truncate">{slot.name ?? 'Untitled'}{slot.modified ? ' •' : ''}</span>
-                                                <span class="pl-6 text-xs text-neutral-400 whitespace-nowrap">{when(slot.time)}</span>
+                                                <span class="pl-6 text-xs text-ui-muted whitespace-nowrap">{when(slot.time)}</span>
                                             </li>)}
                                     </ol>
-                                    <div class="mt-2 text-xs text-neutral-400">{restoreNote(editor)}</div>
+                                    <div class="mt-2 text-xs text-ui-muted">{restoreNote(editor)}</div>
                                 </section>}
                         </div>
 
-                        <div class="px-6 py-3 border-t border-white/10 text-xs text-neutral-400 space-y-1">
-                            <div>New to Solidify? Follow the <a class="text-accent-300 hover:text-accent-200 underline" href={tutorial} target="_blank" rel="noopener">threaded screw tutorial</a>.</div>
+                        <div class="px-6 py-3 border-t border-ui-divider text-xs text-ui-muted space-y-1">
+                            <div>New to Solidify? Follow the <a class="text-ui-accent hover:text-ui-focus underline" href={tutorial} target="_blank" rel="noopener">threaded screw tutorial</a>.</div>
                             {!savesInPlace && <div>Solidify is best experienced on a Chrome browser.</div>}
-                            {canInstall() && <div>Install Solidify to use it in a window of its own, offline too, and open .solidify files from the desktop. <button class="text-accent-300 hover:text-accent-200 underline" onClick={install}>Install</button></div>}
+                            {canInstall() && <div>Install Solidify to use it in a window of its own, offline too, and open .solidify files from the desktop. <button class="text-ui-accent hover:text-ui-focus underline" onClick={install}>Install</button></div>}
                         </div>
                     </div>
                 </div>, this);

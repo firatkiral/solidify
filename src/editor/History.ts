@@ -210,6 +210,7 @@ export class EditorOriginator {
             this.db.restoreFromMemento(m.db);
             this.empties.restoreFromMemento(m.empties);
             this.scene.restoreFromMemento(m.scene);
+            this.materials.restoreFromMemento(m.materials);
             this.selection.restoreFromMemento(m.selection);
             this.crosses.restoreFromMemento(m.crosses);
             this.snaps.restoreFromMemento(m.snaps);

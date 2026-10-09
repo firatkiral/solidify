@@ -31,6 +31,7 @@ import { Orientation, ViewportNavigatorGizmo, ViewportNavigatorPass } from "./Vi
 import { ViewportPointControl } from "./ViewportPointControl";
 import { isLinux } from "../../util/Os";
 import { unitSystem, unitSystems } from "../../util/Units";
+import { paletteColor, themeChanged } from "../../startup/Appearance";
 
 export interface EditorLike extends selector.EditorLike {
     db: DatabaseLike,
@@ -68,6 +69,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     private readonly phantomsPass: RenderPass;
     private readonly helpersPass: RenderPass;
 
+    private readonly navigatorGizmo: ViewportNavigatorGizmo;
     private readonly points = new ViewportPointControl(this, this.editor);
     readonly selector = new ViewportSelector(this, this.editor);
     readonly multiplexer = new ViewportControlMultiplexer(this, this.editor.layers, this.editor.db, this.editor.scene, this.editor.signals);
@@ -124,6 +126,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             this.outlinePassHover = outlinePassHover;
 
             const navigatorGizmo = new ViewportNavigatorGizmo(this, this.editor.settings.Viewport.navigator.size, this.editor.settings.Viewport.navigator.padding);
+            this.navigatorGizmo = navigatorGizmo;
             const navigatorPass = new ViewportNavigatorPass(navigatorGizmo, this.camera);
             const gammaCorrection = new ShaderPass(GammaCorrectionShader);
 
@@ -175,6 +178,9 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         }));
 
         this.scene.background = this.backgroundColor;
+        this.applyTheme();
+        themeChanged.add(this.applyTheme);
+        this.disposable.add(new Disposable(() => themeChanged.remove(this.applyTheme)));
         this.scene.autoUpdate = false;
         this.helpersScene.autoUpdate = false;
         this.multiplexer.push(this.points, this.selector);
@@ -270,6 +276,28 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
     private needsRender = true;
     private setNeedsRender() { this.needsRender = true }
+
+    // Its background, grid and hover outline from the palette, as the theme has them
+    private readonly applyTheme = () => {
+        const set = (color: THREE.Color, name: string) => {
+            const style = paletteColor(name);
+            if (style !== '') color.setStyle(style).convertSRGBToLinear();
+        };
+        set(this.backgroundColor, 'viewport');
+        set(this.gridColor1, 'grid');
+        set(this.gridColor2, 'grid-major');
+        set(this.hoverOutlineColor, 'scene-hover');
+        this.outlinePassHover.visibleEdgeColor.copy(this.hoverOutlineColor);
+        this.outlinePassHover.hiddenEdgeColor.copy(this.hoverOutlineColor);
+        this.grid.recolor();
+        this.setNeedsRender();
+    }
+
+    // Pushes the navigator in from the right edge, out of the way of the tab buttons and the drawer
+    set navigatorInset(inset: number) {
+        this.navigatorGizmo.inset = inset;
+        this.setNeedsRender();
+    }
 
     // The grid's size and step come from the settings; its heavier lines follow the length unit's system
     private get gridSpec() {

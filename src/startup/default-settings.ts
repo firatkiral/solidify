@@ -1,6 +1,12 @@
 import { LengthUnit } from "../util/Units";
+import { ThemeSetting } from "./Appearance";
 
 export default {
+    Appearance: {
+        // Light, dark, or as the system is
+        theme: 'system' as ThemeSetting,
+    },
+
     Viewport: {
         navigator: {
             size: 100,
@@ -41,8 +47,9 @@ export default {
     },
 
     Layout: {
-        // How wide or tall the panes are, as their flex-grow in the order they're in the page; empty until one is resized
-        panes: [] as number[],
+        // The drawer beside the viewport as it was last left: which tab it shows ('' while closed), and its width in pixels
+        drawerTab: 'scene',
+        drawerWidth: 280,
     },
 
     Autosave: {

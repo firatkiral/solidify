@@ -102,4 +102,12 @@ describe(EditorOriginator, () => {
         history.redo();
         expect(db.items.length).toBe(2);
     })
+
+    test("restoreFromMemento restores the materials' settings", () => {
+        const id = materials.add("Red", new THREE.MeshPhysicalMaterial({ color: 0xff0000 }));
+        const memento = originator.saveToMemento();
+        materials.get(id).color.set(0x00ff00);
+        originator.restoreFromMemento(memento);
+        expect(materials.get(id).color.getHex()).toBe(0xff0000);
+    })
 })

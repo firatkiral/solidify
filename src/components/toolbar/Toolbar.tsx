@@ -117,15 +117,16 @@ export default (editor: Editor) => {
             // So, force things to be cleared first.
             render('', this);
             const result = (
-                <div class="flex absolute bottom-2 left-1/2 flex-row space-x-2 -translate-x-1/2">
+                <div class="flex absolute bottom-2 flex-row space-x-2 -translate-x-1/2 centred-clear-of-drawer">
                     {
-                        sections.map(section =>
-                            <section class="flex flex-row space-x-0.5">
+                        // A bar for each section that has commands for the selection
+                        sections.filter(section => section.length > 0).map(section =>
+                            <section class="flex flex-row gap-0.5 p-1 surface">
                                 {
                                     section.map(command => {
                                         const tooltip = tooltips.get(command);
                                         if (!tooltip) console.error("invalid tooltip for " + command);
-                                        return <solidify-command name={command.identifier} class="shadow-lg first:rounded-l last:rounded-r overflow-clip" tooltipPlacement="top"></solidify-command>
+                                        return <solidify-command name={command.identifier} tooltipPlacement="top"></solidify-command>
                                     })
                                 }
                             </section>
@@ -133,7 +134,9 @@ export default (editor: Editor) => {
                     }
                     {
                         trash !== undefined &&
-                        <solidify-command name="delete" class="rounded-full overflow-clip" tooltipPlacement="top"></solidify-command>
+                        <section class="flex p-1 surface">
+                            <solidify-command name="delete" tooltipPlacement="top"></solidify-command>
+                        </section>
                     }
                 </div>
             );

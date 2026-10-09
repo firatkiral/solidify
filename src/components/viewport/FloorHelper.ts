@@ -50,6 +50,12 @@ abstract class Grid extends THREE.Group {
 
     protected abstract configure(material: THREE.LineBasicMaterial): void;
 
+    // After the colors it was made with changed
+    recolor() {
+        this.minor.material.color.copy(this.color1);
+        this.major.material.color.copy(this.color2);
+    }
+
     dispose() {
         for (const lines of [this.minor, this.major]) {
             lines.geometry.dispose();

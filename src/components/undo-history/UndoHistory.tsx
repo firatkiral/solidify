@@ -17,11 +17,11 @@ export default (editor: Editor) => {
         render = () => {
             render(
                 <div class="p-4">
-                    <h1 class="mb-4 text-xs font-bold text-neutral-100">Undo history</h1>
+                    <h1 class="mb-4 text-xs font-bold text-ui-title">Undo history</h1>
                     <ol class="space-y-1">
                         {editor.history.undoStack.map(({ name }) =>
-                            <li class="flex justify-between items-center py-0.5 px-3 rounded hover:bg-neutral-700">
-                                <div class="text-xs text-neutral-400">{name}</div>
+                            <li class="flex justify-between items-center py-0.5 px-3 rounded hover:bg-ui-hover">
+                                <div class="text-xs text-ui-muted">{name}</div>
                             </li>
                         )}
                     </ol>

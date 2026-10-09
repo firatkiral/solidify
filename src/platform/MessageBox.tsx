@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { MessageBoxOptions } from './Platform';
 
-const button = "px-3 py-1 rounded-md text-sm text-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400";
+const button = "px-3 py-1 rounded-md text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
 
 // The app's own message box: the browser's confirm can't name its buttons, as in Save / Don't Save / Cancel.
 // Enter chooses the focused button, which starts as the default one, or the default one from the text field;
@@ -40,18 +40,18 @@ export function showMessageBox(options: MessageBoxOptions): Promise<{ response: 
         };
 
         render(
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="alertdialog" aria-modal="true">
-                <div class="w-[420px] max-w-[90vw] p-4 rounded-lg bg-neutral-800 text-neutral-200 shadow-black/30 shadow-xl ring-1 ring-neutral-600 ring-opacity-5">
-                    <div class={`text-sm font-semibold ${type === 'error' ? 'text-red-300' : 'text-neutral-100'}`}>{message}</div>
-                    {detail !== undefined && <div class="mt-1 text-xs text-neutral-400 select-text break-words">{detail}</div>}
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-ui-backdrop" role="alertdialog" aria-modal="true">
+                <div class="w-[420px] max-w-[90vw] p-4 rounded-lg bg-ui-surface text-ui-text shadow-ui-shadow shadow-xl ring-1 ring-ui-border">
+                    <div class={`text-sm font-semibold ${type === 'error' ? 'text-ui-danger-text' : 'text-ui-title'}`}>{message}</div>
+                    {detail !== undefined && <div class="mt-1 text-xs text-ui-muted select-text break-words">{detail}</div>}
                     {input !== undefined &&
                         <input type="text" value={input} spellcheck={false} aria-label={message}
-                            class="w-full mt-3 px-2 py-1 rounded-md text-sm text-neutral-100 bg-neutral-900 ring-1 ring-white/10 focus:outline-none focus:ring-accent-400"
+                            class="w-full mt-3 px-2 py-1 rounded-md text-sm text-ui-title bg-ui-bg ring-1 ring-ui-border focus:outline-none focus:ring-ui-focus"
                             onInput={e => input = e.currentTarget.value} />}
                     <div class="flex justify-end mt-4 space-x-2">
                         {buttons.map((label, i) =>
                             <button
-                                class={`${button} ${i === defaultId ? 'bg-accent-600 hover:bg-accent-500' : 'bg-white/10 hover:bg-white/20'}`}
+                                class={`${button} ${i === defaultId ? 'text-ui-on-primary bg-ui-primary hover:bg-ui-primary-hover' : 'text-ui-title bg-ui-raised hover:bg-ui-hover'}`}
                                 data-default={i === defaultId ? '' : undefined}
                                 onClick={() => finish(i)}>
                                 {label}

@@ -5,11 +5,14 @@ import * as cmd from './commands/GeometryCommands';
 import Clipboard from './components/clipboard/Clipboard';
 import Creators from './components/creators/Creators';
 import Dialog from './components/dialog/Dialog';
+import Drawer from './components/drawer/Drawer';
+import PropertiesPanel from './components/drawer/PropertiesPanel';
+import SelectionPanel from './components/drawer/SelectionPanel';
+import ViewPanel from './components/drawer/ViewPanel';
 import NumberScrubber from './components/dialog/NumberScrubber';
 import Prompt from './components/dialog/Prompt';
 import Menu from './components/menu/Menu';
 import Outliner from './components/outliner/Outliner';
-import { restorePaneSizes } from './components/pane/Pane';
 import Planes from './components/planes/Planes';
 import Home from './components/home/Home';
 import UpdateNotice from './components/update/UpdateNotice';
@@ -31,6 +34,7 @@ import './css/index.css';
 import { Editor } from './editor/Editor';
 import { isDocument, isImportable } from './editor/ImporterExporter';
 import { OpenedFile } from './platform/Platform';
+import { setTheme } from './startup/Appearance';
 import { ConfigFiles } from './startup/ConfigFiles';
 
 
@@ -39,10 +43,11 @@ ConfigFiles.loadSettings();
 
 export const editor = new Editor();
 
-// The Snaps panel and the panes come back as they were left
+setTheme(editor.settings.Appearance.theme);
+
+// The Snaps panel comes back as it was left
 editor.snaps.settings = editor.settings.Snaps;
 editor.signals.snapSettingsChanged.add(() => ConfigFiles.updateSettings('Snaps', editor.snaps.settings));
-restorePaneSizes(editor.settings.Layout.panes);
 
 Object.defineProperty(window, 'editor', {
     value: editor,
@@ -81,6 +86,10 @@ Tooltip(editor);
 Stats(editor);
 Snaps(editor);
 Planes(editor);
+PropertiesPanel(editor);
+SelectionPanel(editor);
+ViewPanel(editor);
+Drawer(editor);
 Clipboard(editor);
 Menu(editor);
 Settings(editor);
@@ -127,4 +136,14 @@ document.addEventListener('dragover', e => {
     if (!hasFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
+});
+
+// The app has its own right-click menus; the browser's shows only in text fields, to paste or fix spelling
+const notText = ['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image'];
+document.addEventListener('contextmenu', e => {
+    const target = e.target;
+    const isTextField = target instanceof HTMLTextAreaElement
+        || (target instanceof HTMLInputElement && !notText.includes(target.type))
+        || (target instanceof HTMLElement && target.isContentEditable);
+    if (!isTextField) e.preventDefault();
 });

@@ -11,6 +11,7 @@ import { TextureLoader } from "../editor/TextureLoader";
 import basic_side from '../img/matcap/basic_side.exr';
 import ceramicDark from '../img/matcap/ceramic_dark.exr';
 import { HasSelectedAndHovered, Selectable } from "../selection/SelectionDatabase";
+import { paletteColor, themeChanged } from "../startup/Appearance";
 import { Theme } from "../startup/ConfigFiles";
 import * as visual from '../visual_model/VisualModel';
 
@@ -407,6 +408,11 @@ line_selected.depthFunc = THREE.AlwaysDepth;
 
 const line_hovered = new LineMaterial({ color: 0xffffff, linewidth: 2, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 line_hovered.depthFunc = THREE.AlwaysDepth;
+// Standing out from the 3D view's background, light or dark
+themeChanged.add(() => {
+    const style = paletteColor('scene-hover');
+    if (style !== '') line_hovered.color.setStyle(style).convertSRGBToLinear();
+});
 
 export const face_unhighlighted_matcap = new THREE.MeshMatcapMaterial();
 face_unhighlighted_matcap.fog = false;

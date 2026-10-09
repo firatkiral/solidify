@@ -176,13 +176,13 @@ export default (editor: Editor) => {
                         const visible = scene.isVisible(virtual);
                         const isDisplayed = item.displayed;
                         return <div class={`${isDisplayed ? '' : 'opacity-50'} flex gap-1 pl-1 pr-3 overflow-hidden items-center rounded-md group`} style={`padding-left: ${4 + indentSize * indent}px`}>
-                            <solidify-icon name="nav-arrow-down" class="text-neutral-500"></solidify-icon>
-                            <solidify-icon name="folder-solids" class="text-neutral-500 group-hover:text-neutral-200"></solidify-icon>
+                            <solidify-icon name="nav-arrow-down" class="text-ui-faint"></solidify-icon>
+                            <solidify-icon name="folder-solids" class="text-ui-faint group-hover:text-ui-text"></solidify-icon>
                             <div class="py-0.5 flex-1">
-                                <div class="w-full text-neutral-300 text-xs group-hover:text-neutral-100 h-6 p-0.5 bg-transparent rounded pointer-events-none overflow-hidden overflow-ellipsis whitespace-nowrap">{name}</div>
+                                <div class="w-full text-ui-text text-xs group-hover:text-ui-title h-6 p-0.5 bg-transparent rounded pointer-events-none overflow-hidden overflow-ellipsis whitespace-nowrap">{name}</div>
                             </div>
                             <button
-                                class="py-0.5 rounded group text-neutral-300 group-hover:visible invisible hover:text-neutral-100"
+                                class="py-0.5 rounded group text-ui-text group-hover:visible invisible hover:text-ui-title"
                                 onClick={e => this.setVisibility(e, virtual, !visible)}
                             >
                                 <solidify-tooltip placement="top">Disable in viewport</solidify-tooltip>
@@ -193,17 +193,18 @@ export default (editor: Editor) => {
                 }
             });
             render(<>
-                <div class="flex justify-between pl-4 pt-4 pb-3 pr-5">
-                    <h1 class="text-xs font-bold text-neutral-100">Scene</h1>
+                <div class="panel-header">
+                    <solidify-icon name="outliner"></solidify-icon>
+                    <h1 class="panel-title">Outliner</h1>
                     <button
-                        class="py-0.5 rounded group text-neutral-300 hover:text-neutral-100"
+                        class="py-0.5 rounded group text-ui-muted hover:text-ui-title"
                         onClick={this.createGroup}
                     >
                         <solidify-icon name='add-circled-outline'></solidify-icon>
                         <solidify-tooltip placement="top" command="command:group-selected">Create group (of selected items)</solidify-tooltip>
                     </button>
                 </div>
-                <div class="pl-3 pr-3">
+                <div class="py-2 px-3">
                     {result}
                 </div>
             </>, this);

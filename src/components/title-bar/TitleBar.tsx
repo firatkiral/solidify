@@ -16,44 +16,60 @@ const time = (ms: number) =>
 export const restoreNote = (editor: Editor) =>
     `Autosaves are kept in this browser, which can clear them to make space. ${editor.platform.files.savesInPlace ? 'Save' : 'Download'} to keep your work.`;
 
-const row = "flex items-center justify-between px-3 py-1.5 rounded-md text-sm";
-const enabledRow = `${row} text-neutral-200 hover:bg-white/20 cursor-default`;
-const disabledRow = `${row} text-neutral-500 pointer-events-none`;
-const panel = "p-1.5 rounded-lg text-neutral-50 shadow-black/20 shadow-lg ring-1 ring-neutral-600 ring-opacity-5";
+const row = "flex items-center justify-between px-3 py-1.5 rounded-md text-xs";
+const enabledRow = `${row} text-ui-text hover:bg-ui-hover cursor-default`;
+const disabledRow = `${row} text-ui-faint pointer-events-none`;
+const panel = "p-1.5 surface text-ui-title";
 
 export default (editor: Editor) => {
+    // The window's title bar, with the document's name, where the installed app has it (see index.css); elsewhere it's
+    // hidden, and keeps the browser tab's title
     class TitleBar extends HTMLElement {
-        constructor() {
-            super();
-            this.render = this.render.bind(this);
-        }
-
         connectedCallback() { this.render() }
-        disconnectedCallback() { }
+
+        render() {
+            render(
+                <div class="hidden titlebar">
+                    <solidify-document-title class="text-xs text-center pointer-events-none titlebar-title text-ui-text"></solidify-document-title>
+                </div>, this);
+        }
+    }
+    customElements.define('solidify-titlebar', TitleBar);
+
+    // The File menu, at the viewport's top left
+    class FileMenu extends HTMLElement {
+        connectedCallback() { this.render() }
 
         render() {
             const item = (label: string, command: string, keys?: string) =>
                 <li class={enabledRow} onClick={this.execute} data-command={command}>
                     <span>{label}</span>
-                    {keys !== undefined && <span class="pl-6 text-xs text-neutral-400">{keys}</span>}
+                    {keys !== undefined && <span class="pl-6 text-xs text-ui-muted">{keys}</span>}
                 </li>;
             const submenu = (label: string, list: JSX.Element) =>
                 <li class={`${enabledRow} group relative`}>
                     <span>{label}</span>
-                    <solidify-icon name="nav-arrow-right" class="text-neutral-400"></solidify-icon>
+                    <solidify-icon name="nav-arrow-right" class="text-ui-muted"></solidify-icon>
                     {/* Inside the menu, so moving onto it doesn't count as leaving the menu */}
                     <div class="hidden group-hover:block absolute left-full -top-1.5 pl-1">
-                        <div class={`${panel} bg-black/80 min-w-[16rem]`}>{list}</div>
+                        <div class={`${panel} min-w-[16rem]`}>{list}</div>
                     </div>
                 </li>;
-            const separator = <li class="my-1 border-t border-white/10"></li>;
+            const separator = <li class="my-1 border-t border-ui-divider"></li>;
 
-            const tools = <div class="titlebar-menu flex items-center justify-start space-x-1 mt-7 ml-4 z-40">
-                <button class="p-1 rounded stroke-1 group text-neutral-300 hover:bg-neutral-700 hover:text-neutral-50 ring-1 ring-neutral-600 ring-opacity-5">
-                    <solidify-icon name="file-menu"> </solidify-icon>
-                    <solidify-menu placement="bottom" trigger="onclick">
-                        <div class={`w-64 ${panel} backdrop-blur-xl bg-black/30`}>
+            render(
+                // Opened by clicking anywhere on its surface, and lined up with it
+                <div class="absolute top-2 left-2 z-40 p-1 surface">
+                    <button class="bar-button" aria-label="File menu">
+                        <solidify-icon name="menu"></solidify-icon>
+                    </button>
+                    <solidify-menu placement="bottom-start" trigger="onclick">
+                        <div class={`w-64 ${panel}`}>
                             <ol>
+                                <li class="px-3 pt-1.5 pb-1 text-xs truncate text-ui-muted cursor-default">
+                                    <solidify-document-title></solidify-document-title>
+                                </li>
+                                {separator}
                                 {item("New", "file:new", newShortcut)}
                                 {item("Open…", "file:open", shortcut('O'))}
                                 {submenu("Open Recent", <solidify-file-list kind="recent"></solidify-file-list>)}
@@ -75,13 +91,6 @@ export default (editor: Editor) => {
                             </ol>
                         </div>
                     </solidify-menu>
-                </button>
-            </div>;
-
-            render(
-                <div class="titlebar z-30 w-full absolute h-10 top-0 flex justify-between">
-                    {tools}
-                    <solidify-document-title class="titlebar-title absolute inset-x-0 top-0 mt-8 text-center text-xs text-neutral-300 pointer-events-none"></solidify-document-title>
                 </div>, this);
         }
 
@@ -99,7 +108,7 @@ export default (editor: Editor) => {
             element.dispatchEvent(new CustomEvent('closeMenu', { bubbles: true }));
         }
     }
-    customElements.define('solidify-titlebar', TitleBar);
+    customElements.define('solidify-file-menu', FileMenu);
 
     // The name of the open document, marked while it has unsaved changes, here and in the browser tab
     class DocumentTitle extends HTMLElement {
@@ -142,7 +151,7 @@ export default (editor: Editor) => {
                     {recent.map(d =>
                         <li class={openable(d) ? enabledRow : disabledRow} onClick={e => this.choose(e, () => editor.openRecent(d))}>
                             <span class="truncate">{d.name}</span>
-                            <span class="pl-6 text-xs text-neutral-400 whitespace-nowrap">{openable(d) ? time(d.time) : 'Open from its file'}</span>
+                            <span class="pl-6 text-xs text-ui-muted whitespace-nowrap">{openable(d) ? time(d.time) : 'Open from its file'}</span>
                         </li>)}
                 </ol>, this);
             } else {
@@ -157,9 +166,9 @@ export default (editor: Editor) => {
                     {slots.map(slot =>
                         <li class={enabledRow} onClick={e => this.choose(e, () => editor.restore(slot))}>
                             <span class="truncate">{slot.name ?? 'Untitled'}</span>
-                            <span class="pl-6 text-xs text-neutral-400 whitespace-nowrap">{time(slot.time)}</span>
+                            <span class="pl-6 text-xs text-ui-muted whitespace-nowrap">{time(slot.time)}</span>
                         </li>)}
-                    <li class="px-3 pt-2 pb-1 mt-1 border-t border-white/10 text-xs text-neutral-400 whitespace-normal">{restoreNote(editor)}</li>
+                    <li class="px-3 pt-2 pb-1 mt-1 border-t border-ui-divider text-xs text-ui-muted whitespace-normal">{restoreNote(editor)}</li>
                 </ol>, this);
             }
         }

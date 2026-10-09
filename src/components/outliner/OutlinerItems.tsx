@@ -41,7 +41,7 @@ export default (editor: Editor) => {
             const input = !editable
                 ? <input
                     type="text"
-                    class={`w-full text-xs ${isSelected ? 'text-accent-100 hover:text-accent-50' : 'text-neutral-300 group-hover:text-neutral-100'} h-6 p-0.5 bg-transparent rounded pointer-events-none overflow-hidden overflow-ellipsis whitespace-nowrap`}
+                    class={`w-full text-xs ${isSelected ? 'text-ui-title' : 'text-ui-text group-hover:text-ui-title'} h-6 p-0.5 bg-transparent rounded pointer-events-none overflow-hidden overflow-ellipsis whitespace-nowrap`}
                     ref={this.ref}
                     autoComplete='no' autocorrect='off' spellCheck={false}
                     placeholder={klass} value={name}
@@ -59,7 +59,7 @@ export default (editor: Editor) => {
             const anySettingsForThisSpecificItem = hidden || !visible || !selectable;
             const result =
                 <div
-                    class={`flex gap-1 pr-3 overflow-hidden items-center group ${isDisplayed ? '' : 'opacity-50'}  ${isSelected ? 'bg-accent-600 hover:bg-accent-500' : 'hover:bg-neutral-600 hover:rounded'}`} style={`padding-left: ${4 + indentSize * indent}px`}
+                    class={`flex gap-1 pr-3 overflow-hidden items-center group ${isDisplayed ? '' : 'opacity-50'}  ${isSelected ? 'selected-row' : 'hover:bg-ui-hover hover:rounded'}`} style={`padding-left: ${4 + indentSize * indent}px`}
                     onClick={e => { if (isDisplayed) this.select(e); }}
                     onPointerMove={e => { if (isDisplayed) this.hover(e) }}
                 >
@@ -67,11 +67,11 @@ export default (editor: Editor) => {
                         ? <button
                             onClick={e => this.expand(e)}
                         >
-                            <solidify-icon name="nav-arrow-down" class="text-neutral-500 hover:text-neutral-300"></solidify-icon>
+                            <solidify-icon name="nav-arrow-down" class="text-ui-faint hover:text-ui-text"></solidify-icon>
                         </button>
                         : <div class="w-4 h-4"></div>
                     }
-                    <solidify-icon name={klass.toLowerCase()} class={isSelected ? 'text-accent-100 hover:text-accent-50' : 'text-accent-500 hover:text-neutral-50'}></solidify-icon>
+                    <solidify-icon name={klass.toLowerCase()} class={isSelected ? 'text-ui-accent' : 'text-ui-muted group-hover:text-ui-text'}></solidify-icon>
                     <div
                         class="py-0.5 flex-1"
                         onDblClick={e => { if (!editable) this.editName(e) }}
@@ -80,21 +80,21 @@ export default (editor: Editor) => {
                     </div>
                     {!editable && <>
                         <button
-                            class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${hidden ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
+                            class={`px-1 rounded group ${isSelected ? 'text-ui-accent hover:text-ui-title' : `text-ui-text hover:text-ui-title`} ${hidden ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setHidden(e, !hidden)}
                         >
                             <solidify-tooltip placement="top" command="command:hide-selected">Hide in viewport</solidify-tooltip>
                             <solidify-icon key={!hidden} name={!hidden ? 'eye' : 'eye-off'}></solidify-icon>
                         </button>
                         <button
-                            class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${!visible ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
+                            class={`px-1 rounded group ${isSelected ? 'text-ui-accent hover:text-ui-title' : `text-ui-text hover:text-ui-title`} ${!visible ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setVisibility(e, !visible)}
                         >
                             <solidify-tooltip placement="top">Disable in viewport</solidify-tooltip>
                             <solidify-icon key={visible} name={visible ? 'light-bulb-on' : 'light-bulb-off'}></solidify-icon>
                         </button>
                         <button
-                            class={`px-1 rounded group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`} ${!selectable ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
+                            class={`px-1 rounded group ${isSelected ? 'text-ui-accent hover:text-ui-title' : `text-ui-text hover:text-ui-title`} ${!selectable ? '' : anySettingsForThisSpecificItem ? `group-hover:visible invisible` : `group-hover:block hidden`}`}
                             onClick={e => this.setSelectable(e, !selectable)}
                         >
                             <solidify-tooltip placement="top">Disable selection in viewport</solidify-tooltip>
@@ -102,7 +102,7 @@ export default (editor: Editor) => {
                         </button>
                         <button
                             style={color === undefined ? "" : `background-color: #${color}`}
-                            class={`w-2 h-2 px-1 rounded-full group ${isSelected ? 'text-accent-300 hover:text-accent-100' : `text-neutral-300 hover:text-neutral-100`}`}
+                            class={`w-2 h-2 px-1 rounded-full group ${isSelected ? 'text-ui-accent hover:text-ui-title' : `text-ui-text hover:text-ui-title`}`}
                         >
                         </button>
                     </>
@@ -197,7 +197,7 @@ export default (editor: Editor) => {
             const { group } = this;
             const name = group.isRoot ? "Scene" : scene.getName(group) ?? `Group ${group.id}`;
             const result = <h2
-                class="flex justify-between items-center py-0.5 px-2 space-x-2 text-xs font-bold rounded text-neutral-100 hover:bg-neutral-700"
+                class="flex justify-between items-center py-0.5 px-2 space-x-2 text-xs font-bold rounded text-ui-title hover:bg-ui-hover"
             >
                 {name}
             </h2>;
@@ -237,7 +237,7 @@ export class ToggleVisibilityCommand extends cmd.CommandLike {
     }
 }
 
-class ToggleHiddenCommand extends cmd.CommandLike {
+export class ToggleHiddenCommand extends cmd.CommandLike {
     constructor(
         editor: cmd.EditorLike,
         private readonly item: RealNodeItem,
@@ -252,7 +252,7 @@ class ToggleHiddenCommand extends cmd.CommandLike {
     }
 }
 
-class ToggleSelectableCommand extends cmd.CommandLike {
+export class ToggleSelectableCommand extends cmd.CommandLike {
     constructor(
         editor: cmd.EditorLike,
         private readonly item: NodeItem,
@@ -268,7 +268,7 @@ class ToggleSelectableCommand extends cmd.CommandLike {
     }
 }
 
-class SetNameCommand extends cmd.CommandLike {
+export class SetNameCommand extends cmd.CommandLike {
     constructor(
         editor: cmd.EditorLike,
         private readonly item: RealNodeItem,

@@ -266,7 +266,7 @@ export default (editor: Editor) => {
             const onBlur = () => { that.state = { tag: 'none' }; that.render() };
             let input;
 
-            const classes = `py-1 px-2 w-full h-6 text-xs leading-tight text-center align-middle rounded bg-neutral-700 text-neutral-200 ${this.isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-neutral-800'}`;
+            const classes = `py-1 px-2 w-full h-6 text-xs leading-tight text-center align-middle rounded bg-ui-raised text-ui-text ${this.isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-ui-hover'}`;
             switch (this.state.tag) {
                 case 'none':
                 case 'dragging':

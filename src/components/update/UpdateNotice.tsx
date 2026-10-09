@@ -41,10 +41,10 @@ export default (editor: Editor) => {
             }
             const required = this.state === 'required';
             render(
-                <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-lg bg-neutral-800 text-sm text-neutral-100 shadow-black/40 shadow-xl ring-1 ring-neutral-600 ring-opacity-5" role="status">
+                <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-lg bg-ui-surface text-sm text-ui-title shadow-ui-shadow shadow-xl ring-1 ring-ui-border" role="status">
                     <span>{required ? "Solidify was updated, and needs a reload to go on." : "A new version of Solidify is ready."}</span>
-                    <button class="px-3 py-1 rounded-md bg-accent-600 hover:bg-accent-500" onClick={this.reload}>Reload</button>
-                    {!required && <button class="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20" onClick={this.later}>Later</button>}
+                    <button class="px-3 py-1 rounded-md text-ui-on-primary bg-ui-primary hover:bg-ui-primary-hover" onClick={this.reload}>Reload</button>
+                    {!required && <button class="px-3 py-1 rounded-md bg-ui-raised hover:bg-ui-hover" onClick={this.later}>Later</button>}
                 </div>, this);
         }
     }

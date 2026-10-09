@@ -1,7 +1,7 @@
 import { CompositeDisposable } from "event-kit";
 import { listen } from '../atom/delegated-listener';
 
-export type MenuPlacement = 'top' | 'bottom' | 'left' | 'right' | 'auto';
+export type MenuPlacement = 'top' | 'bottom' | 'bottom-start' | 'left' | 'right' | 'auto';
 export type MenuTrigger = 'onclick' | 'oncontextmenu';
 
 interface MenuOptions {
@@ -53,6 +53,8 @@ export class Menu {
     }
 
     private calculateOffset(placement: MenuPlacement, pos: DOMRect, actualWidth: number, actualHeight: number): MenuOffset {
+        // Lined up with the target's left edge: the padding that keeps the pointer on the menu goes to its left
+        if (placement === 'bottom-start') return { top: pos.top + pos.height, left: pos.left - this.inset };
         {
             return placement === 'bottom'
                 ? {
@@ -134,7 +136,8 @@ export class Menu {
                     viewportDimensions.top + viewportDimensions.height - bottomEdgeOffset;
             }
         } else {
-            var leftEdgeOffset = pos.left - viewportPadding;
+            const inset = placement === 'bottom-start' ? this.inset : 0;
+            var leftEdgeOffset = pos.left + inset - viewportPadding;
             var rightEdgeOffset = pos.left + viewportPadding + actualWidth;
             if (leftEdgeOffset < viewportDimensions.left) {
                 // left overflow
@@ -147,6 +150,10 @@ export class Menu {
         }
 
         return delta;
+    }
+
+    private get inset() {
+        return parseFloat(window.getComputedStyle(this.div).paddingLeft);
     }
 
     private leave = () => {

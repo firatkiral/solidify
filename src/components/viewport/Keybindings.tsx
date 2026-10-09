@@ -28,7 +28,7 @@ export default (editor: Editor) => {
                 section.push(name);
             }
             const result = [...sections].map(([prefix, values]) =>
-                <dl class="grid grid-cols-2 auto-rows-[1.25rem] w-52 text-xs bg-transparent text-neutral-100 min-h-24 min-w-[6rem] first-of-type:mr-8">
+                <dl class="grid grid-cols-2 auto-rows-[1.25rem] w-52 text-xs bg-transparent text-ui-text min-h-24 min-w-[6rem]">
                     {[...values].map(postfix => {
                         const command = `${prefix}:${postfix}`;
                         const bindings = keymaps.findKeyBindings({ command });
@@ -42,14 +42,15 @@ export default (editor: Editor) => {
 
                         return <>
                             <dt class="px-1">
-                                <label class="text-center px-1 mr-1 text-xs font-extrabold border min-w-[1.5rem] text-neutral-50 border-neutral-200 float-right">{keystroke}</label>
+                                <label class="float-right px-1 mr-1.5 text-center rounded ring-1 text-[11px] font-medium leading-4 min-w-[1.5rem] bg-ui-surface ring-ui-border text-ui-text">{keystroke}</label>
                             </dt>
                             <dd>{desc}</dd>
                         </>
                     })}
                 </dl>
             );
-            render(<div class="flex absolute right-3 bottom-3 space-x-2 pointer-events-none">
+            // Above the command's options; the sections wrap where there isn't room for them side by side
+            render(<div class="flex flex-wrap gap-y-2 gap-x-8">
                 {result}
             </div>, this);
         }

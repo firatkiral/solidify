@@ -99,15 +99,15 @@ export class ExportDialog extends AbstractDialog<ExportParams> {
                         </div>
                     </li>}
                 </ul>
-                <div class="px-3 pt-2 pb-1 text-xs text-neutral-300 space-y-0.5 select-text">
-                    {summary === undefined ? <div>Measuring…</div> : summary.solids === 0 ? <div class="text-yellow-300">There's nothing to export.</div> : <>
+                <div class="px-3 pt-2 pb-1 text-xs text-ui-text space-y-0.5 select-text">
+                    {summary === undefined ? <div>Measuring…</div> : summary.solids === 0 ? <div class="text-ui-warning">There's nothing to export.</div> : <>
                         <div>
                             {summary.solids === 1 ? '1 solid' : `${count.format(summary.solids)} solids`}
                             {summary.triangles !== undefined && ` · ${count.format(summary.triangles)} triangles`}
                             {summary.size !== undefined && ` · ${format === ExportFormat.STL ? '' : 'about '}${bytes(summary.size)}`}
                         </div>
                         {size !== undefined && <div>Size {size}</div>}
-                        {summary.problems.map(problem => <div class="text-yellow-300">⚠ {problem}</div>)}
+                        {summary.problems.map(problem => <div class="text-ui-warning">⚠ {problem}</div>)}
                     </>}
                 </div>
             </>, this);

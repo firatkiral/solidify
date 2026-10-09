@@ -46,3 +46,43 @@ describe('setResolution', () => {
         expect(line.resolution.height).toEqual(r2.height);
     })
 });
+describe('mementos', () => {
+    test('undoing an edit restores the material it was made on', () => {
+        const id = materials.add("Red", new THREE.MeshPhysicalMaterial({ color: 0xff0000, roughness: 0.5 }));
+        const material = materials.get(id) as THREE.MeshPhysicalMaterial;
+        const before = materials.saveToMemento();
+
+        material.color.set(0x00ff00);
+        material.roughness = 0.9;
+        materials.restoreFromMemento(before);
+
+        expect(materials.get(id)).toBe(material);
+        expect(material.color.getHex()).toBe(0xff0000);
+        expect(material.roughness).toBe(0.5);
+    });
+
+    test('restoring leaves the memento as it was, for restoring again', () => {
+        const id = materials.add("Red", new THREE.MeshPhysicalMaterial({ color: 0xff0000 }));
+        const before = materials.saveToMemento();
+
+        materials.restoreFromMemento(before);
+        materials.get(id).color.set(0x0000ff);
+        materials.restoreFromMemento(before);
+
+        expect(materials.get(id).color.getHex()).toBe(0xff0000);
+    });
+
+    test('materials added since are removed, and removed ones come back', () => {
+        const kept = materials.add("Kept", new THREE.MeshPhysicalMaterial({ color: 0xff0000 }));
+        const before = materials.saveToMemento();
+        const added = materials.add("Added", new THREE.MeshPhysicalMaterial());
+
+        materials.restoreFromMemento(before);
+        expect(() => materials.get(added)).toThrow();
+        expect(materials.get(kept).color.getHex()).toBe(0xff0000);
+
+        materials.clear();
+        materials.restoreFromMemento(before);
+        expect(materials.get(kept).color.getHex()).toBe(0xff0000);
+    });
+});

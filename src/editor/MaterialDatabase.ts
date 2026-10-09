@@ -88,14 +88,29 @@ export class BasicMaterialDatabase implements MaterialDatabase, MementoOriginato
     region(): THREE.Material { return region }
     controlPoint(): BetterRaycastingPointsMaterial { return controlPoint }
 
+    // Copies, so editing a material later doesn't change what was saved
     saveToMemento(): MaterialMemento {
-        // TODO: deep copy
-        return new MaterialMemento(this.counter, new Map(this.materials));
+        const materials = new Map([...this.materials].map(([id, { name, material }]) => [id, { name, material: material.clone() }]));
+        return new MaterialMemento(this.counter, materials);
     }
 
+    // Into the materials there are, where it can, so what's drawn with them shows the saved settings; and never the
+    // saved materials themselves, which editing would change
     restoreFromMemento(m: MaterialMemento): void {
         (this.counter as BasicMaterialDatabase['counter']) = m.counter;
-        (this.materials as BasicMaterialDatabase['materials']) = new Map(m.materials);
+        const materials = new Map<number, { name: string, material: THREE.Material & { color: THREE.Color } }>();
+        for (const [id, { name, material: saved }] of m.materials) {
+            const existing = this.materials.get(id)?.material;
+            let material;
+            if (existing !== undefined && existing.type === saved.type) {
+                material = existing.copy(saved) as THREE.Material & { color: THREE.Color };
+                material.needsUpdate = true;
+            } else {
+                material = saved.clone();
+            }
+            materials.set(id, { name, material });
+        }
+        (this.materials as BasicMaterialDatabase['materials']) = materials;
     }
 
     clear() {

@@ -2,35 +2,167 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The app's colours, all of them: the logo's blues and cyan, on the zinc of its background, dark and then light. Everything
+   uses these, through the ui-* colours in tailwind.config.js. (The loading screen in index.html repeats a few, as it shows
+   before this loads) */
+:root {
+    --ui-bg: #111115;
+    --ui-viewport: #27272a;
+    --ui-surface: #18181b;
+    --ui-raised: rgb(255 255 255 / 0.06);
+    --ui-hover: rgb(255 255 255 / 0.1);
+    --ui-border: rgb(255 255 255 / 0.08);
+    --ui-divider: rgb(255 255 255 / 0.06);
+    --ui-backdrop: rgb(0 0 0 / 0.5);
+    --ui-shadow: rgb(0 0 0 / 0.4);
+
+    --ui-title: #fafafa;
+    --ui-text: #e4e4e7;
+    --ui-muted: #a1a1aa;
+    --ui-faint: #71717a;
+
+    /* Blue means on or selected (the sky icon on the blue tint), or the primary action */
+    --ui-accent: #04a6fc;
+    --ui-tint: rgb(10 143 249 / 0.2);
+    --ui-tint-hover: rgb(10 143 249 / 0.3);
+    --ui-primary: #0766e2;
+    --ui-primary-hover: #0a8ff9;
+    --ui-on-primary: #ffffff;
+    --ui-focus: #00d7fe;
+
+    --ui-danger: #e12d39;
+    --ui-danger-text: #f86a6a;
+    --ui-danger-tint: rgb(225 45 57 / 0.25);
+    --ui-warning: #fde047;
+    --ui-success: #22c55e;
+
+    /* In the 3D view (Viewport.tsx and the scene read these) */
+    --ui-grid: #3f3f46;
+    --ui-grid-major: #52525b;
+    --ui-scene-hover: #fefce8;
+
+    color-scheme: dark;
+}
+
+/* Light, chosen in Settings › Appearance, or the system's; the logo's deep blue stands in for its sky, which is too
+   faint on white */
+:root[data-theme="light"] {
+    --ui-bg: #e4e4e7;
+    --ui-viewport: #f4f4f5;
+    --ui-surface: #ffffff;
+    --ui-raised: rgb(0 0 0 / 0.05);
+    --ui-hover: rgb(0 0 0 / 0.07);
+    --ui-border: rgb(0 0 0 / 0.1);
+    --ui-divider: rgb(0 0 0 / 0.07);
+    --ui-backdrop: rgb(0 0 0 / 0.3);
+    --ui-shadow: rgb(0 0 0 / 0.12);
+
+    --ui-title: #18181b;
+    --ui-text: #3f3f46;
+    --ui-muted: #52525b;
+    --ui-faint: #71717a;
+
+    --ui-accent: #0766e2;
+    --ui-tint: rgb(10 143 249 / 0.14);
+    --ui-tint-hover: rgb(10 143 249 / 0.22);
+    --ui-primary: #0766e2;
+    --ui-primary-hover: #0553cc;
+    --ui-focus: #04a6fc;
+
+    --ui-danger: #cf1124;
+    --ui-danger-text: #cf1124;
+    --ui-danger-tint: rgb(225 45 57 / 0.12);
+    --ui-warning: #a16207;
+    --ui-success: #16a34a;
+
+    --ui-grid: #e4e4e7;
+    --ui-grid-major: #d4d4d8;
+    --ui-scene-hover: #18181b;
+
+    color-scheme: light;
+}
+
 @layer components {
 
-    solidify-pane-axis,
-    solidify-pane {
-        @apply flex-1 min-w-0;
+    /* The design's shared pieces. A surface is anything that floats over the viewport: the bars of buttons, menus, the
+       options panel, chips and tooltips */
+    .surface {
+        @apply rounded-lg ring-1 shadow-lg bg-ui-surface ring-ui-border shadow-ui-shadow;
     }
 
-    solidify-pane-axis.horizontal {
-        @apply flex w-full h-full;
+    .chip {
+        @apply rounded-full ring-1 shadow-lg bg-ui-surface ring-ui-border shadow-ui-shadow;
     }
 
-    solidify-pane-axis.vertical {
-        @apply flex flex-col h-full;
+    /* A button on a surface: quiet until it's hovered, tinted while it's on. Solid accent is kept for primary buttons */
+    .bar-button {
+        @apply block p-2 rounded-md cursor-pointer text-ui-text;
     }
 
-    solidify-pane {
-        @apply relative overflow-y-auto bg-transparent rounded-lg min-h-20;
+    .bar-button:hover {
+        @apply bg-ui-hover text-ui-title;
     }
 
-    solidify-pane-axis.horizontal solidify-pane-resize-handle {
-        @apply w-2 h-full cursor-col-resize;
+    .bar-button.on,
+    input:checked+.bar-button {
+        @apply bg-ui-tint text-ui-accent;
     }
 
-    solidify-pane-axis.vertical solidify-pane-resize-handle {
-        @apply w-full h-2 cursor-row-resize;
+    .selected-row {
+        @apply bg-ui-tint;
+    }
+
+    .bar-button.on:hover,
+    input:checked+.bar-button:hover,
+    .selected-row:hover {
+        @apply bg-ui-tint-hover;
+    }
+
+    solidify-command[name="delete"]>.bar-button:hover {
+        @apply bg-ui-danger-tint text-ui-danger-text;
+    }
+
+    /* The top of a panel in the drawer, its icon and name, as tall as the bars of buttons */
+    .panel-header {
+        @apply flex sticky top-0 z-10 gap-2 items-center px-6 h-[42px] border-b bg-ui-surface border-ui-divider text-ui-muted;
+    }
+
+    .panel-title {
+        @apply flex-1 min-w-0 text-[11px] font-semibold tracking-wider uppercase truncate;
     }
 
     solidify-viewport {
-        @apply overflow-clip bg-viewport;
+        @apply relative flex-1 min-w-0 rounded-lg overflow-clip bg-ui-viewport;
+    }
+
+    /* Floating down the viewport's right edge, 8px in from it (it's in the workspace, which has 8px around the viewport);
+       its panel scrolls where it's longer. Drawer.tsx slides it in and out. It leaves the viewport 320px (as in
+       Drawer.tsx), room for the palette, the construction plane, the navigator and the tab buttons in a row */
+    solidify-drawer {
+        @apply flex absolute top-4 right-4 bottom-4 z-30 flex-col min-w-[200px];
+        max-width: calc(100% - 352px);
+    }
+
+    /* Pushed left, out of the drawer's way, as it opens (Drawer.tsx sets --drawer-inset on the viewport) */
+    .clear-of-drawer {
+        right: calc(0.5rem + var(--drawer-inset, 0px));
+    }
+
+    .centred-clear-of-drawer {
+        left: calc((100% - var(--drawer-inset, 0px)) / 2);
+    }
+
+    /* Its left edge, half outside it */
+    solidify-drawer>.drawer-handle {
+        @apply absolute top-0 -left-1 z-10 w-2 h-full cursor-col-resize;
+    }
+
+    solidify-drawer .drawer-card {
+        @apply flex overflow-hidden flex-col flex-1 min-h-0;
+    }
+
+    solidify-drawer .drawer-card>[data-tab]:not([hidden]) {
+        @apply block flex-1 min-h-0 overflow-y-auto;
     }
 
     solidify-viewport,
@@ -40,7 +172,7 @@
     }
 
     .axis-helper {
-        @apply pointer-events-none text-xs absolute z-50 max-w-xs px-2 py-1 text-center border-[0.5px] rounded text-neutral-50 bg-neutral-500 border-neutral-400 shadow-black/20 shadow-md;
+        @apply absolute z-50 px-2 py-1 max-w-xs text-xs text-center rounded-md ring-1 shadow-lg pointer-events-none text-ui-text bg-ui-surface ring-ui-border shadow-ui-shadow;
     }
 
     .tooltip {
@@ -53,7 +185,7 @@
     }
 
     .tooltip .tooltip-inner {
-        @apply max-w-xs px-2 py-1 text-center border-[0.5px] rounded text-neutral-50 bg-neutral-500 border-neutral-400 shadow-black/20 shadow-md;
+        @apply px-2 py-1 max-w-xs text-center rounded-md ring-1 shadow-lg text-ui-text bg-ui-surface ring-ui-border shadow-ui-shadow;
     }
 
     .tooltip.nowrap .tooltip-inner {
@@ -77,20 +209,25 @@
     }
 
     .select-box.contains {
-        @apply border border-accent-600 bg-accent-500 opacity-20;
+        @apply border border-ui-accent bg-ui-tint;
     }
 
+    /* Dashed while it selects whatever it touches */
     .select-box.intersects {
-        @apply border border-dashed border-supporting-600 bg-supporting-400 opacity-30;
+        @apply border border-dashed border-ui-accent bg-ui-tint;
     }
 
     solidify-button-group {
         @apply relative;
     }
 
-    solidify-button-group::before {
+    /* A small triangle in the corner marks a button that opens with more commands */
+    solidify-button-group::after {
         content: "";
-        @apply absolute bottom-0 left-0 w-full h-1 rotate-45 -translate-x-4 bg-neutral-500;
+        @apply absolute right-1 bottom-1 pointer-events-none;
+        border-style: solid;
+        border-width: 0 0 5px 5px;
+        border-color: transparent transparent var(--ui-faint) transparent;
     }
 
     solidify-dialog>div {
@@ -98,7 +235,7 @@
     }
 
     solidify-dialog.failure>div {
-        @apply border-2 border-red-700 border-dashed;
+        @apply border-2 border-dashed border-ui-danger;
     }
 
     solidify-dialog solidify-icon.alert {
@@ -110,7 +247,7 @@
     }
 
     solidify-dialog ol {
-        @apply flex flex-col py-2 m-3 my-1 space-y-1.5 text-xs border-b border-neutral-900;
+        @apply flex flex-col py-2 m-3 my-1 space-y-1.5 text-xs border-b border-ui-divider;
     }
 
     solidify-dialog ul,
@@ -125,7 +262,7 @@
 
     solidify-dialog ul>li>label,
     .solidify-menu ul>li>label {
-        @apply block w-1/4 px-1 text-xs text-neutral-200;
+        @apply block w-1/4 px-1 text-xs text-ui-text;
     }
 
     solidify-dialog ul>li>label+.fields,
@@ -163,22 +300,19 @@
     solidify-dialog ul>li>.fields>input[type="checkbox"]+label,
     .solidify-menu ul>li>.fields>input[type="radio"]+label,
     .solidify-menu ul>li>.fields>input[type="checkbox"]+label {
-        @apply block w-full px-3 py-1 text-xs text-center rounded cursor-pointer bg-neutral-500 text-neutral-100;
+        @apply block px-3 py-1 w-full text-xs text-center rounded-md cursor-pointer bg-ui-raised text-ui-text;
     }
 
     solidify-dialog ul>li>.fields>input[type="radio"]:checked+label,
     solidify-dialog ul>li>.fields>input[type="checkbox"]:checked+label,
     .solidify-menu ul>li>.fields>input[type="radio"]:checked+label,
     .solidify-menu ul>li>.fields>input[type="checkbox"]:checked+label {
-        @apply bg-accent-600 text-accent-100;
+        @apply bg-ui-tint text-ui-accent;
     }
 
-    solidify-dialog solidify-prompt.executing {
-        @apply bg-neutral-800;
-    }
-
+    solidify-dialog solidify-prompt.executing,
     solidify-dialog solidify-prompt.finished {
-        @apply bg-neutral-800;
+        @apply bg-ui-raised;
     }
 
     .solidify-menu {
@@ -188,6 +322,12 @@
 
 * {
     outline: none;
+}
+
+/* Keyboard focus shows */
+button:focus-visible {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 1px;
 }
 
 *::-webkit-scrollbar {
@@ -204,13 +344,11 @@ body {
     overscroll-behavior: none;
 }
 
-solidify-command > div.active {
-    @apply bg-accent-500 !important 
-}
-/* Installed, with the window's title bar given over to the app (Window Controls Overlay): the menu and the document's
-   name go in it, beside the window's own buttons, and the workspace starts below it */
+/* Installed, with the window's title bar given over to the app (Window Controls Overlay): the document's name goes in
+   it, beside the window's own buttons, and the workspace starts below it */
 @media (display-mode: window-controls-overlay) {
     .titlebar {
+        display: flex;
         position: fixed;
         left: env(titlebar-area-x, 0);
         top: env(titlebar-area-y, 0);
@@ -219,16 +357,6 @@ solidify-command > div.active {
         align-items: center;
         app-region: drag;
         -webkit-app-region: drag;
-    }
-
-    .titlebar .titlebar-menu {
-        margin: 0 0 0 8px;
-    }
-
-    .titlebar button,
-    .titlebar solidify-menu {
-        app-region: no-drag;
-        -webkit-app-region: no-drag;
     }
 
     /* Centred on the window, not on what's left of the title bar */
@@ -247,10 +375,5 @@ solidify-command > div.active {
     #workspace {
         top: env(titlebar-area-height, 33px);
         height: calc(100% - env(titlebar-area-height, 33px));
-    }
-
-    /* The menu has moved up out of the space kept for it */
-    #workspace .below-menu {
-        padding-top: 0;
     }
 }

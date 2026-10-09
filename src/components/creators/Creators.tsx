@@ -149,7 +149,7 @@ export default (editor: Editor) => {
 
         render() {
             render(
-                <button class="p-2 shadow-lg first:rounded-l last:rounded-r bg-neutral-800 group hover:bg-neutral-700" onPointerEnter={this.pointerEnter} onPointerLeave={this.pointerLeave} onPointerDown={this.pointerDown} tabIndex={-1}>
+                <button class="p-2 shadow-lg first:rounded-l last:rounded-r bg-ui-surface group hover:bg-ui-hover" onPointerEnter={this.pointerEnter} onPointerLeave={this.pointerLeave} onPointerDown={this.pointerDown} tabIndex={-1}>
                     <solidify-icon name={_.dasherize(c3d.CreatorType[this.creator.IsA()])}></solidify-icon>
                     <solidify-tooltip placement="top">{c3d.CreatorType[this.creator.IsA()]}</solidify-tooltip>
                 </button>

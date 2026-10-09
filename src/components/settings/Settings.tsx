@@ -2,6 +2,7 @@ import { Disposable } from 'event-kit';
 import { render } from 'preact';
 import { Editor } from '../../editor/Editor';
 import { FileType } from '../../platform/Platform';
+import { setTheme, ThemeSetting } from '../../startup/Appearance';
 import { ConfigFiles, OrbitMode } from '../../startup/ConfigFiles';
 import { restoreNote } from '../title-bar/TitleBar';
 import { ChangeEvent } from '../dialog/NumberScrubber';
@@ -9,13 +10,20 @@ import { LengthUnit, lengthUnits, unitSystem, unitSystems } from '../../util/Uni
 
 const APP_VERSION = process.env.APP_VERSION;
 
-type Tab = 'navigation' | 'units' | 'file' | 'privacy';
+type Tab = 'appearance' | 'navigation' | 'units' | 'file' | 'privacy';
 
 const tabs: { id: Tab, label: string }[] = [
+    { id: 'appearance', label: 'Appearance' },
     { id: 'navigation', label: 'Navigation' },
     { id: 'units', label: 'Units & grid' },
     { id: 'file', label: 'File' },
     { id: 'privacy', label: 'Privacy' },
+];
+
+const themes: { theme: ThemeSetting, label: string }[] = [
+    { theme: 'system', label: 'System' },
+    { theme: 'light', label: 'Light' },
+    { theme: 'dark', label: 'Dark' },
 ];
 
 const mouseControls: { mode: OrbitMode, label: string, hint: string }[] = [
@@ -34,7 +42,7 @@ const settingsFile: FileType = { description: 'Solidify settings', extensions: [
 export default (editor: Editor) => {
     class Settings extends HTMLElement {
         private isOpen = false;
-        private tab: Tab = 'navigation';
+        private tab: Tab = 'appearance';
         private orbitMode: OrbitMode | 'custom' = 'default';
         private command?: Disposable;
 
@@ -107,8 +115,8 @@ export default (editor: Editor) => {
 
         private privacy() {
             return <div>
-                <div class="text-sm font-semibold text-neutral-100">Your documents</div>
-                <div class="text-xs text-neutral-400">Solidify runs in this browser. Documents, autosaves and settings stay on this computer; nothing you make is uploaded.</div>
+                <div class="text-sm font-semibold text-ui-title">Your documents</div>
+                <div class="text-xs text-ui-muted">Solidify runs in this browser. Documents, autosaves and settings stay on this computer; nothing you make is uploaded.</div>
             </div>;
         }
 
@@ -122,24 +130,24 @@ export default (editor: Editor) => {
                 render(null, this);
                 return;
             }
-            const content = this.tab === 'navigation' ? this.navigation() : this.tab === 'units' ? this.units() : this.tab === 'file' ? this.file() : this.privacy();
+            const content = this.tab === 'appearance' ? this.appearance() : this.tab === 'navigation' ? this.navigation() : this.tab === 'units' ? this.units() : this.tab === 'file' ? this.file() : this.privacy();
             render(
-                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
-                    <div class="flex flex-col w-[640px] h-[540px] max-w-[90vw] max-h-[90vh] rounded-lg overflow-hidden bg-neutral-800 text-neutral-200 shadow-black/30 shadow-xl ring-1 ring-neutral-600 ring-opacity-5">
-                        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                            <div class="text-sm font-semibold text-neutral-100">Settings</div>
-                            <button class="w-6 h-6 rounded text-neutral-300 hover:bg-white/20 hover:text-neutral-50" title="Close" onClick={this.close}>✕</button>
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-ui-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
+                    <div class="flex flex-col w-[640px] h-[540px] max-w-[90vw] max-h-[90vh] rounded-lg overflow-hidden bg-ui-surface text-ui-text shadow-ui-shadow shadow-xl ring-1 ring-ui-border">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-ui-divider">
+                            <div class="text-sm font-semibold text-ui-title">Settings</div>
+                            <button class="w-6 h-6 rounded text-ui-text hover:bg-ui-hover hover:text-ui-title" title="Close" onClick={this.close}>✕</button>
                         </div>
                         <div class="flex flex-1 min-h-0">
-                            <nav class="flex flex-col justify-between w-40 p-2 border-r border-white/10">
+                            <nav class="flex flex-col justify-between w-40 p-2 border-r border-ui-divider">
                                 <ol class="space-y-1">
                                     {tabs.map(({ id, label }) =>
-                                        <li class={`px-3 py-1.5 rounded-md text-sm cursor-default ${id === this.tab ? 'bg-white/20 text-neutral-50' : 'text-neutral-300 hover:bg-white/10'}`}
+                                        <li class={`px-3 py-1.5 rounded-md text-sm cursor-default ${id === this.tab ? 'bg-ui-tint text-ui-accent' : 'text-ui-text hover:bg-ui-hover'}`}
                                             onClick={() => { this.tab = id; this.render() }}>
                                             {label}
                                         </li>)}
                                 </ol>
-                                <div class="px-3 py-1 text-xs text-neutral-400">Solidify {APP_VERSION}</div>
+                                <div class="px-3 py-1 text-xs text-ui-muted">Solidify {APP_VERSION}</div>
                             </nav>
                             <section class="flex-1 p-5 overflow-y-auto">{content}</section>
                         </div>
@@ -147,23 +155,45 @@ export default (editor: Editor) => {
                 </div>, this);
         }
 
+        private appearance() {
+            const current = editor.settings.Appearance.theme;
+            return <div>
+                <div class="text-sm font-semibold text-ui-title">Theme</div>
+                <div class="mb-3 text-xs text-ui-muted">System follows your computer's light or dark setting, as it changes.</div>
+                <ol class="space-y-1">
+                    {themes.map(({ theme, label }) =>
+                        <li class={`flex items-center px-3 py-2 rounded-md cursor-default ${theme === current ? 'bg-ui-tint' : 'hover:bg-ui-hover'}`}
+                            onClick={() => this.chooseTheme(theme)}>
+                            <span class={`mr-3 w-3 h-3 shrink-0 rounded-full border ${theme === current ? 'border-ui-accent bg-ui-accent' : 'border-ui-faint'}`}></span>
+                            <span class="text-sm text-ui-title">{label}</span>
+                        </li>)}
+                </ol>
+            </div>;
+        }
+
+        private chooseTheme(theme: ThemeSetting) {
+            ConfigFiles.updateSetting('Appearance', 'theme', theme);
+            setTheme(theme);
+            this.render();
+        }
+
         private navigation() {
             return <div>
-                <div class="text-sm font-semibold text-neutral-100">Mouse controls</div>
-                <div class="mb-3 text-xs text-neutral-400">Which buttons orbit, pan and zoom the view. The wheel zooms, except with Touchpad.</div>
+                <div class="text-sm font-semibold text-ui-title">Mouse controls</div>
+                <div class="mb-3 text-xs text-ui-muted">Which buttons orbit, pan and zoom the view. The wheel zooms, except with Touchpad.</div>
                 <ol class="space-y-1">
                     {mouseControls.map(({ mode, label, hint }) =>
-                        <li class={`flex items-start px-3 py-2 rounded-md cursor-default ${mode === this.orbitMode ? 'bg-white/20' : 'hover:bg-white/10'}`}
+                        <li class={`flex items-start px-3 py-2 rounded-md cursor-default ${mode === this.orbitMode ? 'bg-ui-tint' : 'hover:bg-ui-hover'}`}
                             onClick={() => this.setOrbitMode(mode)}>
-                            <span class={`mt-1 mr-3 w-3 h-3 shrink-0 rounded-full border ${mode === this.orbitMode ? 'border-accent-400 bg-accent-400' : 'border-neutral-400'}`}></span>
+                            <span class={`mt-1 mr-3 w-3 h-3 shrink-0 rounded-full border ${mode === this.orbitMode ? 'border-ui-accent bg-ui-accent' : 'border-ui-faint'}`}></span>
                             <span>
-                                <div class="text-sm text-neutral-100">{label}</div>
-                                <div class="text-xs text-neutral-400">{hint}</div>
+                                <div class="text-sm text-ui-title">{label}</div>
+                                <div class="text-xs text-ui-muted">{hint}</div>
                             </span>
                         </li>)}
                 </ol>
                 {this.orbitMode === 'custom' &&
-                    <div class="mt-3 text-xs text-neutral-400">Currently custom. Choosing one above replaces it.</div>}
+                    <div class="mt-3 text-xs text-ui-muted">Currently custom. Choosing one above replaces it.</div>}
             </div>;
         }
 
@@ -174,18 +204,18 @@ export default (editor: Editor) => {
             const setSize = (e: ChangeEvent) => editor.setGrid(e.value, step);
             const setStep = (e: ChangeEvent) => editor.setGrid(size, e.value);
             return <div>
-                <div class="text-sm font-semibold text-neutral-100">Units</div>
-                <div class="mb-3 text-xs text-neutral-400">How lengths are shown and typed; a typed length can name its own unit, like 2 in. Documents and exported files aren't affected. Moving between metric and imperial sets the grid and the snap steps to round values in the new units.</div>
+                <div class="text-sm font-semibold text-ui-title">Units</div>
+                <div class="mb-3 text-xs text-ui-muted">How lengths are shown and typed; a typed length can name its own unit, like 2 in. Documents and exported files aren't affected. Moving between metric and imperial sets the grid and the snap steps to round values in the new units.</div>
                 <div class="flex space-x-1">
                     {(Object.keys(lengthUnits) as LengthUnit[]).map(unit =>
-                        <button class={`w-12 py-1 rounded-md text-sm ${unit === current ? 'bg-white/20 text-neutral-50 ring-1 ring-accent-400' : 'bg-white/5 text-neutral-300 hover:bg-white/10'}`} onClick={() => editor.setLengthUnit(unit)}>
+                        <button class={`w-12 py-1 rounded-md text-sm ${unit === current ? 'bg-ui-tint text-ui-accent' : 'bg-ui-raised text-ui-text hover:bg-ui-hover'}`} onClick={() => editor.setLengthUnit(unit)}>
                             {unit}
                             <solidify-tooltip placement="bottom">{lengthUnits[unit].name}</solidify-tooltip>
                         </button>)}
                 </div>
 
-                <div class="mt-6 text-sm font-semibold text-neutral-100">Grid</div>
-                <div class="mb-3 text-xs text-neutral-400">On the floor and on construction planes: a line every step, and a heavier one every {majorEvery} steps. Snapping to the grid has its own step, in the Snaps panel.</div>
+                <div class="mt-6 text-sm font-semibold text-ui-title">Grid</div>
+                <div class="mb-3 text-xs text-ui-muted">On the floor and on construction planes: a line every step, and a heavier one every {majorEvery} steps. Snapping to the grid has its own step, in the Snaps panel.</div>
                 <div class="grid grid-cols-[4rem_9rem] items-center gap-x-3 gap-y-2 text-sm">
                     <label for="size">Size</label>
                     <solidify-number-scrubber name="size" unit="length" min={1} max={1_000_000} value={size} onchange={setSize} onscrub={setSize} onfinish={() => { }}></solidify-number-scrubber>
@@ -197,10 +227,10 @@ export default (editor: Editor) => {
 
         private file() {
             const keep = editor.settings.Autosave.keep;
-            const step = "w-6 h-6 rounded text-neutral-200 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none";
+            const step = "w-6 h-6 rounded text-ui-text bg-ui-raised hover:bg-ui-hover disabled:opacity-40 disabled:pointer-events-none";
             return <div>
-                <div class="text-sm font-semibold text-neutral-100">Autosave</div>
-                <div class="mb-3 text-xs text-neutral-400">File › Restore offers your latest untitled work and the autosaves of recent saved documents that aren't open. {restoreNote(editor)}</div>
+                <div class="text-sm font-semibold text-ui-title">Autosave</div>
+                <div class="mb-3 text-xs text-ui-muted">File › Restore offers your latest untitled work and the autosaves of recent saved documents that aren't open. {restoreNote(editor)}</div>
                 <div class="flex items-center space-x-2 text-sm">
                     <span>Restore keeps</span>
                     <button class={step} disabled={keep <= minKeep} onClick={() => this.setKeep(keep - 1)}>−</button>
@@ -209,11 +239,11 @@ export default (editor: Editor) => {
                     <span>saved documents</span>
                 </div>
 
-                <div class="mt-6 text-sm font-semibold text-neutral-100">Settings, keymap and theme</div>
-                <div class="mb-3 text-xs text-neutral-400">They're kept in this browser. Export them to keep a copy or to use them in another browser; importing replaces them and reloads.</div>
+                <div class="mt-6 text-sm font-semibold text-ui-title">Settings, keymap and theme</div>
+                <div class="mb-3 text-xs text-ui-muted">They're kept in this browser. Export them to keep a copy or to use them in another browser; importing replaces them and reloads.</div>
                 <div class="flex items-center space-x-2">
-                    <button class="px-3 py-1 rounded-md text-sm text-neutral-100 bg-white/10 hover:bg-white/20" onClick={() => this.exportSettings()}>Export…</button>
-                    <button class="px-3 py-1 rounded-md text-sm text-neutral-100 bg-white/10 hover:bg-white/20" onClick={() => this.importSettings()}>Import…</button>
+                    <button class="px-3 py-1 rounded-md text-sm text-ui-title bg-ui-raised hover:bg-ui-hover" onClick={() => this.exportSettings()}>Export…</button>
+                    <button class="px-3 py-1 rounded-md text-sm text-ui-title bg-ui-raised hover:bg-ui-hover" onClick={() => this.importSettings()}>Import…</button>
                 </div>
             </div>;
         }

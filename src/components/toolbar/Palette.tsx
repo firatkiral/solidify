@@ -19,7 +19,7 @@ export default (editor: Editor) => {
         command!: GConstructor<Command> & { identifier: string };
         private tooltip?: string;
 
-        private _tooltipPlacement: TooltipPlacement = "left";
+        private _tooltipPlacement: TooltipPlacement = "right";
         get tooltipPlacement() { return this._tooltipPlacement }
         set tooltipPlacement(placement: TooltipPlacement) { this._tooltipPlacement = placement }
 
@@ -42,8 +42,7 @@ export default (editor: Editor) => {
             const { command, tooltip } = this;
             const name = this.getAttribute('name')!;
             render(
-                <div class="p-2 cursor-pointer bg-neutral-800 text-neutral-200 hover:bg-accent-500 hover:text-accent-100"
-                    onClick={this.execute} >
+                <div class="bar-button" role="button" aria-label={tooltip} onClick={this.execute}>
                     <solidify-icon name={name}></solidify-icon>
                     {tooltip !== undefined && <solidify-tooltip command={`command:${command.identifier}`} placement={this.tooltipPlacement}>{tooltip}</solidify-tooltip>}
                 </div >, this);
@@ -101,16 +100,17 @@ export default (editor: Editor) => {
                     const { disposable } = this.state;
                     const pos = this.getBoundingClientRect();
                     const submenu = document.createElement('section');
-                    submenu.className = 'flex absolute flex-col p-1 space-y-0.5';
+                    submenu.className = 'flex absolute z-50 flex-col gap-0.5 p-1 surface';
                     submenu.innerHTML = this.original;
                     document.body.appendChild(submenu);
                     disposable.add(new Disposable(() => submenu.remove()));
 
                     const actualWidth = submenu.offsetWidth;
                     const actualHeight = submenu.offsetHeight;
+                    // Beside the palette, 4px clear of the bar the group is in
                     const offset = {
                         top: pos.top + pos.height / 2 - actualHeight / 2,
-                        left: pos.left - actualWidth
+                        left: pos.right + 8
                     };
 
                     submenu.style.top = offset.top + 'px';
@@ -211,45 +211,49 @@ export default (editor: Editor) => {
 
         render() {
             return render(
-                <div class="flex absolute right-2 top-1/2 z-40 flex-col space-y-2 -translate-y-1/2">
-                    <section class="flex flex-col space-y-0.5">
-                        <solidify-command name="line" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        <solidify-command name="curve" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="center-circle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="two-point-circle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="three-point-circle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        </solidify-button-group>
-                        <solidify-command name="polygon"></solidify-command>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="corner-rectangle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="center-rectangle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="three-point-rectangle" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        </solidify-button-group>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="three-point-arc" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="center-point-arc" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        </solidify-button-group>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="center-ellipse" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="three-point-ellipse" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        </solidify-button-group>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="spiral" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                            <solidify-command name="character-curve" class="first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        </solidify-button-group>
-                        <solidify-command name="trim" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        <solidify-command name="bridge-curves" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                    </section>
-                    <section class="flex flex-col space-y-0.5">
-                        <solidify-command name="sphere" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        <solidify-command name="cylinder" class="shadow-lg first:rounded-t last:rounded-b overflow-clip"></solidify-command>
-                        <solidify-button-group class="shadow-lg first:rounded-t last:rounded-b overflow-clip">
-                            <solidify-command name="corner-box"></solidify-command>
-                            <solidify-command name="center-box"></solidify-command>
-                            <solidify-command name="three-point-box"></solidify-command>
-                        </solidify-button-group>
-                    </section>
+                // Centred in the height below the File menu, and scrolling where that's too short; the padding leaves room
+                // for the bars' shadows
+                <div class="flex overflow-y-auto absolute left-0 bottom-0 z-40 flex-col pr-4 pb-2 pl-2 top-[58px] pointer-events-none">
+                    <div class="flex flex-col my-auto space-y-2 pointer-events-auto">
+                        <section class="flex flex-col gap-0.5 p-1 surface">
+                            <solidify-command name="line"></solidify-command>
+                            <solidify-command name="curve"></solidify-command>
+                            <solidify-button-group>
+                                <solidify-command name="center-circle"></solidify-command>
+                                <solidify-command name="two-point-circle"></solidify-command>
+                                <solidify-command name="three-point-circle"></solidify-command>
+                            </solidify-button-group>
+                            <solidify-command name="polygon"></solidify-command>
+                            <solidify-button-group>
+                                <solidify-command name="corner-rectangle"></solidify-command>
+                                <solidify-command name="center-rectangle"></solidify-command>
+                                <solidify-command name="three-point-rectangle"></solidify-command>
+                            </solidify-button-group>
+                            <solidify-button-group>
+                                <solidify-command name="three-point-arc"></solidify-command>
+                                <solidify-command name="center-point-arc"></solidify-command>
+                            </solidify-button-group>
+                            <solidify-button-group>
+                                <solidify-command name="center-ellipse"></solidify-command>
+                                <solidify-command name="three-point-ellipse"></solidify-command>
+                            </solidify-button-group>
+                            <solidify-button-group>
+                                <solidify-command name="spiral"></solidify-command>
+                                <solidify-command name="character-curve"></solidify-command>
+                            </solidify-button-group>
+                            <solidify-command name="trim"></solidify-command>
+                            <solidify-command name="bridge-curves"></solidify-command>
+                        </section>
+                        <section class="flex flex-col gap-0.5 p-1 surface">
+                            <solidify-command name="sphere"></solidify-command>
+                            <solidify-command name="cylinder"></solidify-command>
+                            <solidify-button-group>
+                                <solidify-command name="corner-box"></solidify-command>
+                                <solidify-command name="center-box"></solidify-command>
+                                <solidify-command name="three-point-box"></solidify-command>
+                            </solidify-button-group>
+                        </section>
+                    </div>
                 </div>, this);
         }
     }

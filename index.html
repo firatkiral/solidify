@@ -9,7 +9,23 @@
     <meta name="theme-color" content="#111115" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+        // Light or dark before anything shows, as Settings › Appearance has it or as the system is (Appearance.ts keeps it
+        // up to date once the app starts)
+        (function () {
+            var theme = 'system';
+            try {
+                var match = /theme:\s*'(light|dark|system)'/.exec(localStorage.getItem('solidify:settings') || '');
+                if (match) theme = match[1];
+            } catch (e) { }
+            if (theme === 'system') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.dataset.theme = theme;
+            document.querySelector('meta[name="theme-color"]').content = theme === 'light' ? '#e4e4e7' : '#111115';
+        })();
+    </script>
     <style>
+        /* The loading screen shows before the stylesheet loads, so it repeats the palette's colours from index.css, dark
+           and light: background, muted text, title, viewport, the logo's sky and cyan, and danger text */
         html {
             background-color: #111115;
         }
@@ -57,7 +73,7 @@
         #loading .fill {
             width: 0;
             height: 100%;
-            background: #0a8ff9;
+            background: linear-gradient(90deg, #04a6fc, #00d7fe);
             transition: width 0.2s;
         }
 
@@ -71,8 +87,28 @@
         }
 
         #loading.failed .status {
-            color: #fca5a5;
+            color: #f86a6a;
             max-width: 440px;
+        }
+
+        html[data-theme="light"] {
+            background-color: #e4e4e7;
+        }
+
+        html[data-theme="light"] #loading {
+            color: #52525b;
+        }
+
+        html[data-theme="light"] #loading .name {
+            color: #18181b;
+        }
+
+        html[data-theme="light"] #loading .bar {
+            background: #f4f4f5;
+        }
+
+        html[data-theme="light"] #loading.failed .status {
+            color: #cf1124;
         }
 
         @keyframes loading {
@@ -83,7 +119,7 @@
     <script type="module" src="/src/renderer.ts"></script>
 </head>
 
-<body class="flex flex-col h-screen bg-neutral-900">
+<body class="flex flex-col h-screen bg-ui-bg">
     <div id="loading" class="indeterminate" role="status" aria-live="polite">
         <img class="logo" src="/logo.svg" alt="" />
         <div class="name">Solidify</div>
@@ -92,49 +128,32 @@
         <noscript>Solidify needs JavaScript.</noscript>
     </div>
     <solidify-titlebar></solidify-titlebar>
-    <div id="workspace" class="absolute top-0 h-full w-full py-2 px-2">
-        <solidify-pane-axis class="horizontal">
-
-            <solidify-pane class="below-menu py-[42px]">
-                <solidify-outliner></solidify-outliner>
-            </solidify-pane>
-
-            <solidify-pane-resize-handle></solidify-pane-resize-handle>
-
-            <solidify-pane style="flex-grow: 4">
-                <solidify-viewport view="3d">
-                    <solidify-viewport-header></solidify-viewport-header>
-                    <solidify-palette></solidify-palette>
-                    <solidify-toolbar></solidify-toolbar>
-                    <solidify-keybindings></solidify-keybindings>
-                    <solidify-dialog></solidify-dialog>
-                    <solidify-snap-overlay></solidify-snap-overlay>
-                </solidify-viewport>
-            </solidify-pane>
-
-            <solidify-pane-resize-handle></solidify-pane-resize-handle>
-
-            <solidify-pane-axis class="below-menu vertical py-[42px] w-5 max-w-5" style="flex-grow: 0.5;">
-
-                <solidify-pane>
-                    <solidify-snaps></solidify-snaps>
-                </solidify-pane>
-
-                <solidify-pane-resize-handle></solidify-pane-resize-handle>
-
-                <solidify-pane>
-                    <solidify-planes></solidify-planes>
-                </solidify-pane>
-
-                <solidify-pane-resize-handle></solidify-pane-resize-handle>
-
-                <solidify-pane>
-                    <solidify-stats></solidify-stats>
-                </solidify-pane>
-
-            </solidify-pane-axis>
-
-        </solidify-pane-axis>
+    <div id="workspace" class="flex absolute top-0 p-2 w-full h-full">
+        <solidify-viewport view="3d">
+            <solidify-viewport-header></solidify-viewport-header>
+            <solidify-file-menu></solidify-file-menu>
+            <solidify-palette></solidify-palette>
+            <solidify-toolbar></solidify-toolbar>
+            <solidify-drawer-tabs></solidify-drawer-tabs>
+            <!-- Over the selection toolbar, beside the palette: a command's options, and above them its keyboard shortcuts -->
+            <div class="flex absolute left-[58px] bottom-[58px] flex-col-reverse gap-2 items-start clear-of-drawer pointer-events-none">
+                <solidify-dialog></solidify-dialog>
+                <solidify-keybindings></solidify-keybindings>
+            </div>
+            <solidify-snap-overlay></solidify-snap-overlay>
+        </solidify-viewport>
+        <!-- Over the viewport, but not in it, so the viewport's keyboard shortcuts stay out of its panels -->
+        <solidify-drawer>
+            <div class="drawer-card surface">
+                <solidify-outliner data-tab="scene"></solidify-outliner>
+                <solidify-properties-panel data-tab="properties"></solidify-properties-panel>
+                <solidify-selection-panel data-tab="selection"></solidify-selection-panel>
+                <solidify-view-panel data-tab="view"></solidify-view-panel>
+                <solidify-snaps data-tab="snaps"></solidify-snaps>
+                <solidify-planes data-tab="planes"></solidify-planes>
+                <solidify-stats data-tab="stats"></solidify-stats>
+            </div>
+        </solidify-drawer>
     </div>
     <solidify-settings></solidify-settings>
     <solidify-home></solidify-home>

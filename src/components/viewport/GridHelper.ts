@@ -24,6 +24,11 @@ export class GridHelper {
         this.floor = new FloorHelper(spec, color1, color2);
     }
 
+    // After the colors it was made with changed
+    recolor() {
+        for (const grid of [this.gridBackground, this.customGrid, this.floor]) grid.recolor();
+    }
+
     // Rebuilds the grids when the size, step or heavier-line rhythm changed
     setSpec(spec: GridSpec) {
         const { size, step, majorEvery } = this.spec;

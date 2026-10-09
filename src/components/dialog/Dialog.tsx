@@ -29,21 +29,21 @@ export default (editor: Editor) => {
         render = (dialog?: AbstractDialog<any>) => {
             if (dialog !== undefined) {
                 const ref = createRef();
-                const form = <div class="absolute bottom-2 left-2 w-96 rounded shadow-lg opacity-90 bg-dialog overflow-clip shadow-neutral-900/95">
-                    <div class="my-1 border-b border-neutral-900 m">
+                const form = <div class="overflow-clip w-96 surface pointer-events-auto">
+                    <div class="my-1 border-b border-ui-divider">
                         <div class="flex justify-between items-center px-2">
-                            <div class="flex items-center m-3 space-x-4 text-xs font-bold text-neutral-100">
+                            <div class="flex items-center m-3 space-x-4 text-xs font-bold text-ui-title">
                                 <div>{dialog.name}</div>
-                                <solidify-icon name="alert" class="text-red-700 alert"></solidify-icon>
+                                <solidify-icon name="alert" class="text-ui-danger alert"></solidify-icon>
                             </div>
 
-                            <a class="py-1 px-3 text-xs text-center align-middle rounded-full bg-neutral-800 text-neutral-400">Learn more ...</a>
+                            <a class="py-1 px-3 text-xs text-center align-middle rounded-full bg-ui-raised text-ui-muted">Learn more ...</a>
                         </div>
                     </div>
                     <div ref={ref}></div>
-                    <div class="flex justify-end py-1 px-2 space-x-2 border bg-neutral-900 border-neutral-900">
-                        <button class="py-1 px-2 text-xs rounded text-neutral-200" type="button" onClick={e => dialog.cancel()} tabIndex={-1}>Cancel</button>
-                        <button class="py-1 px-2 text-xs rounded shadow-sm bg-accent-900 text-accent-100" type="button" onClick={e => dialog.finish()} tabIndex={-1}>OK</button>
+                    <div class="flex justify-end py-1.5 px-2 space-x-2 border-t border-ui-divider">
+                        <button class="py-1 px-2 text-xs rounded-md text-ui-text hover:bg-ui-hover" type="button" onClick={e => dialog.cancel()} tabIndex={-1}>Cancel</button>
+                        <button class="py-1 px-3 text-xs rounded-md text-ui-on-primary bg-ui-primary hover:bg-ui-primary-hover" type="button" onClick={e => dialog.finish()} tabIndex={-1}>OK</button>
                     </div>
                 </div>
                 render(form, this);

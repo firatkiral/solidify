@@ -30,21 +30,21 @@ export class Prompt extends HTMLElement {
         const { name, description, state: { tag }, onclear } = this;
         let icon;
         switch (tag) {
-            case 'executing': icon = <div class="w-4 h-4 rounded-full bg-neutral-600"> <div class="w-full h-full rounded-full animate-ping bg-neutral-600"> </div></div>; break;
-            case 'finished': icon = <solidify-icon name="check" class="bg-green-600 rounded-full"></solidify-icon>; break;
+            case 'executing': icon = <div class="w-4 h-4 rounded-full bg-ui-muted"> <div class="w-full h-full rounded-full animate-ping bg-ui-muted"> </div></div>; break;
+            case 'finished': icon = <solidify-icon name="check" class="rounded-full bg-ui-success"></solidify-icon>; break;
             default: icon = <div class="w-4 h-4 bg-transparent rounded-full"> </div>; break;;
         }
         const clear = onclear !== undefined
-            ? <button class="rounded-full group text-neutral-300 group-hover:text-neutral-100 hover:bg-neutral-500" onClick={() => onclear()}>
+            ? <button class="rounded-full group text-ui-text group-hover:text-ui-title hover:bg-ui-hover" onClick={() => onclear()}>
                 <solidify-icon name="cancel"></solidify-icon>
             </button>
             : <></>;
 
-        render(<li class={`flex items-center py-1 pl-1 pr-2 justify-between text-xs rounded-full ${tag === 'executing' ? 'bg-neutral-800' : 'cursor-pointer'}`}>
+        render(<li class={`flex items-center py-1 pl-1 pr-2 justify-between text-xs rounded-full ${tag === 'executing' ? 'bg-ui-raised' : 'cursor-pointer'}`}>
             <div class="flex items-center space-x-2">
                 {icon}
-                <div class="font-bold text-neutral-200">{name}</div>
-                <div class="text-neutral-500">{description}</div>
+                <div class="font-bold text-ui-text">{name}</div>
+                <div class="text-ui-faint">{description}</div>
             </div>
             {clear}
         </li>, this);

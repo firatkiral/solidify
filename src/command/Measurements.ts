@@ -5,6 +5,7 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { Viewport } from "../components/viewport/Viewport";
 import { NoOpError } from "./GeometryFactory";
 import { EditorSignals } from "../editor/EditorSignals";
+import { paletteColor } from "../startup/Appearance";
 import theme from '../startup/default-theme.json';
 import { CancellableRegisterable } from "../util/CancellableRegisterable";
 import { CancellableRegistor } from "../util/CancellableRegistor";
@@ -28,17 +29,18 @@ export type Dimension =
     | { tag: 'readout', base: THREE.Vector3, direction: THREE.Vector3, text: string };
 
 const besideOffset = 0.1, bracketOffset = 1, readoutOffset = 2;
-const labelClass = 'absolute z-50 px-2 py-1 text-xs text-center whitespace-nowrap rounded pointer-events-none text-neutral-50 opacity-30 -translate-x-1/2 -translate-y-1/2';
+const labelClass = 'absolute z-50 px-2 py-1 text-xs text-center whitespace-nowrap rounded pointer-events-none text-ui-title opacity-30 -translate-x-1/2 -translate-y-1/2';
 const readoutClass = 'axis-helper';
 
-const lineColor = new THREE.Color(theme.colors.neutral[50]).convertSRGBToLinear();
+// The 3D view's text colour, as the theme has it
+const lineColor = () => new THREE.Color(paletteColor('title') || theme.colors.neutral[50]).convertSRGBToLinear();
 // Plasticity draws guides at 10% opacity blending in sRGB; blending in linear space as here, 3% looks the same
 const lineOpacity = 0.03;
 
 type Label = { at: THREE.Vector3, text: string, readout: boolean };
 
 export class Measurements extends Helper implements CancellableRegisterable {
-    private readonly material = new LineMaterial({ color: lineColor.getHex(), opacity: lineOpacity, transparent: true, linewidth: 1, depthWrite: false, fog: false, toneMapped: false });
+    private readonly material = new LineMaterial({ color: lineColor().getHex(), opacity: lineOpacity, transparent: true, linewidth: 1, depthWrite: false, fog: false, toneMapped: false });
     private readonly lines = new LineSegments2(new LineSegmentsGeometry(), this.material);
     private dimensions: Dimension[] = [];
     private readonly elements = new Map<Viewport, HTMLElement[]>();

@@ -30,7 +30,7 @@ export default (editor: Editor) => {
                 const { position, names } = info;
                 const { normalized } = this;
                 normalized2screen(position, normalized);
-                result = <div class="absolute py-1 px-2 ml-5 -mt-5 text-xs rounded shadow-md text-neutral-50 bg-neutral-500 border-neutral-400 shadow-black/20" style={`left: ${normalized.x * 100}%; top: ${normalized.y * 100}%`}>{names!.join(',')}</div>;
+                result = <div class="absolute py-1 px-2 ml-5 -mt-5 text-xs rounded-md ring-1 shadow-lg text-ui-text bg-ui-surface ring-ui-border shadow-ui-shadow" style={`left: ${normalized.x * 100}%; top: ${normalized.y * 100}%`}>{names!.join(',')}</div>;
             }
             render(<div class="absolute top-0 left-0 w-full h-full pointer-events-none">{result}</div>, this);
         }

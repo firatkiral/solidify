@@ -24,6 +24,8 @@ export default (editor: Editor) => {
         disconnectedCallback() { }
 
         show = (e: MouseEvent) => {
+            // In place of the browser's own menu
+            if (e.type === 'contextmenu') e.preventDefault();
             this.menu.show();
         }
 
