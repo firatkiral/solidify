@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import c3d from '../../kernel/kernel';
 import * as visual from '../../visual_model/VisualModel';
-import { composeMainName, decomposeMainName, vec2vec } from '../../util/Conversion';
+import { composeMainName, vec2vec } from '../../util/Conversion';
 import { GeometryFactory, NoOpError } from '../../command/GeometryFactory';
 import { MoveParams } from '../translate/TranslateItemFactory';
 
@@ -91,12 +91,11 @@ export class FilletFaceFactory extends ModifyFaceFactory implements FilletFacePa
         return c3d.Action.FindFilletFaces(models, 10e-3).length == models.length;
     }
 
+    // Round fillets: blends whose surface is a cylinder (a chamfer's is a plane). Faces carry no record of the
+    // operation that made them, so this goes by their shape.
     areFilletFaces(faces: visual.Face[] | c3d.Face[]): boolean {
         const models = this.models(faces);
-        for (const model of models) {
-            const [type] = decomposeMainName(model.GetMainName());
-            if (type != c3d.CreatorType.FilletSolid) return false;
-        }
+        if (models.some(model => model.GetSurface().IsA() !== c3d.SpaceType.CylinderSurface)) return false;
         return this.areFilletOrChamferFaces(faces);
     }
 
