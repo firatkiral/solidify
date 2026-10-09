@@ -1,3 +1,13 @@
+[1.0.4]
+
+- [x] Remove SelectionProxy class and its methods
+- [x] feat: implement unit system for length measurements and snapping
+- [x] feat: prevent page scrolling and navigation during trackpad gestures
+- [x] Refactor snapping functionality to remove reliance on key modifiers
+- [x] feat: enhance autosave functionality to include untitled documents and clarify settings
+- [x] feat: Implement drawer component with selection and properties panels
+- [x] feat: add overflow clipping to workspace to prevent page scrolling
+
 [1.0.3]
 
 - [x] Refactor SelectionProxy methods to use Selectable type for add and remove
