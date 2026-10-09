@@ -1,3 +1,7 @@
+[1.0.3]
+
+- [x] Refactor SelectionProxy methods to use Selectable type for add and remove
+
 [1.0.2]
 
 - [x] Stop autosaving on selection, and save solids without display meshes
