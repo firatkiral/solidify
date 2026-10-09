@@ -12,13 +12,15 @@ import { Images } from "../src/editor/Images";
 import MaterialDatabase from '../src/editor/MaterialDatabase';
 import { ParallelMeshCreator } from "../src/editor/MeshCreator";
 import { Scene } from "../src/editor/Scene";
-import { SnapManager } from "../src/editor/snaps/SnapManager";
+import { PointSnap } from "../src/editor/snaps/PointSnap";
+import { originSnap, SnapManager, xAxisSnap, yAxisSnap, zAxisSnap } from "../src/editor/snaps/SnapManager";
 import { SolidCopier } from "../src/editor/SolidCopier";
 import { TypeManager } from "../src/editor/TypeManager";
 import * as visual from '../src/visual_model/VisualModel';
 import { FakeMaterials } from "../__mocks__/FakeMaterials";
 import './matchers';
 import { setLengthUnit } from '../src/util/Units';
+import { curve3d2curve2d, inst2curve } from '../src/util/Conversion';
 
 let db: GeometryDatabase;
 let scene: Scene;
@@ -80,6 +82,48 @@ test("adding & removing solid", async () => {
     expect(snaps.all.basicSnaps.size).toBe(4);
     expect(snaps.all.crossSnaps.length).toBe(0);
     expect(snaps.all.geometrySnaps.length).toBe(0);
+});
+
+test("the points on objects are on the Point toggle's layer, and the origin on the Grid toggle's", async () => {
+    const makeBox = new ThreePointBoxFactory(db, materials, signals);
+    makeBox.p1 = new THREE.Vector3();
+    makeBox.p2 = new THREE.Vector3(1, 0, 0);
+    makeBox.p3 = new THREE.Vector3(1, 1, 0);
+    makeBox.p4 = new THREE.Vector3(1, 1, 1);
+    await makeBox.commit();
+    snaps.cache.update();
+
+    const pickers = [...snaps.cache.geometrySnaps.points];
+    const onPointLayer = pickers.filter(p => p.layers.isEnabled(visual.Layers.SnapPoint));
+    const origin = pickers.filter(p => p.userData.points.includes(originSnap));
+    expect(onPointLayer.length).toBe(pickers.length - 1);
+    expect(onPointLayer.flatMap(p => p.userData.points).length).toBe(42);
+    expect(origin.length).toBe(1);
+    expect(origin[0].layers.isEnabled(visual.Layers.SnapPoint)).toBe(false);
+    expect(origin[0].layers.isEnabled(visual.Layers.SnapAxis)).toBe(true);
+
+    const active = new THREE.Layers();
+    active.mask = snaps.activeLayers.mask;
+    expect(onPointLayer.every(p => p.layers.test(active))).toBe(true);
+    snaps.toggleLayer(visual.Layers.SnapPoint);
+    active.mask = snaps.activeLayers.mask;
+    expect(onPointLayer.some(p => p.layers.test(active))).toBe(false);
+});
+
+test("the origin and axes snap only while the grid toggle is on", () => {
+    const axes = [xAxisSnap, yAxisSnap, zAxisSnap].map(axis => axis.snapper);
+    const active = new THREE.Layers();
+
+    active.mask = snaps.activeLayers.mask;
+    expect(axes.some(axis => axis.layers.test(active))).toBe(false);
+
+    snaps.snapToGrid = true;
+    active.mask = snaps.activeLayers.mask;
+    expect(axes.every(axis => axis.layers.test(active))).toBe(true);
+
+    snaps.settings = { ...snaps.settings, grid: false };
+    active.mask = snaps.activeLayers.mask;
+    expect(axes.some(axis => axis.layers.test(active))).toBe(false);
 });
 
 test("adding and editing a solid", async () => {
@@ -216,6 +260,53 @@ test("adding & removing curve", async () => {
     expect(snaps.all.geometrySnaps.length).toBe(0);
 });
 
+describe("spline points", () => {
+    const points = [new THREE.Vector3(), new THREE.Vector3(1, 1, 0), new THREE.Vector3(2, -1, 0), new THREE.Vector3(3, 0, 0)];
+    const names = () => [...snaps.all.geometrySnaps[0]].map(snap => snap.name);
+    const positions = () => [...snaps.all.geometrySnaps[0]].map(snap => (snap as PointSnap).position);
+
+    const spline = async (type: c3d.SpaceType, closed = false) => {
+        const makeCurve = new CurveFactory(db, materials, signals);
+        makeCurve.type = type;
+        makeCurve.closed = closed;
+        makeCurve.points.push(...points);
+        return await makeCurve.commit() as visual.SpaceInstance<visual.Curve3D>;
+    }
+
+    test("a hermite or cubic spline snaps at every point it passes through", async () => {
+        for (const type of [c3d.SpaceType.Hermit3D, c3d.SpaceType.CubicSpline3D]) {
+            const curve = await spline(type);
+            expect(names()).toEqual(["Beginning", "Point", "Point", "End"]);
+            positions().forEach((position, i) => expect(position).toApproximatelyEqual(points[i]));
+            db.removeItem(curve);
+        }
+    });
+
+    test("a closed hermite spline snaps at all its points", async () => {
+        await spline(c3d.SpaceType.Hermit3D, true);
+        expect(names()).toEqual(["Point", "Point", "Point", "Point"]);
+    });
+
+    test("a bezier or nurbs spline snaps only at its ends, since its inner points are off the curve", async () => {
+        for (const type of [c3d.SpaceType.Bezier3D, c3d.SpaceType.Nurbs3D]) {
+            const curve = await spline(type);
+            expect(names()).toEqual(["Beginning", "End"]);
+            db.removeItem(curve);
+        }
+    });
+
+    test("a curve lying in a plane snaps like the same curve in space", async () => {
+        for (const [type, expected] of [[c3d.SpaceType.Hermit3D, ["Beginning", "Point", "Point", "End"]], [c3d.SpaceType.Polyline3D, ["End", "End", "End", "End", "Mid", "Mid", "Mid"]]] as const) {
+            const inSpace = c3d.ActionCurve3D.SplineCurve(points.map(p => new c3d.CartPoint3D(p.x, p.y, p.z)), false, type);
+            const { curve: curve2d, placement } = curve3d2curve2d(inSpace, new c3d.Placement3D())!;
+            const curve = await db.addItem(new c3d.SpaceInstance(new c3d.PlaneCurve(placement, curve2d, false)));
+            expect(inst2curve(db.lookup(curve))).toBeInstanceOf(c3d.PlaneCurve);
+            expect(names()).toEqual(expected);
+            db.removeItem(curve);
+        }
+    });
+});
+
 test("adding & removing polyline points", async () => {
     const makeLine = new CurveFactory(db, materials, signals);
     makeLine.type = c3d.SpaceType.Polyline3D;
@@ -251,49 +342,16 @@ test("enabling and disabling types adds/removes snaps", async () => {
 
 const objectLayersOff = () => { for (const layer of SnapManager.objectLayers) snaps.layers.disable(layer) };
 
-test("object snapping is on while any of Face/Curve/Edge is, and Ctrl turns all three on while held", () => {
+test("object snapping is on while any of Point/Edge/Face/Curve is", () => {
     expect(snaps.enabled).toBe(true);
     objectLayersOff();
     expect(snaps.enabled).toBe(false);
     expect(snaps.activeLayers.isEnabled(visual.Layers.Face)).toBe(false);
 
-    snaps.holdObjects(true);
-    expect(snaps.enabled).toBe(true);
-    for (const layer of SnapManager.objectLayers) expect(snaps.activeLayers.isEnabled(layer)).toBe(true);
-    expect(snaps.isLayerOn(visual.Layers.Face)).toBe(false);
-    snaps.holdObjects(false);
-    expect(snaps.enabled).toBe(false);
-
     snaps.layers.enable(visual.Layers.Curve);
     expect(snaps.enabled).toBe(true);
-    snaps.holdObjects(true);
-    snaps.holdObjects(false);
     expect(snaps.isLayerOn(visual.Layers.Curve)).toBe(true);
     expect(snaps.isLayerOn(visual.Layers.Face)).toBe(false);
-})
-
-test("Shift turns grid snapping and handle stepping on while held, and releasing restores the toggles", () => {
-    snaps.snapToGrid = false;
-    snaps.gizmoSnapping = false;
-    snaps.angleSnapping = false;
-    snaps.holdGrid(true);
-    expect(snaps.snapToGrid).toBe(true);
-    expect(snaps.gizmoSnapping).toBe(true);
-    expect(snaps.angleSnapping).toBe(true);
-    expect(snaps.angleSnappingSetting).toBe(false);
-    expect(snaps.snapToGridSetting).toBe(false);
-    expect(snaps.gizmoSnappingSetting).toBe(false);
-    snaps.releaseHolds();
-    expect(snaps.snapToGrid).toBe(false);
-    expect(snaps.gizmoSnapping).toBe(false);
-    expect(snaps.angleSnapping).toBe(false);
-
-    snaps.snapToGrid = true;
-    snaps.gizmoSnapping = true;
-    snaps.holdGrid(true);
-    snaps.holdGrid(false);
-    expect(snaps.snapToGrid).toBe(true);
-    expect(snaps.gizmoSnapping).toBe(true);
 })
 
 test("handle drag steps move along their ladders and stop at the ends", () => {
@@ -347,7 +405,7 @@ test("settings keep what the panel is set to, and put it back", () => {
 
     const saved = snaps.settings;
     expect(saved).toMatchObject({ grid: true, handles: false, angles: false, gridStep: 20, lengthStep: 10, angleStep: 10 });
-    expect(saved).toMatchObject({ face: true, curve: false, edge: true }); // all on to begin with, here
+    expect(saved).toMatchObject({ point: true, face: true, curve: false, edge: true }); // all on to begin with, here
 
     const restarted = new SnapManager(db, scene, new CrossPointDatabase(), signals);
     restarted.settings = saved;

@@ -262,10 +262,10 @@ export class ArcSweepGizmo extends AbstractGizmo<number> {
         return angle;
     }
 
-    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on or Shift is held.
+    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on.
     private truncate(angle: number, event: MouseEvent): number {
         const { snaps } = this.editor;
-        if (!(snaps.angleSnapping || event?.shiftKey)) return angle;
+        if (!snaps.angleSnapping) return angle;
         const start = this.state.original;
         return start + deg2rad(roundToStep(rad2deg(angle - start), snaps.angleStep));
     }

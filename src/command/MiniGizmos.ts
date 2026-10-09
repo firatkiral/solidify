@@ -159,10 +159,10 @@ export class AngleGizmo extends CircularGizmo<number> {
         this.mode = 'pointer';
     }
 
-    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on or Shift is held.
+    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on.
     protected truncate(angle: number, event: MouseEvent): number {
         const { snaps } = this.editor;
-        if (!(snaps.angleSnapping || event?.shiftKey)) return angle;
+        if (!snaps.angleSnapping) return angle;
         const start = this.state.original;
         return start + deg2rad(roundToStep(rad2deg(angle - start), snaps.angleStep));
     }
@@ -205,12 +205,12 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
         super(longName.split(':')[0], editor);
     }
 
-    // Lengths step by the gizmo length step, counted from the value the drag started at, while gizmo snapping is on
-    // or Shift is held; ratios (scale) opt out.
+    // Lengths step by the gizmo length step, counted from the value the drag started at, while gizmo snapping is on;
+    // ratios (scale) opt out.
     protected get stepsAsLength() { return true }
     protected stepLength(length: number, event: MouseEvent): number {
         const { snaps } = this.editor;
-        if (!this.stepsAsLength || !(snaps.gizmoSnapping || event?.shiftKey)) return length;
+        if (!this.stepsAsLength || !snaps.gizmoSnapping) return length;
         const start = this.state.original;
         return start + roundToStep(length - start, snaps.lengthStep);
     }
@@ -264,7 +264,7 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
 
         let point, length, localY;
         localY = this.localY.set(0, 1, 0).applyQuaternion(this.worldQuaternion);
-        if (info.event.ctrlKey) {
+        if (this.editor.snaps.enabled) {
             point = intersect.snap()[0]?.position.clone();
             if (point === undefined) return; // this only happens when the user is dragging through different viewports.
 

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import * as intersectable from "../../visual_model/Intersectable";
+import * as visual from "../../visual_model/VisualModel";
 import { BetterRaycastingPoints, BetterRaycastingPointsMaterial } from "../../visual_model/VisualModelRaycasting";
 import { DatabaseLike } from "../DatabaseLike";
 import { PointSnap } from "./PointSnap";
@@ -26,6 +27,8 @@ export class SnapManagerGeometryCache {
     private _geometrySnaps!: PointSnapCache;
     get geometrySnaps() { return this._geometrySnaps }
     
+    // The points on objects and the curve crossings go on the SnapPoint layer, so they snap only while the Point toggle
+    // is on; the origin goes on the SnapAxis layer, so it snaps only while the Grid toggle is on.
     update() {
         const { basicSnaps, geometrySnaps, crossSnaps } = this.snaps.all;
         const result = [];
@@ -33,17 +36,17 @@ export class SnapManagerGeometryCache {
         this._geometrySnaps = geometrySnapCache;
 
         for (const points of geometrySnaps) {
-            geometrySnapCache.add(points);
+            geometrySnapCache.add(points, visual.Layers.SnapPoint);
         }
         for (const snap of basicSnaps) {
             if (snap instanceof PointSnap) {
-                geometrySnapCache.add(new Set([snap]));
+                geometrySnapCache.add(new Set([snap]), visual.Layers.SnapAxis);
                 continue;
             } else if (snap instanceof RaycastableSnap) {
                 result.push(snap.snapper);
             } else assertUnreachable(snap);
         }
-        geometrySnapCache.add(new Set(crossSnaps));
+        geometrySnapCache.add(new Set(crossSnaps), visual.Layers.SnapPoint);
         this._basic = result;
     }
 
@@ -59,7 +62,7 @@ export class PointSnapCache {
     private _points: Set<BetterRaycastingPoints> = new Set();
     get points() { return this._points; }
 
-    add(points: ReadonlySet<PointSnap>) {
+    add(points: ReadonlySet<PointSnap>, layer?: visual.Layers) {
         const pointInfo = new Float32Array(points.size * 3);
         let j = 0;
         for (const point of points) {
@@ -69,6 +72,7 @@ export class PointSnapCache {
         const pointsGeometry = new THREE.BufferGeometry();
         pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(pointInfo, 3));
         const picker = new BetterRaycastingPoints(pointsGeometry, this.material);
+        if (layer !== undefined) picker.layers.set(layer);
         picker.userData.points = [...points];
         this._points.add(picker);
     }

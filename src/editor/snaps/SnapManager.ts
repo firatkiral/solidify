@@ -1,7 +1,7 @@
 import { Disposable } from "event-kit";
 import * as THREE from "three";
 import c3d from '../../kernel/kernel';
-import { cornerInfo, inst2curve, point2point, vec2vec } from "../../util/Conversion";
+import { cornerInfo, curve2d2curve3d, inst2curve, point2point, vec2vec } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
 import { CrossPointDatabase } from "../curves/CrossPointDatabase";
 import { DatabaseLike } from "../DatabaseLike";
@@ -31,22 +31,20 @@ type SnapMap = Map<c3d.SimpleName, ReadonlySet<PointSnap>>;
 type BasicSnap = PointSnap | RaycastableSnap;
 
 export class SnapManager implements MementoOriginator<SnapMemento> {
-    // The setters and the *Setting getters are the panel toggles; the plain getters are what is in effect, which is
-    // the toggle OR a held key (Shift for the grid and handle-drag steps, Ctrl for objects). Held keys only ever turn snapping on.
+    // The setters and getters are the panel toggles.
 
-    // Snapping to objects: on while any of Face/Curve/Edge is; with all three off nothing snaps (not even the origin,
-    // axes, crossings or guide lines). Ctrl turns all three on while held.
-    static readonly objectLayers: readonly visual.Layers[] = [visual.Layers.Face, visual.Layers.Curve, visual.Layers.CurveEdge];
-    get enabled() { return this.heldObjects || this.forcedMask !== 0 || SnapManager.objectLayers.some(layer => this.isLayerOn(layer)) }
+    // Snapping to objects: on while any of Point/Edge/Face/Curve is; with all four off nothing snaps (not even the origin,
+    // axes or guide lines). Point is every snap point (corners, midpoints, centers, crossings); Edge, Face and Curve are
+    // anywhere on the geometry itself. The origin and axes also need the Grid toggle.
+    static readonly objectLayers: readonly visual.Layers[] = [visual.Layers.SnapPoint, visual.Layers.Face, visual.Layers.Curve, visual.Layers.CurveEdge];
+    get enabled() { return this.forcedMask !== 0 || SnapManager.objectLayers.some(layer => this.isLayerOn(layer)) }
     isLayerOn(layer: visual.Layers) { return (this.layers.mask & (1 << layer)) !== 0 }
 
-    // The layers snapping raycasts against: the toggled ones, plus Face/Curve/Edge while Ctrl is held, plus any a
-    // command forces on.
+    // The layers snapping raycasts against: the toggled ones, plus any a command forces on.
     get activeLayers(): THREE.Layers {
-        if (!this.heldObjects && this.forcedMask === 0) return this.layers;
+        if (this.forcedMask === 0) return this.layers;
         const layers = new THREE.Layers();
         layers.mask = this.layers.mask | this.forcedMask;
-        if (this.heldObjects) for (const layer of SnapManager.objectLayers) layers.enable(layer);
         return layers;
     }
 
@@ -64,21 +62,26 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
     }
 
     private _snapToGrid = false;
-    set snapToGrid(snapToGrid: boolean) { this._snapToGrid = snapToGrid; this.settingsChanged() }
-    get snapToGrid() { return this._snapToGrid || this.heldGrid }
+    set snapToGrid(snapToGrid: boolean) { this.setSnapToGrid(snapToGrid); this.settingsChanged() }
+    get snapToGrid() { return this._snapToGrid }
     get snapToGridSetting() { return this._snapToGrid }
+
+    // The origin and the X/Y/Z axes snap only while snapping to the grid
+    private setSnapToGrid(snapToGrid: boolean) {
+        this._snapToGrid = snapToGrid;
+        snapToGrid ? this.layers.enable(visual.Layers.SnapAxis) : this.layers.disable(visual.Layers.SnapAxis);
+    }
 
     // Snapping to the grid steps points by gridStep in millimeters, along the construction plane's axes from its origin.
     // Dragging a gizmo handle steps its value: lengths (and moves) by lengthStep in millimeters, angles by angleStep in degrees.
-    // Gizmo drags read Shift straight off the pointer event, since the Shift hold below only applies while picking points.
     private _gizmoSnapping = false;
     set gizmoSnapping(gizmoSnapping: boolean) { this._gizmoSnapping = gizmoSnapping; this.settingsChanged() }
-    get gizmoSnapping() { return this._gizmoSnapping || this.heldGrid }
+    get gizmoSnapping() { return this._gizmoSnapping }
     get gizmoSnappingSetting() { return this._gizmoSnapping }
 
     private _angleSnapping = false;
     set angleSnapping(angleSnapping: boolean) { this._angleSnapping = angleSnapping; this.settingsChanged() }
-    get angleSnapping() { return this._angleSnapping || this.heldGrid }
+    get angleSnapping() { return this._angleSnapping }
     get angleSnappingSetting() { return this._angleSnapping }
 
     // The length steps follow the length unit's system (see Units.ts); resetSteps puts them on one of the length unit.
@@ -106,40 +109,21 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
     // at one of the unit.
     get settings(): SnapSettings {
         const { _snapToGrid: grid, _gizmoSnapping: handles, _angleSnapping: angles, gridStep, lengthStep, angleStep } = this;
-        const face = this.isLayerOn(visual.Layers.Face), curve = this.isLayerOn(visual.Layers.Curve), edge = this.isLayerOn(visual.Layers.CurveEdge);
-        return { grid, handles, angles, face, curve, edge, gridStep, lengthStep, angleStep };
+        const point = this.isLayerOn(visual.Layers.SnapPoint), face = this.isLayerOn(visual.Layers.Face), curve = this.isLayerOn(visual.Layers.Curve), edge = this.isLayerOn(visual.Layers.CurveEdge);
+        return { grid, handles, angles, point, face, curve, edge, gridStep, lengthStep, angleStep };
     }
 
     set settings(settings: SnapSettings) {
         const onLadder = (ladder: readonly number[], step: number, otherwise: number) => ladder.some(s => Math.abs(s - step) < 1e-9) ? step : otherwise;
-        this._snapToGrid = settings.grid;
+        this.setSnapToGrid(settings.grid);
         this._gizmoSnapping = settings.handles;
         this._angleSnapping = settings.angles;
-        const layers: [visual.Layers, boolean][] = [[visual.Layers.Face, settings.face], [visual.Layers.Curve, settings.curve], [visual.Layers.CurveEdge, settings.edge]];
+        const layers: [visual.Layers, boolean][] = [[visual.Layers.SnapPoint, settings.point], [visual.Layers.Face, settings.face], [visual.Layers.Curve, settings.curve], [visual.Layers.CurveEdge, settings.edge]];
         for (const [layer, on] of layers) on ? this.layers.enable(layer) : this.layers.disable(layer);
         this.gridStep = onLadder(SnapManager.lengthSteps, settings.gridStep, fromLengthUnit(1));
         this.lengthStep = onLadder(SnapManager.lengthSteps, settings.lengthStep, fromLengthUnit(1));
         this.angleStep = onLadder(SnapManager.angleSteps, settings.angleStep, 5);
         this.settingsChanged();
-    }
-
-    private heldObjects = false;
-    holdObjects(held: boolean) {
-        if (this.heldObjects === held) return;
-        this.heldObjects = held;
-        this.heldChanged(held);
-    }
-
-    private heldGrid = false;
-    holdGrid(held: boolean) {
-        if (this.heldGrid === held) return;
-        this.heldGrid = held;
-        this.heldChanged(held);
-    }
-
-    releaseHolds() {
-        this.holdObjects(false);
-        this.holdGrid(false);
     }
 
     private heldChanged(held: boolean) {
@@ -168,6 +152,7 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
 
         this.layers.enableAll();
         this.layers.disable(visual.Layers.CurveFragment);
+        this.layers.disable(visual.Layers.SnapAxis);
         this.init();
 
         signals.objectAdded.add(([item, agent]) => {
@@ -413,19 +398,51 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
             }
 
             into.add(centerSnap);
+        } else if (item instanceof c3d.Hermit3D || item instanceof c3d.CubicSpline3D) {
+            this.addThroughPoints(curveSnap, item.GetPoints(), item.IsClosed(), ancestor, into);
+        } else if (item instanceof c3d.PlaneCurve) {
+            // A curve drawn on a face lies in its plane: it snaps like the same curve drawn in space
+            const { curve2d, placement } = item.GetPlaneCurve(false);
+            const flat = curve2d.Cast<c3d.Curve>(curve2d.IsA());
+            if (flat instanceof c3d.Hermit || flat instanceof c3d.CubicSpline) {
+                const points = [];
+                for (let i = 0, l = flat.GetPointsCount(); i < l; i++) {
+                    const point = flat.GetPoint(i);
+                    points.push(placement.GetPointFrom(point.x, point.y, 0));
+                }
+                this.addThroughPoints(curveSnap, points, flat.IsClosed(), ancestor, into);
+            } else {
+                const inSpace = curve2d2curve3d(flat, placement);
+                if (inSpace instanceof c3d.Polyline3D || inSpace instanceof c3d.Contour3D || inSpace instanceof c3d.Arc3D) this.addCurve(curveSnap, inSpace, ancestor, into);
+                else this.addEnds(curveSnap, item, into);
+            }
         } else {
-            if (item.IsClosed()) return;
-
-            const min = item.PointOn(item.GetTMin());
-            const mid = item.PointOn(0.5 * (item.GetTMin() + item.GetTMax()));
-            const max = item.PointOn(item.GetTMax());
-            const begSnap = new CurveEndPointSnap("Beginning", point2point(min), curveSnap, item.GetTMin());
-            const midSnap = new CurveEndPointSnap("Middle", point2point(mid), curveSnap, 0.5 * (item.GetTMin() + item.GetTMax()));
-            const endSnap = new CurveEndPointSnap("End", point2point(max), curveSnap, item.GetTMax());
-            into.add(begSnap);
-            if (item.IsStraight()) into.add(midSnap);
-            into.add(endSnap);
+            this.addEnds(curveSnap, item, into);
         }
+    }
+
+    // An interpolating spline passes through the points it was drawn from: its ends, and every point between them
+    private addThroughPoints(curveSnap: CurveSnap, points: c3d.CartPoint3D[], closed: boolean, ancestor: c3d.Curve3D, into: Set<Snap>) {
+        for (const [i, point] of points.entries()) {
+            const t = ancestor.NearPointProjection(point, false).t;
+            const first = i === 0, last = i === points.length - 1;
+            if (!closed && (first || last)) into.add(new CurveEndPointSnap(first ? "Beginning" : "End", point2point(point), curveSnap, t));
+            else into.add(new CurvePointSnap("Point", point2point(point), curveSnap, t));
+        }
+    }
+
+    private addEnds(curveSnap: CurveSnap, item: c3d.Curve3D, into: Set<Snap>) {
+        if (item.IsClosed()) return;
+
+        const min = item.PointOn(item.GetTMin());
+        const mid = item.PointOn(0.5 * (item.GetTMin() + item.GetTMax()));
+        const max = item.PointOn(item.GetTMax());
+        const begSnap = new CurveEndPointSnap("Beginning", point2point(min), curveSnap, item.GetTMin());
+        const midSnap = new CurveEndPointSnap("Middle", point2point(mid), curveSnap, 0.5 * (item.GetTMin() + item.GetTMax()));
+        const endSnap = new CurveEndPointSnap("End", point2point(max), curveSnap, item.GetTMax());
+        into.add(begSnap);
+        if (item.IsStraight()) into.add(midSnap);
+        into.add(endSnap);
     }
 
     private delete(item: visual.Item) {
@@ -496,6 +513,7 @@ export const originSnap = new PointSnap("Origin");
 export const xAxisSnap = new AxisSnap("X", X, origin, Z);
 export const yAxisSnap = new AxisSnap("Y", Y, origin, Z);
 export const zAxisSnap = new AxisSnap("Z", Z, origin, Z);
+for (const axis of [xAxisSnap, yAxisSnap, zAxisSnap]) axis.snapper.layers.set(visual.Layers.SnapAxis);
 
 // The neighbor of `value` on the ladder, staying at the ends.
 function nextOnLadder(ladder: readonly number[], value: number, direction: 1 | -1): number {

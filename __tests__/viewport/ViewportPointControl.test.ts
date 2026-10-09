@@ -16,6 +16,7 @@ let viewport: Viewport;
 
 beforeEach(() => {
     editor = new Editor();
+    editor.snaps.settings = editor.settings.Snaps;
     viewport = MakeViewport(editor);
 });
 

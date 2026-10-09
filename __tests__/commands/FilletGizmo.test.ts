@@ -32,6 +32,7 @@ let viewport: Viewport;
 
 beforeEach(() => {
     editor = new Editor();
+    editor.snaps.settings = editor.settings.Snaps;
     materials = editor.materials;
     signals = editor.signals;
     db = editor.db;

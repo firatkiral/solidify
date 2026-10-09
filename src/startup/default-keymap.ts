@@ -260,8 +260,6 @@ export default {
         "ctrl-shift-space": "command:create-viewspace-construction-plane",
         "alt-z": "viewport:toggle-x-ray",
         "shift-alt-z": "viewport:toggle-overlays",
-        "shift-wheel+up": "viewport:grid:incr",
-        "shift-wheel+down": "viewport:grid:decr",
     },
 
     "body:not([gizmo])": {
@@ -394,15 +392,6 @@ export default {
     },
 
     "body": {
-        // Holding turns that snapping on until released, whatever the panel toggles say: Shift the grid and handle-drag
-        // steps, Ctrl the Face/Curve/Edge snaps. Global, so the snaps panel always shows what is in effect.
-        "shift": "snaps:hold-grid",
-        "^shift": "snaps:release-grid",
-        "ctrl": "snaps:hold-objects",
-        "^ctrl": "snaps:release-objects",
-        // Pressing either while the other is down arrives as one combined keystroke; releasing Ctrl first does too.
-        "ctrl-shift": "snaps:hold-all",
-        "^ctrl-shift": "snaps:release-objects",
         "alt": "noop",
         "escape": "menu:cancel",
     },

@@ -146,18 +146,18 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
         return this.state.current;
     }
 
-    // While gizmo snapping is on or Shift is held, the diameter steps by the length step, counted from where the drag started
+    // While gizmo snapping is on, the diameter steps by the length step, counted from where the drag started
     private stepLength(diameter: number, event: MouseEvent) {
         const { snaps } = this.editor;
-        if (!(snaps.gizmoSnapping || event?.shiftKey)) return diameter;
+        if (!snaps.gizmoSnapping) return diameter;
         const start = this.state.original;
         return start + roundToStep(diameter - start, snaps.lengthStep);
     }
 
-    // While angle snapping is on or Shift is held, the angle steps by the angle step, counted from where the drag started
+    // While angle snapping is on, the angle steps by the angle step, counted from where the drag started
     private stepAngle(angle: number, event: MouseEvent) {
         const { snaps } = this.editor;
-        if (!(snaps.angleSnapping || event?.shiftKey)) return angle;
+        if (!snaps.angleSnapping) return angle;
         const start = this.startAngle;
         const delta = Math.atan2(Math.sin(angle - start), Math.cos(angle - start));
         return start + deg2rad(roundToStep(rad2deg(delta), snaps.angleStep));

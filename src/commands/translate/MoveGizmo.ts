@@ -96,7 +96,7 @@ export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
         const { n, pln } = this;
 
         let delta;
-        if (info.event.ctrlKey) {
+        if (this.editor.snaps.enabled) {
             const snapIntersect = intersect.snap()[0]?.position.clone();
             if (snapIntersect === undefined) return; // this only happens when the user is dragging through different viewports.
             n.copy(Z).applyQuaternion(this.quaternion);
@@ -172,11 +172,11 @@ export class MoveAxisGizmo extends AbstractAxisGizmo {
 const localY = new THREE.Vector3();
 
 const AXIS_HIDE_TRESHOLD = 0.99;
-// While gizmo snapping is on or Shift is held, step each component of a move by the gizmo length step, counted from
+// While gizmo snapping is on, step each component of a move by the gizmo length step, counted from
 // where the drag started and measured in the given frame.
 function stepVector(editor: EditorLike, delta: THREE.Vector3, start: THREE.Vector3, event: MouseEvent, frame: THREE.Quaternion) {
     const { snaps } = editor;
-    if (!(snaps.gizmoSnapping || event?.shiftKey)) return;
+    if (!snaps.gizmoSnapping) return;
     const step = snaps.lengthStep;
     const moved = delta.clone().sub(start).applyQuaternion(frame.clone().invert());
     moved.set(roundToStep(moved.x, step), roundToStep(moved.y, step), roundToStep(moved.z, step));

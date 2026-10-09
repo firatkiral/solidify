@@ -181,12 +181,16 @@ describe('Integration test', () => {
 
     describe('nearby', () => {
         test('when no geometry or point picker settings', () => {
+            expect(picker.nearby(pointPicker, cache, scene).map(s => s.name)).toEqual([]);
+            snaps.snapToGrid = true;
             expect(picker.nearby(pointPicker, cache, scene).map(s => s.name)).toEqual(["Origin"]);
         });
 
         test('when point picker additions', () => {
             const snap = new PointSnap("foo", new THREE.Vector3());
             pointPicker.addSnap(snap);
+            expect(picker.nearby(pointPicker, cache, scene).map(s => s.name)).toEqual(["foo"]);
+            snaps.snapToGrid = true;
             expect(picker.nearby(pointPicker, cache, scene).map(s => s.name)).toEqual(["foo", "Origin"]);
         })
 
@@ -223,7 +227,7 @@ describe('Integration test', () => {
 
                 test('it returns snap points for the geometry', () => {
                     const actual = picker.nearby(pointPicker, cache, scene);
-                    expect(actual.map(s => s.name)).toEqual(["End", "Beginning", "Origin"]);
+                    expect(actual.map(s => s.name)).toEqual(["End", "Point", "Beginning"]);
                 })
             })
         });
@@ -231,7 +235,10 @@ describe('Integration test', () => {
 
     describe('intersect', () => {
         test('when no geometry or point picker settings', () => {
-            expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(3);
+            expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(1);
+            snaps.snapToGrid = true;
+            // The grid puts the plane, the origin and the three axes on the same grid point
+            expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(5);
         });
 
         describe('when geometry additions', () => {

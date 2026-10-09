@@ -6,9 +6,10 @@ import { formatStep } from '../../util/Units';
 import * as visual from '../../visual_model/VisualModel';
 
 const objectLayers = [
+    { layer: visual.Layers.SnapPoint, icon: 'control-point', name: "Point" },
+    { layer: visual.Layers.CurveEdge, icon: 'edge', name: "Edge" },
     { layer: visual.Layers.Face, icon: 'face', name: "Face" },
     { layer: visual.Layers.Curve, icon: 'curve', name: "Curve" },
-    { layer: visual.Layers.CurveEdge, icon: 'edge', name: "Edge" },
 ];
 
 const degrees = new Intl.NumberFormat(undefined, { style: 'unit', unit: 'degree', unitDisplay: 'narrow', maximumFractionDigits: 0 });
@@ -51,7 +52,7 @@ export default (editor: Editor) => {
             this.render();
         }
 
-        // Toggles show what is in effect: their setting, or on while Shift/Ctrl is held. Clicking one changes the setting.
+        // Toggles show their setting. Clicking one changes it.
         render = () => {
             const { snaps } = editor;
             const { pointPicker } = this;
@@ -59,15 +60,15 @@ export default (editor: Editor) => {
                 <div class="p-4">
                     <h1 class={title}>Snaps</h1>
                     <div class="flex items-center px-2 space-x-1">
-                        {this.toggle('snap-grid', snaps.snapToGrid, "Snap points to the grid (hold Shift)", this.toggleGrid)}
+                        {this.toggle('snap-grid', snaps.snapToGrid, "Snap points to the grid", this.toggleGrid)}
                         {this.stepper(formatStep(snaps.gridStep), "Snap step on the grid", snaps.snapToGrid, () => this.stepGrid(-1), () => this.stepGrid(1))}
                     </div>
                     <div class="flex items-center px-2 mt-2 space-x-1">
-                        {this.toggle('snap-gizmo', snaps.gizmoSnapping, "Step lengths and moves when dragging handles (hold Shift)", this.toggleGizmo)}
+                        {this.toggle('snap-gizmo', snaps.gizmoSnapping, "Step lengths and moves when dragging handles", this.toggleGizmo)}
                         {this.stepper(formatStep(snaps.lengthStep), "Handle drag step for lengths", snaps.gizmoSnapping, () => this.stepLength(-1), () => this.stepLength(1))}
                     </div>
                     <div class="flex items-center px-2 mt-2 space-x-1">
-                        {this.toggle('snap-angle', snaps.angleSnapping, "Step angles when dragging handles (hold Shift)", this.toggleAngle)}
+                        {this.toggle('snap-angle', snaps.angleSnapping, "Step angles when dragging handles", this.toggleAngle)}
                         {this.stepper(degrees.format(snaps.angleStep), "Handle drag step for angles", snaps.angleSnapping, () => this.stepAngle(-1), () => this.stepAngle(1))}
                     </div>
                     <ul class="px-2 mt-3 space-y-1">
@@ -78,7 +79,7 @@ export default (editor: Editor) => {
                                     <solidify-icon name={icon}></solidify-icon>
                                 </div>
                                 <div class={`flex-grow min-w-0 text-xs truncate ${on ? 'text-neutral-300 group-hover:text-neutral-100' : 'text-neutral-500'}`}>{name}</div>
-                                <solidify-tooltip placement="left">{`Snap to ${name.toLowerCase()}s (hold Ctrl for all)`}</solidify-tooltip>
+                                <solidify-tooltip placement="left">{`Snap to ${name.toLowerCase()}s`}</solidify-tooltip>
                             </li>
                         })}
                     </ul>
@@ -101,7 +102,7 @@ export default (editor: Editor) => {
             </button>
         }
 
-        // Disabled while its snapping is off (holding Shift turns it on)
+        // Disabled while its snapping is off
         private stepper(value: string, tooltip: string, active: boolean, minus: () => void, plus: () => void) {
             return <div class={`flex flex-grow min-w-0 h-7 rounded-md border border-white/[0.06] text-neutral-300 ${active ? '' : 'opacity-40'}`} aria-disabled={!active}>
                 <button class="flex flex-none items-center px-1 rounded-l-md border-r border-white/[0.06] hover:bg-white/20 disabled:pointer-events-none" disabled={!active} onClick={minus}>

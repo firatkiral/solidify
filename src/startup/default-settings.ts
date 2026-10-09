@@ -31,6 +31,7 @@ export default {
         grid: false,
         handles: false,
         angles: false,
+        point: false,
         face: false,
         curve: false,
         edge: false,

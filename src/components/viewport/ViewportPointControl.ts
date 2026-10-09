@@ -113,7 +113,7 @@ export class ViewportPointControl extends ViewportControl implements GizmoLike<T
                 const { pointEnd3d, _raycaster: raycaster, delta, helper, viewport: { camera, constructionPlane }, pointStart3d } = this;
                 this.presenter.clear();
 
-                if (moveEvent.ctrlKey) {
+                if (this.editor.snaps.enabled) {
                     const { unprojected, snapPicker } = this;
                     snapPicker.setFromViewport(moveEvent, this.viewport);
                     const { presentation, intersections } = SnapPresentation.makeForGizmo(this.snapPicker, this.viewport, this.editor.scene, this.editor.snaps.cache, this.editor.gizmos);

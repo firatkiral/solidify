@@ -552,6 +552,11 @@ export enum Layers {
     CurveEdge,
 
     Unselectable,
+
+    // The snap points on objects (corners, midpoints, centers, crossings), so the Point snap toggle can filter them
+    SnapPoint,
+    // The origin and the X/Y/Z axes, which snap only while the Grid snap toggle is on
+    SnapAxis,
 }
 
 import("./VisualModelRaycasting");
