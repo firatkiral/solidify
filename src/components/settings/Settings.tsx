@@ -200,13 +200,13 @@ export default (editor: Editor) => {
             const step = "w-6 h-6 rounded text-neutral-200 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none";
             return <div>
                 <div class="text-sm font-semibold text-neutral-100">Autosave</div>
-                <div class="mb-3 text-xs text-neutral-400">File › Restore offers the autosaves of recent documents that aren't open. {restoreNote(editor)}</div>
+                <div class="mb-3 text-xs text-neutral-400">File › Restore offers your latest untitled work and the autosaves of recent saved documents that aren't open. {restoreNote(editor)}</div>
                 <div class="flex items-center space-x-2 text-sm">
                     <span>Restore keeps</span>
                     <button class={step} disabled={keep <= minKeep} onClick={() => this.setKeep(keep - 1)}>−</button>
                     <span class="w-6 text-center tabular-nums">{keep}</span>
                     <button class={step} disabled={keep >= maxKeep} onClick={() => this.setKeep(keep + 1)}>+</button>
-                    <span>documents</span>
+                    <span>saved documents</span>
                 </div>
 
                 <div class="mt-6 text-sm font-semibold text-neutral-100">Settings, keymap and theme</div>

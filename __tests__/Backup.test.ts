@@ -319,20 +319,87 @@ describe(Backup, () => {
         expect((await editor.backup.restorable()).map(s => s.name)).toEqual(['a.solidify']);
     });
 
-    test("only the newest autosaves of documents that aren't open are kept, up to the setting", async () => {
+    test("of documents with a file that aren't open, the newest keep their autosaves, up to the setting; untitled work has one besides", async () => {
         defaultSettings.Autosave.keep = 2;
         const ids = [];
         for (let i = 0; i < 4; i++) {
             const editor = await started();
             await edit(editor, 1);
-            await editor.backup.save();
+            browser.files.toSave = `${i}.solidify`;
+            await editor.saveAs();
             ids.push(editor.document.id);
             close(editor);
         }
         // Each was open when it pruned the others
         expect(keys().filter(k => k.endsWith('.json')).map(k => k.replace('.json', '')).sort()).toEqual(ids.slice(1).sort());
+
+        const untitled = await started();
+        await edit(untitled, 1);
+        await untitled.backup.save();
+        close(untitled);
         const fresh = await started();
-        expect((await fresh.backup.restorable()).map(s => s.id)).toEqual([ids[3], ids[2]]);
+        expect((await fresh.backup.restorable()).map(s => s.id)).toEqual([untitled.document.id, ids[3], ids[2]]);
+    });
+
+    test("one untitled autosave is kept: the tab that last changed its untitled document has it", async () => {
+        const a = await started();
+        await edit(a, 1);
+        await a.backup.save();
+        const b = await started();
+        await edit(b, 1);
+        await b.backup.save();
+        expect(keys()).toEqual(slotOf(b));
+
+        await edit(a, 10);
+        await a.backup.save();
+        expect(keys()).toEqual(slotOf(a));
+        // Open in a tab, so not offered
+        expect(await (await started()).backup.restorable()).toEqual([]);
+    });
+
+    test("a reload whose untitled autosave another tab took starts empty, and leaves that tab's", async () => {
+        const a = await started();
+        await edit(a, 1);
+        await a.backup.save();
+        const b = await started();
+        await edit(b, 1);
+        await b.backup.save();
+
+        const restarted = await reloaded(a);
+        expect(restarted._db.items.length).toBe(0);
+        expect(restarted.document.id).not.toBe(a.document.id);
+        expect(corrupt()).toEqual([]);
+        expect(keys()).toEqual(slotOf(b));
+    });
+
+    test("an empty untitled document doesn't take the untitled autosave from another", async () => {
+        const a = await started();
+        await edit(a, 1);
+        await a.backup.save();
+        const b = await started();
+        await edit(b, 1);
+        await b.backup.save();
+
+        // Emptied after its autosave was taken
+        a.originator.clear();
+        a.signals.historyChanged.dispatch();
+        await a.backup.save();
+        expect(keys()).toEqual(slotOf(b));
+    });
+
+    test("the untitled autosaves earlier versions kept, one for every document, are cleared at startup but for the newest", async () => {
+        const editor = await started();
+        await edit(editor, 1);
+        await editor.backup.save();
+        const [info, data] = slotOf(editor);
+        const { time } = (await browser.autosaves.get<{ time: number }>(info))!;
+        for (const id of ['old-1', 'old-2']) {
+            await browser.autosaves.setMany([[`${id}.solidify`, browser.autosaves.items.get(data)], [`${id}.json`, { time: time - 1, modified: true }]]);
+        }
+        close(editor);
+
+        await started();
+        expect(keys()).toEqual([info, data]);
     });
 
     test("Open finds the document's autosave by the id in the file", async () => {
@@ -404,8 +471,9 @@ describe(Backup, () => {
         expect(slots.map(s => s.name)).toEqual([undefined, 'a.solidify']);
         expect(slots.map(s => s.modified)).toEqual([true, false]);
 
+        // The setting counts documents with a file; the untitled autosave is besides
         defaultSettings.Autosave.keep = 1;
-        expect((await fresh.backup.restorable()).length).toBe(1);
+        expect((await fresh.backup.restorable()).map(s => s.name)).toEqual([undefined, 'a.solidify']);
     });
 
     test("restoring a file's autosave reopens it with its name, its unsaved changes, and its file", async () => {

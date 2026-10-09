@@ -46,7 +46,8 @@ export default {
     },
 
     Autosave: {
-        // How many documents that aren't open keep an autosave, which File › Restore offers
+        // How many documents with a file that aren't open keep an autosave, which File › Restore offers; untitled
+        // work always has one, the newest
         keep: 3,
     },
 }

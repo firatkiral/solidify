@@ -102,10 +102,10 @@ export class Backup {
         const { document, store } = this;
         const { id, file, modified } = document;
         this.revision = document.revision;
-        // An empty new document has nothing worth an autosave yet
-        if (file === undefined && !document.autosaved && document.isEmpty()) return;
-
         const isNew = await store.get(this.infoKey(id)) === undefined;
+        // An empty untitled document has nothing worth an autosave, and mustn't take the untitled one from another
+        if (file === undefined && isNew && document.isEmpty()) return;
+
         const { json, geometry, images, meshes } = await new SolidifyDocument(this.originator).serialize();
         const data = writeSolidifyFile({ id, json, geometry, images, meshes }, false);
         const info: SlotInfo = { name: file?.name, time: Date.now(), modified };
@@ -115,21 +115,24 @@ export class Backup {
         if (isNew) await this.prune();
     }
 
-    // Keeps the newest autosaves of documents that aren't open, up to the setting
+    // One untitled autosave is kept, the newest, even if its document is open: the tab that last changed its
+    // untitled document has it. Of documents with a file that aren't open, the newest are kept, up to the setting.
     private async prune() {
-        for (const slot of (await this.closed()).slice(this.keep())) {
-            await this.remove(slot.id);
-        }
-    }
-
-    // What File › Restore offers: the newest autosaves of documents that aren't open in any tab
-    async restorable(): Promise<Slot[]> {
-        return (await this.closed()).slice(0, this.keep());
-    }
-
-    private async closed(): Promise<Slot[]> {
         const open = new Set(await this.locks.held());
-        return (await this.slots()).filter(s => !open.has(s.id));
+        const slots = await this.slots();
+        const untitled = slots.filter(s => s.name === undefined).slice(1);
+        const saved = slots.filter(s => s.name !== undefined && !open.has(s.id)).slice(this.keep());
+        for (const slot of [...untitled, ...saved]) await this.remove(slot.id);
+    }
+
+    // What File › Restore offers: the untitled autosave, and the newest of documents with a file, up to the setting;
+    // none whose document is open in a tab
+    async restorable(): Promise<Slot[]> {
+        const open = new Set(await this.locks.held());
+        const slots = await this.slots();
+        const untitled = slots.filter(s => s.name === undefined).slice(0, 1);
+        const saved = slots.filter(s => s.name !== undefined && !open.has(s.id)).slice(0, this.keep());
+        return [...untitled, ...saved].filter(s => !open.has(s.id)).sort((a, b) => b.time - a.time);
     }
 
     // Every autosave, newest first
@@ -162,11 +165,12 @@ export class Backup {
     }
 
     // Startup: a reload brings back the document the tab had; a new tab starts with an empty one, as does a tab
-    // copied from another, which still has it open. Returns whether a document was brought back.
+    // copied from another, which still has it open, and a tab whose untitled document another tab's took the
+    // autosave from. Returns whether a document was brought back.
     async start(session: Partial<DocumentState>): Promise<boolean> {
         let restored = false;
         const { id, file } = session;
-        if (session.autosaved === true && id !== undefined && await this.claim(id)) {
+        if (session.autosaved === true && id !== undefined && await this.has(id) && await this.claim(id)) {
             try {
                 await this.load(id);
                 this.document.reset(id, file, session.modified === true);
@@ -182,9 +186,19 @@ export class Backup {
             this.signals.backupLoaded.dispatch();
         }
         await this.claim(this.document.id);
+        // Earlier versions kept an untitled autosave for every document
+        try {
+            await this.prune();
+        } catch (e) {
+            console.warn("Old autosaves could not be cleared", e);
+        }
         this.resume();
         if (this.pending) await this.save();
         return restored;
+    }
+
+    private async has(id: string) {
+        return (await this.store.keys()).includes(this.dataKey(id));
     }
 
     private async remove(id: string) {
