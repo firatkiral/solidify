@@ -45,6 +45,10 @@ yarn preview    # dist/, served with the headers it's deployed with
 
 A service worker keeps the app in the browser, so it starts offline. A deploy is downloaded in the background, only the files that changed; the app then offers to reload into the new version, and the document comes back from its autosave.
 
+## Releasing
+
+`yarn release` makes the next patch version (`yarn release minor`, `major`, or a version like `1.2.3` for others). On `master`, with everything committed and nothing new on `origin`, it bumps the version in `package.json`, adds a CHANGELOG entry with a line for each commit since the last release, commits, tags `v<version>`, and pushes both, after showing the entry and asking. Commit subjects become the entry, so write them as what changed for users.
+
 ## License
 
 Solidify is derived from Plasticity by Nick Kallen and is licensed under the GNU LGPL, version 3 (see [LICENSE](LICENSE)).

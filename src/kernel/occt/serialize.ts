@@ -5,7 +5,7 @@ import { Item, SpaceItem } from './base';
 import { Model, PlaneInstance, SpaceInstance } from './items';
 import { CartPoint, CartPoint3D, Matrix3D, Placement3D, Vector3D } from './math';
 import { oc } from './occt';
-import { Solid } from './solid';
+import { Shape, Solid } from './solid';
 import { Creator, extend } from './history';
 
 // The document format of the OCCT kernel: JSON with curves described by their definitions and solids as BREP text.
@@ -109,11 +109,23 @@ function toCurve3d(j: Json): Curve3D {
     throw new Error(`Unknown curve ${j.k}`);
 }
 
+// A shape as BREP text, without the triangulation it was drawn with: that is made again when it's drawn after loading,
+// and kept it was most of a document (a solid's every history record had its own copy). It's written from a copy that
+// has none; copying keeps the order of the faces and edges, which their names follow.
+function brep(shape: Shape): string {
+    const identity = new oc.gp_Trsf();
+    const transform = new oc.BRepBuilderAPI_Transform(shape, identity, true, false);
+    const copy = transform.Shape();
+    const text = oc.BRepToolsWrapper.Write(copy);
+    copy.delete(); transform.delete(); identity.delete();
+    return text;
+}
+
 function item(i: Item): Json | undefined {
     const base = { name: i.GetItemName(), style: i.GetStyle() };
     if (i instanceof Solid) {
-        const history = i.creators.map(c => ({ type: c.IsA(), status: c.GetStatus(), matrix: c.matrix.m, brep: oc.BRepToolsWrapper.Write(c.snapshot) }));
-        return { ...base, k: 'Solid', brep: oc.BRepToolsWrapper.Write(i.shape), history, numbering: i.numbering };
+        const history = i.creators.map(c => ({ type: c.IsA(), status: c.GetStatus(), matrix: c.matrix.m, brep: brep(c.snapshot) }));
+        return { ...base, k: 'Solid', brep: brep(i.shape), history, numbering: i.numbering };
     }
     if (i instanceof SpaceInstance) {
         const space = i.GetSpaceItem();

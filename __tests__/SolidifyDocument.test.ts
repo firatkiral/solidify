@@ -67,6 +67,23 @@ describe(SolidifyDocument, () => {
         expect(db.items.length).toBe(2);
     });
 
+    test("solids are saved without the meshes they're drawn with, and are drawn again when loaded", async () => {
+        const save = new SolidifyDocument(originator);
+        const { json, geometry, images: data } = await save.serialize();
+        const { items } = JSON.parse(new TextDecoder().decode(geometry));
+        const breps: string[] = items.flatMap((i: any) => i.k === 'Solid' ? [i.brep, ...i.history.map((h: any) => h.brep)] : []);
+        expect(breps.length).toBeGreaterThan(2);
+        for (const brep of breps) expect(brep).not.toMatch(/\nTriangulations [1-9]/);
+
+        await db.removeItem(box1);
+        await db.removeItem(box2);
+        await SolidifyDocument.load(json, geometry, data, originator);
+        const bbox = new THREE.Box3().setFromObject(db.items[1].view);
+        expect(bbox.min).toApproximatelyEqual(new THREE.Vector3());
+        expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(10, 10, 10));
+        expect([...(db.items[1].view as visual.Solid).allFaces].length).toBe([...box2.allFaces].length);
+    });
+
     test("serialize & deserialize names", async () => {
         scene.setName(box1, "my first box");
         scene.setName(box2, "my other box");

@@ -3,6 +3,7 @@
  */
 import * as THREE from 'three';
 import { FakeFiles, FakePlatform } from '../__mocks__/FakePlatform';
+import Command from '../src/command/Command';
 import { ThreePointBoxFactory } from '../src/commands/box/BoxFactory';
 import { Editor } from '../src/editor/Editor';
 import { Backup } from '../src/editor/serialization/Backup';
@@ -142,6 +143,26 @@ describe(Backup, () => {
         // The request made during the load is saved once it finishes
         expect(await written()).toBeGreaterThan(before);
         expect((await reloaded(restarted))._db.items.length).toBe(2);
+    });
+
+    test("selecting writes no autosave, nor does undoing or redoing it; undoing an edit does", async () => {
+        const editor = await started();
+        await edit(editor, 1);
+        await editor.backup.save();
+        const serialize = jest.spyOn(SolidifyDocument.prototype, 'serialize');
+
+        const before = editor.history.current;
+        editor.history.add("Select", before, false);
+        editor.signals.commandFinishedSuccessfully.dispatch({ changesDocument: false } as Command);
+        editor.history.undo();
+        editor.history.redo();
+        await editor.backup['saving'];
+        expect(serialize).not.toHaveBeenCalled();
+
+        editor.history.undo();
+        editor.history.undo();
+        await editor.backup['saving'];
+        expect(serialize).toHaveBeenCalledTimes(1);
     });
 
     test("overlapping autosaves are coalesced", async () => {

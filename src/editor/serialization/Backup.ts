@@ -32,6 +32,8 @@ export class Backup {
     private broken = false;
     private pending = false;
     private saving?: Promise<void>;
+    // The history revision last written
+    private revision?: number;
     // The document whose lock this tab holds
     private claimed?: string;
 
@@ -43,8 +45,10 @@ export class Backup {
         private readonly signals: EditorSignals,
         private readonly keep: () => number,
     ) {
-        signals.commandFinishedSuccessfully.add(() => this.save());
-        signals.historyChanged.add(() => this.save());
+        // The selection isn't kept, so selecting, and undoing or redoing a selection, writes nothing: writing a large
+        // document takes seconds, which every click would wait for
+        signals.commandFinishedSuccessfully.add(command => { if (command.changesDocument) this.save() });
+        signals.historyChanged.add(() => { if (document.revision !== this.revision) this.save() });
     }
 
     private dataKey(id: string) { return `${id}.solidify` }
@@ -97,6 +101,7 @@ export class Backup {
     private async write() {
         const { document, store } = this;
         const { id, file, modified } = document;
+        this.revision = document.revision;
         // An empty new document has nothing worth an autosave yet
         if (file === undefined && !document.autosaved && document.isEmpty()) return;
 

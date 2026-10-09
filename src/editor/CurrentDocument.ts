@@ -54,6 +54,9 @@ export class CurrentDocument {
 
     get name() { return this._file?.name ?? 'Untitled' }
 
+    // Changes with every change to the content, and back again with undo and redo; not with the selection
+    get revision() { return this.history.revision }
+
     get modified() {
         // There's nothing to lose in an empty untitled document
         if (this._file === undefined && this.isEmpty()) return false;
