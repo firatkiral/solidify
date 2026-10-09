@@ -7,15 +7,12 @@ import { EditorSignals } from '../editor/EditorSignals';
 import LayerManager from "../editor/LayerManager";
 import MaterialDatabase from "../editor/MaterialDatabase";
 import { Scene } from "../editor/Scene";
-import { GizmoSnapPicker } from "../editor/snaps/GizmoSnapPicker";
 import { SnapManager } from "../editor/snaps/SnapManager";
-import { SnapResult } from "../editor/snaps/SnapPicker";
 import { CancellablePromise } from "../util/CancellablePromise";
 import { Helper, Helpers } from "../util/Helpers";
 import { GizmoMaterialDatabase } from "./GizmoMaterials";
 import { KeyboardInterpreter } from "./KeyboardInterpreter";
 import { Executable } from "./Quasimode";
-import { SnapPresentation, SnapPresenter } from "./SnapPresenter";
 
 /**
  * Gizmos are the graphical tools used to run commands, such as move/rotate/fillet, etc.
@@ -257,7 +254,6 @@ export class BasicGizmoTriggerStrategy<I, O> extends GizmoTriggerStrategy<I, O> 
 
 export interface Intersector {
     raycast(...objects: THREE.Object3D[]): THREE.Intersection | undefined;
-    snap(): SnapResult[];
 }
 
 export interface MovementInfo {
@@ -284,8 +280,8 @@ export interface MovementInfo {
 // gizmo interactions) as well as the keyboardCommand->move->click->unclick case (blender modal-style).
 type State = { tag: 'none' }
     | { tag: 'hover' }
-    | { tag: 'dragging', clearEventHandlers: Disposable, clearPresenter: Disposable, text: KeyboardInterpreter }
-    | { tag: 'command', clearEventHandlers: Disposable, clearPresenter: Disposable, text: KeyboardInterpreter }
+    | { tag: 'dragging', clearEventHandlers: Disposable, text: KeyboardInterpreter }
+    | { tag: 'command', clearEventHandlers: Disposable, text: KeyboardInterpreter }
 
 export class GizmoStateMachine<I, O> implements MovementInfo {
     // NOTE: isActive and isEnabled differ only slightly. When !isEnabled, the gizmo is COMPLETELY disabled.
@@ -340,20 +336,12 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
         this.cameraPlane.quaternion.copy(camera.quaternion);
         this.cameraPlane.updateMatrixWorld();
         this.raycaster.setFromCamera(this.currentMousePosition, camera);
-        this.snapPicker.setFromViewport(event, viewport);
         this.event = event;
     }
 
     private readonly raycaster = new THREE.Raycaster();
-    private readonly snapPicker = new GizmoSnapPicker();
-    private readonly presenter = new SnapPresenter(this.editor);
     private readonly raycast = (...obj: THREE.Object3D[]) => GizmoStateMachine.intersectObjectWithRay(obj, this.raycaster);
-    private readonly snap = () => {
-        const { presentation, intersections } = SnapPresentation.makeForGizmo(this.snapPicker, this.viewport, this.editor.scene, this.editor.snaps.cache, this.editor.gizmos);
-        this.presenter.onPointerMove(this.viewport, presentation);
-        return intersections;
-    }
-    private readonly intersector: Intersector = { raycast: this.raycast, snap: this.snap }
+    private readonly intersector: Intersector = { raycast: this.raycast }
 
     private worldPosition = new THREE.Vector3();
     private begin() {
@@ -390,8 +378,7 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
                 if (fn(this.cb) === undefined) {
                     this.gizmo.update(this.camera);
                     this.begin();
-                    const clearPresenter = this.presenter.execute();
-                    this.state = { tag: 'command', clearEventHandlers, clearPresenter, text: new KeyboardInterpreter() };
+                    this.state = { tag: 'command', clearEventHandlers, text: new KeyboardInterpreter() };
                     this.gizmo.dispatchEvent({ type: 'start' });
                 } else {
                     clearEventHandlers.dispose();
@@ -410,8 +397,7 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
 
                 this.begin();
                 const clearEventHandlers = start();
-                const clearPresenter = this.presenter.execute();
-                this.state = { tag: 'dragging', clearEventHandlers, clearPresenter, text: new KeyboardInterpreter() };
+                this.state = { tag: 'dragging', clearEventHandlers, text: new KeyboardInterpreter() };
                 this.gizmo.dispatchEvent({ type: 'start' });
                 break;
             default: break;
@@ -434,7 +420,6 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
                 const startRadius = this.pointStart2d.clone().sub(this.center2d);
                 this.angle = Math.atan2(this.endRadius.y, this.endRadius.x) - Math.atan2(startRadius.y, startRadius.x);
 
-                this.presenter.clear();
                 const value = this.gizmo.onPointerMove(this.cb, this.intersector, this);
                 if (value !== undefined) {
                     this.gizmo.helper?.onMove(this.pointEnd2d, value);
@@ -456,7 +441,6 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
                 if (this.event.button !== 0) return;
 
                 this.state.clearEventHandlers.dispose();
-                this.state.clearPresenter.dispose();
                 this.editor.signals.gizmoChanged.dispatch();
                 this.state = { tag: 'none' };
                 this.gizmo.dispatchEvent({ type: 'end' });
@@ -519,7 +503,6 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
             case 'command':
             case 'dragging':
                 this.state.clearEventHandlers.dispose();
-                this.state.clearPresenter.dispose();
                 this.gizmo.dispatchEvent({ type: 'interrupt' });
                 this.gizmo.onInterrupt(this.cb);
                 this.gizmo.helper?.onInterrupt();
@@ -535,7 +518,6 @@ export class GizmoStateMachine<I, O> implements MovementInfo {
             case 'command':
             case 'dragging':
                 this.state.clearEventHandlers.dispose();
-                this.state.clearPresenter.dispose();
                 this.gizmo.helper?.onEnd();
             default: break;
         }

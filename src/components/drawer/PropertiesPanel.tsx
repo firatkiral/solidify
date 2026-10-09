@@ -2,9 +2,9 @@ import { JSX, render } from 'preact';
 import * as THREE from 'three';
 import { AddMaterialCommand, EditMaterialCommand, RemoveMaterialCommand, setMaterialSetting } from '../../commands/material/SetMaterialCommand';
 import { Editor } from '../../editor/Editor';
-import { Empty } from '../../editor/Empties';
 import { Group } from '../../editor/Groups';
 import { RealNodeItem } from '../../editor/Nodes';
+import { kindOf } from '../../editor/Scene';
 import { formatLength } from '../../util/Units';
 import * as visual from '../../visual_model/VisualModel';
 import { ChangeEvent } from '../dialog/NumberScrubber';
@@ -34,16 +34,11 @@ const depths = [["Normal", THREE.LessEqualDepth], ["Front", THREE.AlwaysDepth], 
 export default (editor: Editor) => {
     const { scene } = editor;
 
-    const kind = (node: RealNodeItem) =>
-        node instanceof visual.Solid ? "Solid" : node instanceof visual.SpaceInstance ? "Curve" : node instanceof Group ? "Group" : "Empty";
+    const kind = kindOf;
     const icon = (node: RealNodeItem) =>
         node instanceof visual.Solid ? 'solid' : node instanceof visual.SpaceInstance ? 'curve' : node instanceof Group ? 'group' : 'face';
-    // As the Scene panel names it
-    const defaultName = (node: RealNodeItem) => {
-        const id = node instanceof Group || node instanceof Empty ? node.simpleName : editor.db.lookupId(node.simpleName);
-        return `${kind(node)} ${id}`;
-    }
-    const nameOf = (node: RealNodeItem) => scene.getName(node) ?? defaultName(node);
+    const defaultName = (node: RealNodeItem) => scene.defaultName(node);
+    const nameOf = (node: RealNodeItem) => scene.nameOf(node);
 
     // What a node is drawn as, a group's being what's in it
     const objectsOf = (node: RealNodeItem): THREE.Object3D[] => node instanceof Group

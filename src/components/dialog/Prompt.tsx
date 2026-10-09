@@ -1,5 +1,7 @@
 import { CompositeDisposable, Disposable } from 'event-kit';
 import { Editor } from '../../editor/Editor';
+import type { Scene } from '../../editor/Scene';
+import type * as visual from '../../visual_model/VisualModel';
 import { CancellablePromise } from '../../util/CancellablePromise';
 import { render } from 'preact';
 
@@ -23,11 +25,24 @@ export class Prompt extends HTMLElement {
     get onclear() { return this._onclear }
     set onclear(onclear: (() => void) | undefined) { this._onclear = onclear }
 
+    // What the prompt holds, like the target bodies: shown with a check in place of the description, and once a prompt
+    // holds values, an empty one shows as not done
+    private _value?: string;
+    private holdsValue = false;
+    get value() { return this._value }
+    set value(value: string | undefined) {
+        this._value = value;
+        this.holdsValue = true;
+        if (this.state.tag !== 'executing') this.state = this.doneState;
+        this.render();
+    }
+    private get doneState(): State { return this.holdsValue && this._value === undefined ? { tag: 'none' } : { tag: 'finished' } }
+
     connectedCallback() { this.render() }
     disconnectedCallback() { }
 
     render() {
-        const { name, description, state: { tag }, onclear } = this;
+        const { name, description, value, state: { tag }, onclear } = this;
         let icon;
         switch (tag) {
             case 'executing': icon = <div class="w-4 h-4 rounded-full bg-ui-muted"> <div class="w-full h-full rounded-full animate-ping bg-ui-muted"> </div></div>; break;
@@ -35,7 +50,7 @@ export class Prompt extends HTMLElement {
             default: icon = <div class="w-4 h-4 bg-transparent rounded-full"> </div>; break;;
         }
         const clear = onclear !== undefined
-            ? <button class="rounded-full group text-ui-text group-hover:text-ui-title hover:bg-ui-hover" onClick={() => onclear()}>
+            ? <button class="rounded-full group text-ui-text group-hover:text-ui-title hover:bg-ui-hover" onClick={e => { e.stopPropagation(); onclear() }}>
                 <solidify-icon name="cancel"></solidify-icon>
             </button>
             : <></>;
@@ -44,7 +59,9 @@ export class Prompt extends HTMLElement {
             <div class="flex items-center space-x-2">
                 {icon}
                 <div class="font-bold text-ui-text">{name}</div>
-                <div class="text-ui-faint">{description}</div>
+                {value !== undefined
+                    ? <div class="text-ui-text">{value}</div>
+                    : <div class="text-ui-faint">{description}</div>}
             </div>
             {clear}
         </li>, this);
@@ -54,7 +71,7 @@ export class Prompt extends HTMLElement {
         const cancellable = new CancellablePromise<void>((resolve, reject) => {
             const disposables = new CompositeDisposable();
             disposables.add(new Disposable(() => {
-                this.state = { tag: 'finished' };
+                this.state = this.doneState;
                 this.render();
             }));
 
@@ -64,6 +81,13 @@ export class Prompt extends HTMLElement {
         this.render();
         return cancellable;
     }
+}
+
+// Target bodies as a prompt shows them: one by its name, more by how many
+export function targetsLabel(scene: Scene, targets: readonly visual.Solid[]): string | undefined {
+    if (targets.length === 0) return undefined;
+    if (targets.length === 1) return scene.nameOf(targets[0]);
+    return `${targets.length} bodies`;
 }
 
 export default (editor: Editor) => {

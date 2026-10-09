@@ -183,14 +183,12 @@ export abstract class ViewportControl extends THREE.EventDispatcher {
                 const intersects = this.getIntersects(this.normalizedMousePosition, [...this.scene.selectableObjects]);
                 const currentTime = upEvent.timeStamp;
                 try {
-                    if (previousEvent !== undefined
+                    // A quick second click elsewhere, like shift-clicking the next object, is an ordinary click
+                    const isDblClick = previousEvent !== undefined
                         && currentTime - previousEvent.timeStamp < dblClickTimeThreshold
-                    ) {
-                        const currentPosition = new THREE.Vector2(upEvent.clientX, upEvent.clientY);
-                        const previousPosition = new THREE.Vector2(previousEvent.clientX, previousEvent.clientY);
-                        if (currentPosition.distanceTo(previousPosition) <= consummationDistanceThreshold) {
-                            this.dblClick(intersects, upEvent);
-                        }
+                        && new THREE.Vector2(upEvent.clientX, upEvent.clientY).distanceTo(new THREE.Vector2(previousEvent.clientX, previousEvent.clientY)) <= consummationDistanceThreshold;
+                    if (isDblClick) {
+                        this.dblClick(intersects, upEvent);
                     } else {
                         this.endClick(intersects, upEvent);
                     }
@@ -278,7 +276,7 @@ export abstract class ViewportControl extends THREE.EventDispatcher {
     }
 }
 
-// Time thresholds are in milliseconds,\ distance thresholds are in pixels.
+// Time thresholds are in milliseconds, distance thresholds are in pixels.
 const dragConsummationTimeThreshold = 200; // once the mouse is down at least this long the drag is consummated
-const consummationDistanceThreshold = 4; // once the mouse moves at least this distance the drag is consummatedconst dragConsummationTimeThreshold = 200; // once the mouse is down at least this long the drag is consummated
-const dblClickTimeThreshold = 300; // once the mouse is down at least this long the drag is consummated
+const consummationDistanceThreshold = 4; // once the mouse moves at least this distance the drag is consummated
+const dblClickTimeThreshold = 300; // a second click within this long of the first, and as close, is a double click

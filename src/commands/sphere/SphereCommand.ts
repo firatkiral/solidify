@@ -1,4 +1,5 @@
 import Command from "../../command/Command";
+import { targetsLabel } from "../../components/dialog/Prompt";
 import { diameter, Measurements } from "../../command/Measurements";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { PointPicker } from "../../command/point-picker/PointPicker";
@@ -50,14 +51,17 @@ export class SphereCommand extends Command {
             return objectPicker.execute(async delta => {
                 const targets = [...objectPicker.selection.selected.solids];
                 sphere.targets = targets;
+                dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, sphere.targets));
                 await sphere.update();
                 keyboard.toggle(sphere.isOverlapping);
             }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this)
         }, async () => {
             sphere.targets = [];
+            dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, sphere.targets));
             await sphere.update();
             keyboard.toggle(sphere.isOverlapping);
         });
+        dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, sphere.targets));
 
         // The radius pin points toward where the radius was dragged to
         const direction = p2.clone().sub(p1);

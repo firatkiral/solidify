@@ -123,7 +123,7 @@ export default {
 
     "[command='extrude'] solidify-viewport": {
         "a": "gizmo:extrude:race1",
-        "s": "gizmo:extrude:race2",
+        "s": "keyboard:extrude:symmetric",
         "d": "gizmo:extrude:distance1",
         "t": "gizmo:extrude:thickness",
 

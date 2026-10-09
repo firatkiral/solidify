@@ -5,6 +5,7 @@ export class ExtrudeKeyboardGizmo extends CommandKeyboardInput {
         super('extrude', editor, [
             'keyboard:extrude:free',
             'keyboard:extrude:pivot',
+            'keyboard:extrude:symmetric',
         ]);
     }
 }

@@ -30,11 +30,69 @@ export abstract class PossiblyBooleanFactory<GF extends GeometryFactory> extends
     protected _isSurface = false;
     get isSurface() { return this._isSurface; }
 
-    private async beforeCalculate(fast = false) {
+    // Targets the tool is known to touch, such as the solid an extruded face belongs to: no overlap test is needed
+    touching = new Set<visual.Solid>();
+
+    // Previewing the boolean on every change can take seconds on a detailed body. When this is on, the preview shows
+    // just the tool while values are changing, and the boolean once they've settled for a moment (and on commit).
+    protected get previewsToolWhileChanging() { return false }
+    static settleDelay = 300;
+    private changing = false;
+    private settleTimer?: ReturnType<typeof setTimeout>;
+    private toolOnly = false;
+
+    override async update() {
+        if (this.previewsToolWhileChanging) {
+            this.changing = true;
+            if (this.settleTimer !== undefined) clearTimeout(this.settleTimer);
+            this.settleTimer = setTimeout(() => this.settle(), PossiblyBooleanFactory.settleDelay);
+        }
+        this.generation++;
+        return super.update();
+    }
+
+    private settle() {
+        this.settleTimer = undefined;
+        if (this.done) return;
+        this.changing = false;
+        this.generation++;
+        super.update();
+    }
+
+    override async commit() {
+        this.stopSettling();
+        this.generation++;
+        return super.commit();
+    }
+
+    override cancel() {
+        this.stopSettling();
+        super.cancel();
+    }
+
+    private stopSettling() {
+        if (this.settleTimer !== undefined) clearTimeout(this.settleTimer);
+        this.settleTimer = undefined;
+        this.changing = false;
+    }
+
+    // The phantom update and the real update ask for the same tool; build it and test it once per update
+    private generation = 0;
+    private computed?: { generation: number, result: ReturnType<PossiblyBooleanFactory<GF>['computeBeforeCalculate']> };
+    private beforeCalculate() {
+        const { generation } = this;
+        if (this.computed?.generation !== generation) this.computed = { generation, result: this.computeBeforeCalculate() };
+        return this.computed.result;
+    }
+
+    private async computeBeforeCalculate() {
         const phantoms = toArray(await this.fantom.calculate()) as c3d.Solid[];
         let isOverlapping, isSurface;
         if (this.targets.length === 0) {
             isOverlapping = false;
+            isSurface = false;
+        } else if (this.targets.some(target => this.touching.has(target))) {
+            isOverlapping = true;
             isSurface = false;
         } else {
             const possible = [];
@@ -65,6 +123,10 @@ export abstract class PossiblyBooleanFactory<GF extends GeometryFactory> extends
         const { phantoms, isOverlapping, isSurface } = await this.beforeCalculate();
         this._isOverlapping = isOverlapping; this._isSurface = isSurface;
 
+        // While values change, the phantom stands in for the boolean, and the targets stay as they are
+        this.toolOnly = this.changing && isOverlapping && !this.newBody;
+        if (this.toolOnly) return [];
+
         if (isOverlapping && !this.newBody) {
             this.bool.operationType = this.operationType;
             this.bool.tools = phantoms;
@@ -82,7 +144,7 @@ export abstract class PossiblyBooleanFactory<GF extends GeometryFactory> extends
             return [];
         if (this.newBody)
             return [];
-        if (this.operationType === c3d.OperationType.Union)
+        if (this.operationType === c3d.OperationType.Union && !this.changing)
             return [];
         if (!isOverlapping)
             return [];
@@ -102,5 +164,9 @@ export abstract class PossiblyBooleanFactory<GF extends GeometryFactory> extends
 
     get shouldRemoveOriginalItemOnCommit() {
         return this.isOverlapping && this.targets.length !== 0 && !this.newBody;
+    }
+
+    protected get shouldHideOriginalItemDuringUpdate() {
+        return !this.toolOnly && this.shouldRemoveOriginalItemOnCommit;
     }
 }

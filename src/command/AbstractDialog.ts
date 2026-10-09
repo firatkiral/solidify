@@ -132,4 +132,11 @@ export abstract class AbstractDialog<T> extends HTMLElement implements Executabl
     replace<T>(key: string, execute: () => CancellablePromise<T>, clear?: () => void): () => CancellablePromise<T> {
         return this.prompt(key, execute, clear, true);
     }
+
+    // Shows what a prompt holds, such as the target bodies; undefined shows it empty
+    promptValue(key: string, value: string | undefined) {
+        const element = this.querySelector(`solidify-prompt[name='${key}']`);
+        if (element === null) throw new Error("invalid prompt: " + key);
+        (element as Prompt).value = value;
+    }
 }

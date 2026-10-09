@@ -3,11 +3,15 @@ import c3d from '../../kernel/kernel';
 import { delegate, derive } from "../../command/FactoryBuilder";
 import { NoOpError } from '../../command/GeometryFactory';
 import { MultiGeometryFactory, MultiplyableFactory } from "../../command/MultiFactory";
-import { composeMainName, point2point, unit, vec2vec } from "../../util/Conversion";
+import { DatabaseLike } from "../../editor/DatabaseLike";
+import { composeMainName, isSamePlacement, point2point, unit, vec2vec } from "../../util/Conversion";
 import * as visual from '../../visual_model/VisualModel';
 import { MultiBooleanFactory } from "../boolean/BooleanFactory";
 import { PossiblyBooleanFactory } from "../boolean/PossiblyBooleanFactory";
 import { SweepFactory, SweptParams } from "../evolution/SweepFactory";
+
+// The dialog's choice of a new body, alongside the boolean operation types
+export const NewBody = 1000;
 
 export interface ExtrudeParams extends SweptParams {
     distance1: number;
@@ -138,13 +142,54 @@ export class RegionExtrudeFactory extends AbstractExtrudeFactory {
         bbox.getCenter(this._center);
     }
 
+    // The outward normal of the solid face the region lies on, if any: extruding out of the solid joins it, into it cuts
+    faceNormal?: THREE.Vector3;
+
     get defaultOperationType() {
+        if (this.faceNormal !== undefined)
+            return this.distance1 * this.direction.dot(this.faceNormal) > 0 ? c3d.OperationType.Union : c3d.OperationType.Difference;
         return this.isSurface ? c3d.OperationType.Union : c3d.OperationType.Difference
     }
 
     private _direction!: THREE.Vector3;
     get direction(): THREE.Vector3 { return this._direction }
     set direction(direction: THREE.Vector3) { this._direction = direction }
+}
+
+// The solids with a flat face under the region, and that face's outward normal, so the region can be extruded into them
+// like the face itself
+export function solidsUnderRegion(db: DatabaseLike, region: visual.PlaneInstance<visual.Region>, solids: visual.Solid[]): { solid: visual.Solid, normal: THREE.Vector3 }[] {
+    const placement = db.lookup(region).GetPlacement();
+    const inside = pointInside(region);
+    const box = new THREE.Box3().setFromObject(region).expandByScalar(10e-4);
+    const result = [];
+    for (const solid of solids) {
+        if (!box.intersectsBox(new THREE.Box3().setFromObject(solid))) continue;
+        for (const face of db.lookup(solid).GetFaces()) {
+            if (!face.IsPlanar() || !isSamePlacement(face.GetSurfacePlacement(), placement)) continue;
+            // As FaceSnap.isValid: the nearest point of the face is the point itself
+            const { u, v } = face.NearPointProjection(point2point(inside));
+            const { faceU, faceV } = face.GetFaceParam(u, v);
+            if (inside.manhattanDistanceTo(point2point(face.Point(faceU, faceV))) >= 10e-4) continue;
+            result.push({ solid, normal: vec2vec(face.Normal(faceU, faceV), 1) });
+            break;
+        }
+    }
+    return result;
+}
+
+// A point inside the region: the middle of its first triangle
+function pointInside(region: visual.PlaneInstance<visual.Region>): THREE.Vector3 {
+    const { mesh } = region.underlying;
+    mesh.updateWorldMatrix(true, false);
+    const { geometry } = mesh;
+    const position = geometry.getAttribute('position');
+    const index = geometry.getIndex();
+    const result = new THREE.Vector3();
+    for (let i = 0; i < 3; i++) {
+        result.add(new THREE.Vector3().fromBufferAttribute(position, index !== null ? index.getX(i) : i));
+    }
+    return result.divideScalar(3).applyMatrix4(mesh.matrixWorld);
 }
 
 export class PossiblyBooleanExtrudeFactory extends PossiblyBooleanFactory<AbstractExtrudeFactory | MultiExtrudeFactory> implements ExtrudeParams, MultiplyableFactory {
@@ -158,6 +203,39 @@ export class PossiblyBooleanExtrudeFactory extends PossiblyBooleanFactory<Abstra
     set thickness(d: number) {
         this.thickness1 = d;
         this.thickness2 = d;
+    }
+
+    protected get previewsToolWhileChanging() { return true }
+
+    // Lock distances: both distances stay equal, so the extrusion is even on both sides. Unlocking gives the second
+    // distance back what it was before.
+    private _symmetric = false;
+    private unlockedDistance2 = 0;
+    private lockedDistance = 0;
+    get symmetric() { return this._symmetric }
+    set symmetric(symmetric: boolean) {
+        if (symmetric === this._symmetric) return;
+        this._symmetric = symmetric;
+        if (symmetric) {
+            this.unlockedDistance2 = this.distance2;
+            this.distance2 = this.lockedDistance = this.distance1;
+        } else {
+            this.distance2 = this.unlockedDistance2;
+        }
+    }
+
+    // The boolean as one choice, for the dialog: an operation type, or new body
+    get operation(): number { return this.newBody ? NewBody : this.operationType }
+    set operation(operation: number) {
+        this.newBody = operation === NewBody;
+        if (operation !== NewBody) this.operationType = operation;
+    }
+
+    // While locked, whichever distance was changed sets the other
+    syncDistances() {
+        if (!this._symmetric) return;
+        const distance = this.distance1 !== this.lockedDistance ? this.distance1 : this.distance2;
+        this.distance1 = this.distance2 = this.lockedDistance = distance;
     }
 
     @delegate.default(0) distance1!: number;

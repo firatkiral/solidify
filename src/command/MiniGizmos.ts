@@ -262,21 +262,13 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
     onPointerMove(cb: (delta: number) => void, intersect: Intersector, info: MovementInfo): number | undefined {
         if (this.mode !== 'pointer') return this.state.current;
 
-        let point, length, localY;
-        localY = this.localY.set(0, 1, 0).applyQuaternion(this.worldQuaternion);
-        if (this.editor.snaps.enabled) {
-            point = intersect.snap()[0]?.position.clone();
-            if (point === undefined) return; // this only happens when the user is dragging through different viewports.
+        // Handles don't snap to objects or the grid, only by their own length step
+        const localY = this.localY.set(0, 1, 0).applyQuaternion(this.worldQuaternion);
+        const point = intersect.raycast(this.plane)?.point;
+        if (point === undefined) return; // this only happens when the user is dragging through different viewports.
 
-            const dist = point.sub(this.originalPosition).dot(localY);
-            length = this.accumulate(0, this.sign, dist);
-        } else {
-            point = intersect.raycast(this.plane)?.point;
-            if (point === undefined) return; // this only happens when the user is dragging through different viewports.
-
-            const dist = point.sub(this.startMousePosition).dot(localY);
-            length = this.stepLength(this.accumulate(this.state.original, this.sign, dist), info.event);
-        }
+        const dist = point.sub(this.startMousePosition).dot(localY);
+        const length = this.stepLength(this.accumulate(this.state.original, this.sign, dist), info.event);
         point.copy(localY).multiplyScalar(length).add(this.originalPosition);
         this.state.current = length;
         this.render(this.state.current);

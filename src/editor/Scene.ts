@@ -249,6 +249,12 @@ export class Scene implements MementoOriginator<SceneMemento> {
     isVisible(node: NodeItem): boolean { return this.nodes.isVisible(node) }
     isSelectable(node: NodeItem): boolean { return this.nodes.isSelectable(node) }
     getName(node: RealNodeItem): string | undefined { return this.nodes.getName(node) }
+    // As the Scene panel names a node: its own name, or its kind and number
+    nameOf(node: RealNodeItem): string { return this.getName(node) ?? this.defaultName(node) }
+    defaultName(node: RealNodeItem): string {
+        const id = node instanceof Group || node instanceof Empty ? node.simpleName : this.db.lookupId(node.simpleName);
+        return `${kindOf(node)} ${id}`;
+    }
     key2item(key: NodeKey): NodeItem { return this.nodes.key2item(key) }
     item2key(item: NodeItem): string { return this.nodes.item2key(item) }
 
@@ -337,3 +343,7 @@ export type SceneDisplayInfo = {
     visibleItems: Set<LeafNodeItem>;
     visibleGroups: Set<number>;
 };
+
+export function kindOf(node: RealNodeItem): string {
+    return node instanceof visual.Solid ? "Solid" : node instanceof visual.SpaceInstance ? "Curve" : node instanceof Group ? "Group" : "Empty";
+}

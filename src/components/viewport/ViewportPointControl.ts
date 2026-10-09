@@ -119,27 +119,29 @@ export class ViewportPointControl extends ViewportControl implements GizmoLike<T
                     const { presentation, intersections } = SnapPresentation.makeForGizmo(this.snapPicker, this.viewport, this.editor.scene, this.editor.snaps.cache, this.editor.gizmos);
                     this.presenter.onPointerMove(this.viewport, presentation);
                     const point: THREE.Vector3 | undefined = intersections[0]?.position.clone();
-                    if (point === undefined) return;
-                    unprojected.copy(point).project(camera);
+                    if (point !== undefined) {
+                        unprojected.copy(point).project(camera);
 
-                    helper.onMove(unprojected as any);
+                        helper.onMove(unprojected as any);
 
-                    delta.copy(point).sub(pointStart3d);
-                    this.mode.cb(delta.clone());
-                } else {
-                    helper.onMove(normalizedMousePosition);
-
-                    raycaster.setFromCamera(normalizedMousePosition, camera);
-                    const moved = constructionPlane.move(pointStart3d);
-                    const intersection = raycaster.intersectObject(moved.snapper);
-                    if (intersection.length === 0) throw new Error("corrupt intersection query");
-                    pointEnd3d.copy(intersection[0].point);
-
-                    const { position } = moved.project(pointEnd3d);
-                    delta.copy(position).sub(pointStart3d);
-
-                    this.mode.cb(this.delta.clone());
+                        delta.copy(point).sub(pointStart3d);
+                        this.mode.cb(delta.clone());
+                        break;
+                    }
                 }
+                // Nothing to snap to: the point follows the construction plane through where it started
+                helper.onMove(normalizedMousePosition);
+
+                raycaster.setFromCamera(normalizedMousePosition, camera);
+                const moved = constructionPlane.move(pointStart3d);
+                const intersection = raycaster.intersectObject(moved.snapper);
+                if (intersection.length === 0) throw new Error("corrupt intersection query");
+                pointEnd3d.copy(intersection[0].point);
+
+                const { position } = moved.project(pointEnd3d);
+                delta.copy(position).sub(pointStart3d);
+
+                this.mode.cb(this.delta.clone());
         }
     }
 

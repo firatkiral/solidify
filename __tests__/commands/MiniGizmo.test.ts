@@ -243,15 +243,13 @@ describe(LengthGizmo, () => {
         editor.snaps.gizmoSnapping = false;
     })
 
-    test("it uses snaps while object snapping is on", () => {
-        const snap = jest.fn();
-        const intersector = { raycast: jest.fn(), snap };
+    test("it ignores object snaps and drags along its plane", () => {
+        const intersector = { raycast: jest.fn() };
         const cb = jest.fn();
         let info = {} as MovementInfo;
         const moveEvent = new MouseEvent('move');
 
-        editor.snaps.settings = { ...editor.snaps.settings, face: true };
-        snap.mockImplementation(() => [{ position: new THREE.Vector3(1, 1, 1) }]);
+        editor.snaps.settings = { ...editor.snaps.settings, point: true, face: true, curve: true, edge: true };
         gizmo.update(viewport.camera);
 
         gizmo.onPointerEnter(intersector);
@@ -259,13 +257,13 @@ describe(LengthGizmo, () => {
         intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3() })
         gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
 
+        intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 7, 0) })
         gizmo.onPointerMove(cb, intersector, { viewport, event: moveEvent } as MovementInfo);
-        expect(gizmo.value).toBe(1);
+        expect(gizmo.value).toBe(7);
 
         gizmo.onPointerUp(cb, intersector, info)
 
         gizmo.onPointerLeave(intersector);
-        editor.snaps.settings = { ...editor.snaps.settings, face: false };
     })
 })
 
@@ -402,6 +400,8 @@ describe(PlanarMoveGizmo, () => {
         intersector.raycast.mockReturnValueOnce({ point: pointEnd })
         gizmo.onPointerMove(cb, intersector, { event } as MovementInfo);
         expect(gizmo.value).toEqual(pointEnd.clone().sub(pointStart));
+        // Object snaps are on by default, but handles only follow their plane
+        expect(intersector.snap).not.toHaveBeenCalled();
         gizmo.onPointerUp(cb, intersector, info)
         gizmo.onPointerLeave(intersector);
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { targetsLabel } from "../../components/dialog/Prompt";
 import Command from "../../command/Command";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { SelectionMode } from '../../selection/SelectionModeSet';
@@ -32,14 +33,17 @@ export class PipeCommand extends Command {
             return objectPicker.execute(async delta => {
                 const targets = [...objectPicker.selection.selected.solids];
                 pipe.targets = targets;
+                dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, pipe.targets));
                 await pipe.update();
                 keyboard.toggle(pipe.isOverlapping);
             }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this)
         }, async () => {
             pipe.targets = [];
+            dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, pipe.targets));
             keyboard.toggle(pipe.isOverlapping);
             await pipe.update();
         })();
+        dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, pipe.targets));
 
         gizmo.position.copy(pipe.origin);
         gizmo.quaternion.setFromUnitVectors(Y, pipe.direction);

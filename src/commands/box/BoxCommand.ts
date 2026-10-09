@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { targetsLabel } from "../../components/dialog/Prompt";
 import Command from "../../command/Command";
 import { height, Measurements, rectangleOf } from "../../command/Measurements";
 import { PointPicker, PointResult } from "../../command/point-picker/PointPicker";
@@ -142,14 +143,17 @@ export class CornerBoxCommand extends Command {
             return objectPicker.execute(async delta => {
                 const targets = [...objectPicker.selection.selected.solids];
                 box.targets = targets;
+                dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, box.targets));
                 await box.update();
                 keyboard.toggle(box.isOverlapping);
             }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this)
         }, async () => {
             box.targets = [];
+            dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, box.targets));
             await box.update();
             keyboard.toggle(box.isOverlapping);
         });
+        dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, box.targets));
 
         gizmo.basis = box.basis;
         gizmo.position.copy(box.p1);

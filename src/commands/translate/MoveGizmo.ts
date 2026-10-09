@@ -88,29 +88,15 @@ export class MoveGizmo extends CompositeGizmo<MoveParams> {
 export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
     readonly state = new VectorStateMachine(new THREE.Vector3());
 
-    private readonly n = new THREE.Vector3();
-    private readonly pln = new THREE.Plane();
-
     onPointerMove(cb: (value: THREE.Vector3) => void, intersect: Intersector, info: MovementInfo) {
-        const { plane, startMousePosition, originalPosition, state } = this;
-        const { n, pln } = this;
+        const { plane, startMousePosition, state } = this;
 
-        let delta;
-        if (this.editor.snaps.enabled) {
-            const snapIntersect = intersect.snap()[0]?.position.clone();
-            if (snapIntersect === undefined) return; // this only happens when the user is dragging through different viewports.
-            n.copy(Z).applyQuaternion(this.quaternion);
-            pln.setFromNormalAndCoplanarPoint(n, this.worldPosition);
-
-            const projected = pln.projectPoint(snapIntersect, new THREE.Vector3());
-            delta = projected.sub(originalPosition).add(state.original);
-        } else {
-            const planeIntersect = intersect.raycast(plane);
-            if (planeIntersect === undefined) return; // this only happens when the user is dragging through different viewports.
-            delta = planeIntersect.point.clone().sub(startMousePosition).add(state.original);
-            // Step along the plane's own two axes, so the move stays in the plane.
-            stepVector(this.editor, delta, state.original, info.event, this.getWorldQuaternion(new THREE.Quaternion()));
-        }
+        // Handles don't snap to objects or the grid, only by their own length step
+        const planeIntersect = intersect.raycast(plane);
+        if (planeIntersect === undefined) return; // this only happens when the user is dragging through different viewports.
+        const delta = planeIntersect.point.clone().sub(startMousePosition).add(state.original);
+        // Step along the plane's own two axes, so the move stays in the plane.
+        stepVector(this.editor, delta, state.original, info.event, this.getWorldQuaternion(new THREE.Quaternion()));
 
         this.state.current = delta;
         cb(delta);

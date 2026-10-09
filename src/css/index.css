@@ -303,6 +303,11 @@
         @apply block px-3 py-1 w-full text-xs text-center rounded-md cursor-pointer bg-ui-raised text-ui-text;
     }
 
+    /* Rows with many choices, so they fit the dialog */
+    solidify-dialog ul>li>.fields.compact>input[type="radio"]+label {
+        @apply px-2;
+    }
+
     solidify-dialog ul>li>.fields>input[type="radio"]:checked+label,
     solidify-dialog ul>li>.fields>input[type="checkbox"]:checked+label,
     .solidify-menu ul>li>.fields>input[type="radio"]:checked+label,

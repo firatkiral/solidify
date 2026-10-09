@@ -140,7 +140,7 @@ test('dblclick', () => {
     expect(dblClick).toBeCalledTimes(1);
 })
 
-test('dblclick when mouse moves dramatically', () => {
+test('a quick second click far from the first is a click, not a dblclick', () => {
     const startClick = jest.spyOn(control, 'startClick').mockImplementation(() => true);
     control.onPointerDown(new MouseEvent('pointerdown'));
     expect(startClick).toBeCalledTimes(1);
@@ -155,7 +155,7 @@ test('dblclick when mouse moves dramatically', () => {
     const dblClick = jest.spyOn(control, 'dblClick').mockImplementation(() => { });
     control.onPointerUp(new MouseEvent('pointerup', { clientX: 100, clientY: 100 }));
     expect(startClick).toBeCalledTimes(2);
-    expect(endClick).toBeCalledTimes(1);
+    expect(endClick).toBeCalledTimes(2);
     expect(dblClick).toBeCalledTimes(0);
 })
 

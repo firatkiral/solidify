@@ -120,7 +120,7 @@ keybindings.set("gizmo:spiral:radius", "Radius");
 keybindings.set("gizmo:spiral:length", "Length");
 keybindings.set("gizmo:extrude:race1", "Angle 1");
 keybindings.set("gizmo:extrude:distance1", "Distance 1");
-keybindings.set("gizmo:extrude:race2", "Angle 2");
+keybindings.set("keyboard:extrude:symmetric", "Lock distances");
 keybindings.set("gizmo:extrude:distance2", "Distance 2");
 keybindings.set("gizmo:extrude:thickness", "Thickness");
 keybindings.set("gizmo:boolean:union", "Union");

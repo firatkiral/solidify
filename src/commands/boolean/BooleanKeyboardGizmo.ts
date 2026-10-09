@@ -31,7 +31,7 @@ export class PossiblyBooleanKeyboardGizmo extends AbstractCommandKeyboardInput<(
         }
     }
 
-    prepare(factory: { newBody: boolean; operationType: c3d.OperationType; update(): void }) {
+    prepare(factory: { newBody: boolean; operationType: c3d.OperationType; update(): void }, changed?: () => void) {
         return this.execute(e => {
             switch (e.tag) {
                 case 'boolean':
@@ -44,6 +44,7 @@ export class PossiblyBooleanKeyboardGizmo extends AbstractCommandKeyboardInput<(
                     factory.update();
                     break;
             }
+            changed?.();
         })
     }
 

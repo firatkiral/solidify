@@ -1,4 +1,5 @@
 import { Z } from "../../util/Constants";
+import { targetsLabel } from "../../components/dialog/Prompt";
 import * as THREE from "three";
 import Command from "../../command/Command";
 import { diameter, height, Measurements } from "../../command/Measurements";
@@ -68,14 +69,17 @@ export class CylinderCommand extends Command {
             return objectPicker.execute(async delta => {
                 const targets = [...objectPicker.selection.selected.solids];
                 cylinder.targets = targets;
+                dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, cylinder.targets));
                 await cylinder.update();
                 keyboard.toggle(cylinder.isOverlapping);
             }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this)
         }, async () => {
             cylinder.targets = [];
+            dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, cylinder.targets));
             await cylinder.update();
             keyboard.toggle(cylinder.isOverlapping);
         });
+        dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, cylinder.targets));
 
         gizmo.quaternion.setFromUnitVectors(Z, cylinder.axis);
         gizmo.position.copy(cylinder.p0);
