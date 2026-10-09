@@ -182,7 +182,7 @@ export const Action = {
 
 export const TriFace = {
     CalculateGrid(face: Face, stepData: StepData, grid: Grid, _dualSeams?: boolean, _quad?: boolean, _fair?: boolean) {
-        const data = face.solid.mesh(stepData.GetSag()).faces[face.meshIndex];
+        const data = face.solid.mesh(stepData.GetSag(), stepData.GetAngle()).faces[face.meshIndex];
         if (data !== undefined) grid.set(data.index, data.position, data.normal);
     },
 };

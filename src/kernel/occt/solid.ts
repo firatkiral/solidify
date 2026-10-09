@@ -95,7 +95,7 @@ function matchByPosition(items: CartPoint3D[], expected: CartPoint3D[]): number[
 export class Solid extends Item {
     private _shape: Shape;
     private topology?: Topology;
-    private meshes = new Map<number, MeshData>();
+    private meshes = new Map<string, MeshData>();
     private shell?: FaceShell;
 
     constructor(shape?: Shape) {
@@ -178,10 +178,11 @@ export class Solid extends Item {
     GetFaceIndex(face: Face) { return face.index }
     GetEdgeIndex(edge: CurveEdge) { return edge.index }
 
-    mesh(sag: number): MeshData {
-        const cached = this.meshes.get(sag);
+    mesh(sag: number, angle = ANGULAR_DEFLECTION): MeshData {
+        const key = `${sag} ${angle}`;
+        const cached = this.meshes.get(key);
         if (cached !== undefined) return cached;
-        const data = oc.ReplicadMeshExtractor.extract(this.shape, sag, ANGULAR_DEFLECTION, false);
+        const data = oc.ReplicadMeshExtractor.extract(this.shape, sag, angle, false);
         const memory = () => oc.wasmMemory.buffer as ArrayBuffer;
         const vertices = new Float32Array(memory(), data.getVerticesPtr(), data.getVerticesSize()).slice();
         const normals = new Float32Array(memory(), data.getNormalsPtr(), data.getNormalsSize()).slice();
@@ -200,7 +201,7 @@ export class Solid extends Item {
             faces.push({ index, position: vertices.slice(lo * 3, (hi + 1) * 3), normal: normals.slice(lo * 3, (hi + 1) * 3) });
         }
 
-        const edgeData = oc.ReplicadEdgeMeshExtractor.extract(this.shape, sag, ANGULAR_DEFLECTION);
+        const edgeData = oc.ReplicadEdgeMeshExtractor.extract(this.shape, sag, angle);
         const lines = new Float32Array(memory(), edgeData.getLinesPtr(), edgeData.getLinesSize()).slice();
         const edgeGroups = new Int32Array(memory(), edgeData.getEdgeGroupsPtr(), edgeData.getEdgeGroupsSize()).slice();
         edgeData.delete();
@@ -210,14 +211,13 @@ export class Solid extends Item {
         }
 
         const result = { faces, edges };
-        this.meshes.set(sag, result);
+        this.meshes.set(key, result);
         return result;
     }
 
     CreateMesh(stepData: StepData, _note: FormNote) {
         const mesh = new Mesh();
-        const sag = stepData.GetSag();
-        const { faces, edges } = this.mesh(sag);
+        const { faces, edges } = this.mesh(stepData.GetSag(), stepData.GetAngle());
         for (const face of this.GetFaces()) {
             const grid = mesh.AddGrid();
             grid.SetItem(face);
@@ -478,7 +478,7 @@ export class CurveEdge extends Edge {
 
     CalculateMesh(stepData: StepData, _note: FormNote) {
         const mesh = new Mesh();
-        const { edges } = this.solid.mesh(stepData.GetSag());
+        const { edges } = this.solid.mesh(stepData.GetSag(), stepData.GetAngle());
         const data = edges[this.meshIndex];
         if (data !== undefined) mesh.AddPolygon(data, this);
         return mesh;

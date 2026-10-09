@@ -13,9 +13,14 @@ import MaterialDatabase from './MaterialDatabase';
 import { MeshCreator } from './MeshCreator';
 import { SolidCopier, SolidCopierPool } from './SolidCopier';
 
-const mesh_precision_distance: [number, number][] = [[unit(0.05), 1000], [unit(0.0009), 1]];
-const other_precision_distance: [number, number][] = [[unit(0.0005), 1]];
-const temporary_precision_distance: [number, number][] = [[unit(0.003), 1]];
+// How finely things are meshed for display: the sag (how far the mesh may stray from the surface), the angle (the most
+// a mesh segment may turn, which is what keeps curves and silhouettes smooth; unset leaves the kernel's own), and the
+// camera distance the level of detail is for. Exports mesh on their own.
+type Precision = [sag: number, angle: number | undefined, distance: number];
+const degrees = (d: number) => d * Math.PI / 180;
+const mesh_precision_distance: Precision[] = [[unit(0.1), degrees(17), 1000], [unit(0.1), degrees(8), 1]];
+const other_precision_distance: Precision[] = [[unit(0.0005), undefined, 1]];
+const temporary_precision_distance: Precision[] = [[unit(0.1), degrees(12), 1]];
 const formNote = new c3d.FormNote(true, true, false, false, false);
 
 type Builder = build.SpaceInstanceBuilder<visual.Curve3D | visual.Surface> | build.PlaneInstanceBuilder<visual.Region> | build.SolidBuilder;
@@ -107,7 +112,7 @@ export class GeometryDatabase implements DatabaseLike, MementoOriginator<Geometr
         return view;
     }
 
-    private precisionAndDistanceFor(item: c3d.Item, mode: 'real' | 'temporary' = 'real'): [number, number][] {
+    private precisionAndDistanceFor(item: c3d.Item, mode: 'real' | 'temporary' = 'real'): Precision[] {
         if (item.IsA() === c3d.SpaceType.Solid) {
             return mode === 'real' ? mesh_precision_distance : temporary_precision_distance;
         } else {
@@ -261,7 +266,7 @@ export class GeometryDatabase implements DatabaseLike, MementoOriginator<Geometr
         return [...this.geometryModel.values()];
     }
 
-    private async meshes(obj: c3d.Item, id: c3d.SimpleName, precision_distance: [number, number][], includeMetadata: boolean, materials?: MaterialOverride): Promise<build.Builder<visual.SpaceInstance<visual.Curve3D | visual.Surface> | visual.Solid | visual.PlaneInstance<visual.Region>>> {
+    private async meshes(obj: c3d.Item, id: c3d.SimpleName, precision_distance: Precision[], includeMetadata: boolean, materials?: MaterialOverride): Promise<build.Builder<visual.SpaceInstance<visual.Curve3D | visual.Surface> | visual.Solid | visual.PlaneInstance<visual.Region>>> {
         let builder;
         switch (obj.IsA()) {
             case c3d.SpaceType.SpaceInstance:
@@ -278,16 +283,17 @@ export class GeometryDatabase implements DatabaseLike, MementoOriginator<Geometr
         }
 
         const promises = [];
-        for (const [precision, distance] of precision_distance) {
-            promises.push(this.object2mesh(builder, obj, id, precision, distance, includeMetadata, materials));
+        for (const [sag, angle, distance] of precision_distance) {
+            promises.push(this.object2mesh(builder, obj, id, sag, angle, distance, includeMetadata, materials));
         }
         await Promise.all(promises);
 
         return builder;
     }
 
-    private async object2mesh(builder: Builder, obj: c3d.Item, id: c3d.SimpleName, sag: number, distance: number, includeMetadata: boolean, materials?: MaterialOverride): Promise<void> {
+    private async object2mesh(builder: Builder, obj: c3d.Item, id: c3d.SimpleName, sag: number, angle: number | undefined, distance: number, includeMetadata: boolean, materials?: MaterialOverride): Promise<void> {
         const stepData = new c3d.StepData(c3d.StepType.SpaceStep, sag);
+        if (angle !== undefined) stepData.SetAngle(angle);
         const stats = Measure.get("create-mesh");
         stats.begin();
         const item = await this.meshCreator.create(obj, stepData, formNote, obj.IsA() === c3d.SpaceType.Solid, includeMetadata);

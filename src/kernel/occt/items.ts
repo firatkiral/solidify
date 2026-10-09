@@ -5,10 +5,11 @@ import { Contour, Curve, Region } from './curve2d';
 import { Curve3D } from './curve3d';
 import { Cube, Matrix3D, Placement3D } from './math';
 
-// How finely to mesh: meshes follow the sag (the largest distance between the mesh and the surface); the angle,
-// length and count limits are kept for callers but OCCT's mesher only uses the sag.
+// How finely to mesh: solids follow the sag (the largest distance between the mesh and the surface) and the angle (the
+// most a mesh segment may turn, in radians); the length and count limits are kept for callers but OCCT's mesher doesn't
+// use them.
 export class StepData extends RefItem {
-    private angle = 0.35;
+    private angle = 0.3;
     private length = 0;
     private maxCount = 0;
     constructor(private stepType = 1, private sag = 0.1) { super() }

@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 const kernelSize = statSync(new URL('./node_modules/replicad-opencascadejs/dist/replicad_single.wasm', import.meta.url)).size;
+const threadedKernelSize = statSync(new URL('./node_modules/replicad-opencascadejs/dist/replicad_multi.wasm', import.meta.url)).size;
 // Tells one deploy from the next
 const build = Date.now().toString(36);
 const background = '#111115';
@@ -23,9 +24,16 @@ const contentSecurityPolicy = [
     "frame-ancestors 'none'",
 ].join('; ');
 
+// Cross-origin isolation, which the kernel's threaded build needs for its shared memory. Everything the app loads is its
+// own, so requiring that of embedded resources costs nothing.
+const isolationHeaders: Record<string, string> = {
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+};
+
 const securityHeaders: Record<string, string> = {
     'Content-Security-Policy': contentSecurityPolicy,
-    'Cross-Origin-Opener-Policy': 'same-origin',
+    ...isolationHeaders,
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
@@ -117,6 +125,7 @@ export default defineConfig(({ mode, command }) => ({
         'process.env.APP_VERSION': JSON.stringify(pkg.version),
         'process.env.BUILD_ID': JSON.stringify(command === 'build' ? build : 'dev'),
         'process.env.KERNEL_SIZE': JSON.stringify(String(kernelSize)),
+        'process.env.THREADED_KERNEL_SIZE': JSON.stringify(String(threadedKernelSize)),
         'process.env.JEST_WORKER_ID': 'undefined',
     },
     assetsInclude: ['**/*.exr'],
@@ -134,6 +143,11 @@ export default defineConfig(({ mode, command }) => ({
             // Commands, dialogs and gizmos are named after their classes, so minifying mustn't rename them
             output: { keepNames: true },
         },
+    },
+    // The kernel's threads are module workers
+    worker: { format: 'es' },
+    server: {
+        headers: isolationHeaders,
     },
     preview: {
         headers: securityHeaders,

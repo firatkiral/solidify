@@ -1,5 +1,6 @@
-import kernelUrl from 'replicad-opencascadejs/wasm?url';
-import { load } from './kernel/occt/occt';
+import singleKernelUrl from 'replicad-opencascadejs/wasm?url';
+import threadedKernelUrl from 'replicad-opencascadejs/multi/wasm?url';
+import { load, threaded } from './kernel/occt/occt';
 import { listenForInstallOffer } from './startup/Install';
 
 // The geometry kernel (OpenCascade, compiled to WebAssembly) is about 23 MB. It's compiled as it downloads, while the
@@ -16,7 +17,7 @@ const megabytes = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 function progress(loaded: number) {
     // Counted after decompression, so against the file's own size, whatever the server compressed it to
-    const total = Number(process.env.KERNEL_SIZE) || 0;
+    const total = Number(threaded ? process.env.THREADED_KERNEL_SIZE : process.env.KERNEL_SIZE) || 0;
     if (total > 0) {
         screen.classList.remove('indeterminate');
         fill.style.width = `${Math.min(100, 100 * loaded / total)}%`;
@@ -38,7 +39,7 @@ async function start() {
     const instantiated = new Promise<void>((resolve, reject) => {
         const instantiateWasm = (imports: WebAssembly.Imports, receive: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => {
             (async () => {
-                const response = await fetch(kernelUrl);
+                const response = await fetch(threaded ? threadedKernelUrl : singleKernelUrl);
                 if (!response.ok || response.body === null) throw new Error(`the geometry kernel didn't download (${response.status})`);
                 let loaded = 0;
                 const counted = response.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
