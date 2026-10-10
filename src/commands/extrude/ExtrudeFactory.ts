@@ -207,20 +207,20 @@ export class PossiblyBooleanExtrudeFactory extends PossiblyBooleanFactory<Abstra
 
     protected get previewsToolWhileChanging() { return true }
 
-    // Lock distances: both distances stay equal, so the extrusion is even on both sides. Unlocking gives the second
+    // Symmetric: both distances stay equal, so the extrusion is even on both sides. Turning it off gives the second
     // distance back what it was before.
     private _symmetric = false;
-    private unlockedDistance2 = 0;
-    private lockedDistance = 0;
+    private asymmetricDistance2 = 0;
+    private symmetricDistance = 0;
     get symmetric() { return this._symmetric }
     set symmetric(symmetric: boolean) {
         if (symmetric === this._symmetric) return;
         this._symmetric = symmetric;
         if (symmetric) {
-            this.unlockedDistance2 = this.distance2;
-            this.distance2 = this.lockedDistance = this.distance1;
+            this.asymmetricDistance2 = this.distance2;
+            this.distance2 = this.symmetricDistance = this.distance1;
         } else {
-            this.distance2 = this.unlockedDistance2;
+            this.distance2 = this.asymmetricDistance2;
         }
     }
 
@@ -231,11 +231,11 @@ export class PossiblyBooleanExtrudeFactory extends PossiblyBooleanFactory<Abstra
         if (operation !== NewBody) this.operationType = operation;
     }
 
-    // While locked, whichever distance was changed sets the other
+    // While symmetric, whichever distance was changed sets the other
     syncDistances() {
         if (!this._symmetric) return;
-        const distance = this.distance1 !== this.lockedDistance ? this.distance1 : this.distance2;
-        this.distance1 = this.distance2 = this.lockedDistance = distance;
+        const distance = this.distance1 !== this.symmetricDistance ? this.distance1 : this.distance2;
+        this.distance1 = this.distance2 = this.symmetricDistance = distance;
     }
 
     @delegate.default(0) distance1!: number;

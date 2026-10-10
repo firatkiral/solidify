@@ -45,10 +45,10 @@ export class ExtrudeDialog extends AbstractDialog<ExtrudeDialogParams> {
                         </div>
                     </li>
                     <li>
-                        <label for="symmetric">Lock distances</label>
+                        <label for="symmetric">Symmetric</label>
                         <div class="fields">
                             <input type="checkbox" hidden id="symmetric" name="symmetric" checked={symmetric} onClick={this.onChange}></input>
-                            <label for="symmetric">Lock distances</label>
+                            <label for="symmetric">Symmetric</label>
                         </div>
                     </li>
                     <li>

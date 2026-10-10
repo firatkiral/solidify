@@ -14,6 +14,7 @@ import { Cancel, Finish, Interrupt } from "../util/Cancellable";
 import { AlreadyFinishedError } from "../util/CancellablePromise";
 import { Helpers } from "../util/Helpers";
 import { GConstructor } from "../util/Util";
+import { ClickToFinish } from "./ClickToFinish";
 import Command from "./Command";
 import { NoOpError, ValidationError } from "./GeometryFactory";
 import { SelectionCommandManager } from "./SelectionCommandManager";
@@ -88,6 +89,7 @@ export class CommandExecutor {
             'command:finish': () => command.finish(),
             'command:abort': () => command.cancel(),
         });
+        const clickToFinish = new ClickToFinish(() => command.finish()).execute();
         const state = history.current;
         const undecorateBody = this.decorateBody(command);
         try {
@@ -121,6 +123,7 @@ export class CommandExecutor {
                     viewport.enableControls();
                 }
                 disposable.dispose();
+                clickToFinish.dispose();
                 db.clearTemporaryObjects();
                 PlaneDatabase.ScreenSpace.reset();
                 if (helpers.scene.children.length > 0) {

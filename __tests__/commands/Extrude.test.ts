@@ -464,7 +464,7 @@ describe(solidsUnderRegion, () => {
     });
 })
 
-describe('lock distances', () => {
+describe('symmetric', () => {
     let extrude: PossiblyBooleanExtrudeFactory;
 
     beforeEach(async () => {
@@ -480,7 +480,7 @@ describe('lock distances', () => {
         extrude = new PossiblyBooleanExtrudeFactory(new MultiBooleanFactory(db, materials, signals), phantom);
     });
 
-    test('locking copies distance 1, unlocking gives distance 2 back', () => {
+    test('turning it on copies distance 1, turning it off gives distance 2 back', () => {
         extrude.distance1 = 1;
         extrude.distance2 = 0.3;
         extrude.symmetric = true;
@@ -490,7 +490,7 @@ describe('lock distances', () => {
         expect(extrude.distance1).toBe(1);
     });
 
-    test('while locked, whichever distance changes sets the other', () => {
+    test('while on, whichever distance changes sets the other', () => {
         extrude.distance1 = 1;
         extrude.symmetric = true;
         extrude.distance1 = 2;
@@ -504,14 +504,14 @@ describe('lock distances', () => {
         expect(extrude.distance2).toBe(-0.5);
     });
 
-    test('unlocked, distances are independent', () => {
+    test('off, distances are independent', () => {
         extrude.distance1 = 1;
         extrude.distance2 = 0;
         extrude.syncDistances();
         expect(extrude.distance2).toBe(0);
     });
 
-    test('locked commits on both sides, unlocked on one', async () => {
+    test('on commits on both sides, off on one', async () => {
         extrude.distance1 = 1;
         extrude.symmetric = true;
         const both = new THREE.Box3().setFromObject((await extrude.commit() as visual.Solid[])[0]);
@@ -519,7 +519,7 @@ describe('lock distances', () => {
         expect(both.max.z).toBeCloseTo(1);
     });
 
-    test('unlocking before commit is one-sided again', async () => {
+    test('turning it off before commit is one-sided again', async () => {
         extrude.distance1 = 1;
         extrude.symmetric = true;
         extrude.symmetric = false;
@@ -528,7 +528,7 @@ describe('lock distances', () => {
         expect(one.max.z).toBeCloseTo(1);
     });
 
-    test('a negative distance locks to an even extrusion too', async () => {
+    test('a negative distance makes an even extrusion too', async () => {
         extrude.distance1 = -1;
         extrude.symmetric = true;
         const both = new THREE.Box3().setFromObject((await extrude.commit() as visual.Solid[])[0]);
