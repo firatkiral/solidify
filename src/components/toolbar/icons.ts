@@ -106,7 +106,7 @@ keybindings.set("keyboard:rectangle:mode", "Toggle center/corner");
 keybindings.set("gizmo:polygon:add-vertex", "Add a vertex");
 keybindings.set("gizmo:polygon:subtract-vertex", "Subtract a vertex");
 keybindings.set("gizmo:polygon:mode", "Toggle vertical/horizontal");
-keybindings.set("gizmo:polygon:diameter", "Diameter");
+keybindings.set("gizmo:polygon:radius", "Radius");
 keybindings.set("gizmo:array:add", "Add copy");
 keybindings.set("gizmo:array:subtract", "Subtract copy");
 keybindings.set("gizmo:pipe:add-vertex", "Add a vertex");

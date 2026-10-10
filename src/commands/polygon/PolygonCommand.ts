@@ -15,7 +15,7 @@ export class PolygonCommand extends Command {
     async execute(): Promise<void> {
         const polygon = new PolygonFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
 
-        // The circumscribed circle and its diameter, in the polygon's plane (which the mode can stand up)
+        // The circumscribed circle and its radius, in the polygon's plane (which the mode can stand up)
         const measurements = new Measurements(this.editor).resource(this);
         const measure = () => {
             const { center, p2, orientation, mode } = polygon;

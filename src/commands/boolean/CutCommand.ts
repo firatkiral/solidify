@@ -1,5 +1,6 @@
 import Command from "../../command/Command";
 import { ObjectPicker } from "../../command/ObjectPicker";
+import { targetsLabel } from "../../components/dialog/Prompt";
 import { SelectionMode } from "../../selection/SelectionModeSet";
 import * as visual from "../../visual_model/VisualModel";
 import { CutDialog } from "./CutDialog";
@@ -31,6 +32,8 @@ export class CutCommand extends Command {
             });
             const solids = await getTarget();
             cut.solids = [...solids];
+            const showTargets = () => dialog.promptValue("Select target bodies", targetsLabel(this.editor.scene, cut.solids));
+            showTargets();
 
             dialog.replace("Select target bodies", () => {
                 const objectPicker = new ObjectPicker(this.editor);
@@ -38,10 +41,12 @@ export class CutCommand extends Command {
                 return objectPicker.execute(delta => {
                     const solids = [...objectPicker.selection.selected.solids];
                     cut.solids = solids;
+                    showTargets();
                     cut.update();
                 }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this);
             }, () => {
                 cut.solids = [];
+                showTargets();
                 cut.update();
             });
         }

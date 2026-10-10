@@ -2,7 +2,7 @@ import { Z } from "../../util/Constants";
 import { targetsLabel } from "../../components/dialog/Prompt";
 import * as THREE from "three";
 import Command from "../../command/Command";
-import { diameter, height, Measurements } from "../../command/Measurements";
+import { height, Measurements, radius } from "../../command/Measurements";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
@@ -36,7 +36,7 @@ export class CylinderCommand extends Command {
             circle.point = p2;
             circle.orientation = orientation;
             circle.update();
-            measurements.set(diameter(p1, p2));
+            measurements.set(radius(p1, p2));
         }).resource(this);
         circle.cancel();
 

@@ -8,11 +8,11 @@ import { CancellablePromise } from "../../util/CancellablePromise";
 import { deg2rad, rad2deg, roundToStep } from "../../util/Conversion";
 import { Helper } from "../../util/Helpers";
 import { fromLengthUnit } from "../../util/Units";
-import { EditPolygonParams, minDiameter } from "./PolygonFactory";
+import { EditPolygonParams, minRadius } from "./PolygonFactory";
 
 // Sits at the polygon's centre, with its XY in the drawing plane
 export class EditPolygonGizmo extends CompositeGizmo<EditPolygonParams> {
-    private readonly vertexGizmo = new PolygonVertexGizmo("polygon:diameter", this.editor);
+    private readonly vertexGizmo = new PolygonVertexGizmo("polygon:radius", this.editor);
 
     protected prepare(mode: Mode) {
         const { vertexGizmo, params } = this;
@@ -24,8 +24,8 @@ export class EditPolygonGizmo extends CompositeGizmo<EditPolygonParams> {
     execute(cb: (params: EditPolygonParams) => void, finishFast: Mode = Mode.Persistent): CancellablePromise<void> {
         const { vertexGizmo, params } = this;
 
-        this.addGizmo(vertexGizmo, diameter => {
-            params.diameter = diameter;
+        this.addGizmo(vertexGizmo, radius => {
+            params.radius = radius;
             params.degrees = rad2deg(vertexGizmo.angle);
         });
 
@@ -36,14 +36,14 @@ export class EditPolygonGizmo extends CompositeGizmo<EditPolygonParams> {
 
     render(params: EditPolygonParams) {
         this.vertexGizmo.angle = deg2rad(params.degrees);
-        this.vertexGizmo.value = params.diameter;
+        this.vertexGizmo.value = params.radius;
     }
 }
 
 const planeGeometry = new THREE.PlaneGeometry(100_000, 100_000, 2, 2);
 
 // A pin from a polygon's centre to the vertex it was drawn to. Dragging the ball works like the drawing drag: in the
-// gizmo's XY, its distance sets the diameter (the value) and its direction the angle from X. The pin is in world units,
+// gizmo's XY, its distance sets the radius (the value) and its direction the angle from X. The pin is in world units,
 // while the ball keeps a constant size on screen.
 class PolygonVertexGizmo extends AbstractGizmo<number> {
     readonly state = new MagnitudeStateMachine(0);
@@ -61,7 +61,7 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
 
     constructor(name: string, editor: EditorLike) {
         super(name.split(':')[0], editor);
-        this.state.min = minDiameter;
+        this.state.min = minRadius;
         this.knob.userData.command = [`gizmo:${name}`, () => { }];
         this.handle.add(this.shaft, this.tip);
         this.picker.add(this.knob);
@@ -77,14 +77,13 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
     }
 
     get value() { return this.state.current }
-    set value(diameter: number) {
-        this.state.original = diameter;
+    set value(radius: number) {
+        this.state.original = radius;
         this.render(this.state.current);
     }
 
-    render(diameter: number) {
+    render(radius: number) {
         const { tip, knob, shaft, helper, angle } = this;
-        const radius = diameter / 2;
         tip.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
         knob.position.copy(tip.position);
         helper.position.copy(tip.position);
@@ -100,58 +99,58 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
         this.tip.material = this.material.mesh;
     }
 
-    onPointerDown(cb: (diameter: number) => void, intersect: Intersector, info: MovementInfo) {
+    onPointerDown(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo) {
         const point = this.pointerPoint(intersect);
         if (point === undefined) this.grab.set(0, 0, 0);
         else this.grab.copy(this.tip.position).sub(point);
         this.startAngle = this.angle;
     }
 
-    onPointerMove(cb: (diameter: number) => void, intersect: Intersector, info: MovementInfo): number | undefined {
+    onPointerMove(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo): number | undefined {
         if (this.mode !== 'pointer') return this.state.current;
         const point = this.pointerPoint(intersect);
         if (point === undefined) return this.state.current;
 
         point.add(this.grab);
         this._angle = this.stepAngle(Math.atan2(point.y, point.x), info.event);
-        this.state.current = this.stepLength(2 * Math.hypot(point.x, point.y), info.event);
+        this.state.current = this.stepLength(Math.hypot(point.x, point.y), info.event);
         this.render(this.state.current);
         cb(this.state.current);
         return this.state.current;
     }
 
-    onPointerUp(cb: (diameter: number) => void, intersect: Intersector, info: MovementInfo) {
+    onPointerUp(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo) {
         this.state.push();
         this.mode = 'pointer';
         this.tip.material = this.material.mesh;
     }
 
-    onInterrupt(cb: (diameter: number) => void) {
+    onInterrupt(cb: (radius: number) => void) {
         this.state.push();
     }
 
     // Typed in the length unit
-    override onKeyPress(cb: (diameter: number) => void, text: KeyboardInterpreter) {
+    override onKeyPress(cb: (radius: number) => void, text: KeyboardInterpreter) {
         const typed = TextCalculator.calculate(text.state);
-        const diameter = typed === undefined ? undefined : fromLengthUnit(typed);
-        if (diameter === undefined) {
+        const radius = typed === undefined ? undefined : fromLengthUnit(typed);
+        if (radius === undefined) {
             this.mode = 'pointer';
             return this.state.current;
         }
 
-        this.state.current = diameter;
+        this.state.current = radius;
         this.render(this.state.current);
         cb(this.state.current);
         this.mode = 'keyboard';
         return this.state.current;
     }
 
-    // While gizmo snapping is on, the diameter steps by the length step, counted from where the drag started
-    private stepLength(diameter: number, event: MouseEvent) {
+    // While gizmo snapping is on, the radius steps by the length step, counted from where the drag started
+    private stepLength(radius: number, event: MouseEvent) {
         const { snaps } = this.editor;
-        if (!snaps.gizmoSnapping) return diameter;
+        if (!snaps.gizmoSnapping) return radius;
         const start = this.state.original;
-        return start + roundToStep(diameter - start, snaps.lengthStep);
+        return start + roundToStep(radius - start, snaps.lengthStep);
     }
 
     // While angle snapping is on, the angle steps by the angle step, counted from where the drag started

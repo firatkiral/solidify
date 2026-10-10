@@ -39,16 +39,16 @@ describe(EditPolygonFactory, () => {
         edit.polygon = polygon;
     });
 
-    test('reads the vertex count, diameter and rotation it was drawn with', () => {
+    test('reads the vertex count, radius and rotation it was drawn with', () => {
         expect(edit.vertexCount).toBe(4);
-        expect(edit.diameter).toBeCloseTo(2);
+        expect(edit.radius).toBeCloseTo(1);
         expect(edit.degrees).toBeCloseTo(0);
     });
 
-    test('changing the rotation turns the vertex around the centre, keeping the diameter', async () => {
+    test('changing the rotation turns the vertex around the centre, keeping the radius', async () => {
         edit.degrees = 45;
         expect(edit.p2).toApproximatelyEqual(new THREE.Vector3(Math.SQRT1_2, Math.SQRT1_2, 0));
-        expect(edit.diameter).toBeCloseTo(2);
+        expect(edit.radius).toBeCloseTo(1);
 
         const result = await edit.commit() as visual.SpaceInstance<visual.Curve3D>;
         const bbox = new THREE.Box3().setFromObject(result);
@@ -56,9 +56,9 @@ describe(EditPolygonFactory, () => {
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(Math.SQRT1_2, Math.SQRT1_2, 0));
     });
 
-    test('changing the diameter keeps the centre and rotation', () => {
+    test('changing the radius keeps the centre and rotation', () => {
         edit.degrees = 90;
-        edit.diameter = 4;
+        edit.radius = 2;
         expect(edit.p2).toApproximatelyEqual(new THREE.Vector3(0, 2, 0));
         expect(edit.degrees).toBeCloseTo(90);
     });
@@ -70,10 +70,10 @@ describe(EditPolygonFactory, () => {
         expect(edit.degrees).toBeCloseTo(270);
     });
 
-    test('keeps at least 3 vertices and a diameter of at least 0.01', () => {
+    test('keeps at least 3 vertices and a radius of at least 0.005', () => {
         edit.vertexCount = 2;
         expect(edit.vertexCount).toBe(3);
-        edit.diameter = 0;
-        expect(edit.diameter).toBeCloseTo(0.01);
+        edit.radius = 0;
+        expect(edit.radius).toBeCloseTo(0.005);
     });
 });

@@ -28,7 +28,7 @@ export default (editor: Editor) => {
                 section.push(name);
             }
             const result = [...sections].map(([prefix, values]) =>
-                <dl class="grid grid-cols-2 auto-rows-[1.25rem] w-52 text-xs bg-transparent text-ui-text min-h-24 min-w-[6rem]">
+                <dl class="grid grid-cols-2 auto-rows-[minmax(1.25rem,auto)] w-52 text-xs bg-transparent text-ui-text min-h-24 min-w-[6rem]">
                     {[...values].map(postfix => {
                         const command = `${prefix}:${postfix}`;
                         const bindings = keymaps.findKeyBindings({ command });

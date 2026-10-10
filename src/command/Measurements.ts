@@ -12,7 +12,7 @@ import { CancellableRegistor } from "../util/CancellableRegistor";
 import { Helper, Helpers } from "../util/Helpers";
 import { formatAngle, formatLength } from "../util/Units";
 
-// The dimensions shown while drawing a shape, as in Plasticity: faint guide lines (diameters, angle arcs, dimension
+// The dimensions shown while drawing a shape, as in Plasticity: faint guide lines (radii, angle arcs, dimension
 // brackets) with labels that state their units. Offsets are in gizmo units (see Helper.scaleIndependentOfZoom), so
 // they keep their size on screen as the camera moves.
 
@@ -154,28 +154,19 @@ export class Measurements extends Helper implements CancellableRegisterable {
     }
 }
 
-// The diameter through the cursor, labelled at the center: center circle, sphere and cylinder base
-export function diameter(center: THREE.Vector3, point: THREE.Vector3): Dimension[] {
-    const opposite = center.clone().multiplyScalar(2).sub(point);
-    return [
-        { tag: 'line', from: opposite, to: point.clone() },
-        { tag: 'label', at: center.clone(), text: formatLength(2 * center.distanceTo(point)) },
-    ];
-}
-
-// The diameter through a point on the circle, labelled with the radius: two- and three-point circles
+// The radius from the center to a point on the circle, labelled halfway along: circles, spheres and cylinder bases. Round
+// things are sized by their radius everywhere, as in their dialogs and gizmos.
 export function radius(center: THREE.Vector3, through: THREE.Vector3): Dimension[] {
-    const opposite = center.clone().multiplyScalar(2).sub(through);
     return [
-        { tag: 'line', from: opposite, to: through.clone() },
-        { tag: 'label', at: center.clone(), text: formatLength(center.distanceTo(through)) },
+        { tag: 'line', from: center.clone(), to: through.clone() },
+        { tag: 'label', at: center.clone().lerp(through, 0.5), text: formatLength(center.distanceTo(through)) },
     ];
 }
 
-// A regular polygon's circumscribed circle and the diameter through the vertex, labelled with that diameter
+// A regular polygon's circumscribed circle and its radius to the vertex
 export function polygon(center: THREE.Vector3, vertex: THREE.Vector3, normal: THREE.Vector3): Dimension[] {
     const start = vertex.clone().sub(center).normalize();
-    return [...diameter(center, vertex), arc(center, start, normal, 2 * Math.PI, center.distanceTo(vertex))];
+    return [...radius(center, vertex), arc(center, start, normal, 2 * Math.PI, center.distanceTo(vertex))];
 }
 
 // A length labelled beside its segment: the radius of a center-point arc or ellipse, the ends of a three-point arc, a

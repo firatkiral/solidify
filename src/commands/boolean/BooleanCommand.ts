@@ -2,6 +2,7 @@ import * as THREE from "three";
 import c3d from '../../kernel/kernel';
 import Command from "../../command/Command";
 import { ObjectPicker } from "../../command/ObjectPicker";
+import { targetsLabel } from "../../components/dialog/Prompt";
 import { SelectionMode } from "../../selection/SelectionModeSet";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import * as visual from "../../visual_model/VisualModel";
@@ -44,6 +45,8 @@ export class BooleanCommand extends Command {
             });
             const solids = await getTarget();
             boolean.targets = [...solids];
+            const showTargets = () => dialog.promptValue("Select target bodies", targetsLabel(editor.scene, boolean.targets));
+            showTargets();
 
             dialog.replace("Select target bodies", () => {
                 const objectPicker = new ObjectPicker(this.editor);
@@ -52,10 +55,12 @@ export class BooleanCommand extends Command {
                 return objectPicker.execute(delta => {
                     const targets = [...objectPicker.selection.selected.solids];
                     boolean.targets = targets;
+                    showTargets();
                     boolean.update();
                 }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Solid).resource(this)
             }, () => {
                 boolean.targets = [];
+                showTargets();
                 boolean.update();
             });
         }

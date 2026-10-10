@@ -84,7 +84,9 @@ function sort(i1: IntersectableWithTopologyItem & Unprojected, i2: Intersectable
     const t2 = o2 instanceof intersectable.RaycastableTopologyItem ? i2.topologyItem! : o2;
     const p1 = t1.priority, p2 = t2.priority;
     if (Math.trunc(p1) === Math.trunc(p2)) {
-        if (t1 instanceof CurveEdge && t2 instanceof CurveEdge) {
+        // Lines are picked within a threshold around them, so the one nearest the cursor on screen wins; their depths
+        // can't tell apart curves drawn in the same plane, seen straight on
+        if ((t1 instanceof CurveEdge && t2 instanceof CurveEdge) || (t1 instanceof Curve3D && t2 instanceof Curve3D)) {
             return i1.dist2d - i2.dist2d;
         } else {
             const delta = i1.distance - i2.distance;

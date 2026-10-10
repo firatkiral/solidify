@@ -104,6 +104,8 @@ describe(RegionExtrudeFactory, () => {
         expect(center).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
         expect(bbox.min).toApproximatelyEqual(new THREE.Vector3(-1, -1, -1));
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 1, 1));
+        // To both sides it is one prism: the side is one face, with no seam along the circle's plane
+        expect([...(result as visual.Solid).faces].length).toBe(3);
     })
 
     test('with direction', async () => {

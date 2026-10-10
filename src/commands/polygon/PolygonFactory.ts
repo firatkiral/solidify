@@ -36,23 +36,23 @@ export class PolygonFactory extends GeometryFactory {
     }
 }
 
-export const minDiameter = 0.01;
+export const minRadius = 0.005;
 
 export interface EditPolygonParams {
     vertexCount: number;
-    diameter: number;
+    radius: number;
     degrees: number;
 }
 
-// Edits a regular polygon with what drawing it set: the vertex count, and the vertex it was dragged to, as the diameter
+// Edits a regular polygon with what drawing it set: the vertex count, and the vertex it was dragged to, as the radius
 // of its circumscribed circle and that vertex's rotation around the drawing plane's normal, from the plane's X. The
 // centre and mode stay as drawn.
 export class EditPolygonFactory extends PolygonFactory implements EditPolygonParams {
     get vertexCount() { return super.vertexCount }
     set vertexCount(count: number) { super.vertexCount = Math.max(3, count) }
 
-    get diameter() { return 2 * this.p2.distanceTo(this.center) }
-    set diameter(diameter: number) { this.place(Math.max(diameter, minDiameter) / 2, this.angle) }
+    get radius() { return this.p2.distanceTo(this.center) }
+    set radius(radius: number) { this.place(Math.max(radius, minRadius), this.angle) }
 
     // In [0, 2π)
     get angle() {
@@ -61,7 +61,7 @@ export class EditPolygonFactory extends PolygonFactory implements EditPolygonPar
         const angle = Math.atan2(d.dot(y), d.dot(x));
         return angle < 0 ? angle + 2 * Math.PI : angle;
     }
-    set angle(angle: number) { this.place(this.diameter / 2, angle) }
+    set angle(angle: number) { this.place(this.radius, angle) }
 
     get degrees() { return THREE.MathUtils.radToDeg(this.angle) }
     set degrees(degrees: number) { this.angle = THREE.MathUtils.degToRad(degrees) }

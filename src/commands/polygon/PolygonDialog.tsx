@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { EditorSignals } from "../../editor/EditorSignals";
 import { AbstractDialog } from "../../command/AbstractDialog";
-import { EditPolygonParams } from './PolygonFactory';
+import { EditPolygonParams, minRadius } from './PolygonFactory';
 
 export class PolygonDialog extends AbstractDialog<EditPolygonParams> {
     name = "Polygon";
@@ -11,7 +11,7 @@ export class PolygonDialog extends AbstractDialog<EditPolygonParams> {
     }
 
     render() {
-        const { vertexCount, diameter, degrees } = this.params;
+        const { vertexCount, radius, degrees } = this.params;
 
         render(
             <>
@@ -24,9 +24,9 @@ export class PolygonDialog extends AbstractDialog<EditPolygonParams> {
                     </li>
 
                     <li>
-                        <label for="diameter">Diameter</label>
+                        <label for="radius">Radius</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="diameter" unit="length" min={0.01} value={diameter} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="radius" unit="length" min={minRadius} value={radius} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>
 

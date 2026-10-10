@@ -1,5 +1,5 @@
 import Command from "../../command/Command";
-import { diameter, length, Measurements, radius, sweep } from "../../command/Measurements";
+import { length, Measurements, radius, sweep } from "../../command/Measurements";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import * as visual from "../../visual_model/VisualModel";
@@ -37,7 +37,7 @@ export class CenterCircleCommand extends Command {
             circle.point = p2;
             circle.orientation = orientation;
             circle.update();
-            measurements.set(diameter(p1, p2));
+            measurements.set(radius(p1, p2));
         }).resource(this);
         measurements.reset();
 

@@ -1147,10 +1147,14 @@ export function extrude(data: SweptData, direction: Vector3D, params: ExtrusionV
     const dir = normalized(direction);
     const from = Math.min(-params.side2.scalarValue, params.side1.scalarValue), to = Math.max(-params.side2.scalarValue, params.side1.scalarValue);
     if (to - from < 1e-9) throw new KernelError("Extrusion distance is zero");
-    // The extent is split at the profile's plane, since the two sides may have different draft angles.
+    // The extent is split at the profile's plane, since the two sides may have different draft angles. Without draft
+    // it is one prism, so that an extrusion to both sides has whole faces with no seam along the profile's plane.
     const segments: [number, number, number][] = [];
-    if (from < 0) segments.push([from, Math.min(to, 0), rake2]);
-    if (to > 0) segments.push([Math.max(from, 0), to, rake1]);
+    if (Math.abs(rake1) < 1e-12 && Math.abs(rake2) < 1e-12) segments.push([from, to, 0]);
+    else {
+        if (from < 0) segments.push([from, Math.min(to, 0), rake2]);
+        if (to > 0) segments.push([Math.max(from, 0), to, rake1]);
+    }
     return occ("Extrusion", () => {
         // Each profile is given as its cross-section at an inward offset (by which a draft angle narrows it).
         const profiles: ((inward: number) => Shape[])[] = [];
@@ -1596,8 +1600,12 @@ export function faceSlab(solid: Solid, face: Face, d: number): Shape | undefined
         if (other === undefined) return undefined;
         neighbours.push({ edge, other });
     }
-    // Neighbours that run along the normal (walls of a box or an extrusion, holes): the slab is a prism.
-    const along = neighbours.every(({ edge, other }) => [0.2, 0.5, 0.8].every(t => Math.abs(dot(other.NearPointProjection(edge.Point(t)).normal, n)) < 1e-7));
+    // Neighbours that run along the normal (walls of a box or an extrusion, holes), or that lie in the face's own plane
+    // (the rest of a face divided by an offset loop or an imprint): the slab is a prism.
+    const along = neighbours.every(({ edge, other }) => [0.2, 0.5, 0.8].every(t => {
+        const c = Math.abs(dot(other.NearPointProjection(edge.Point(t)).normal, n));
+        return c < 1e-7 || (c > 1 - 1e-7 && other.IsPlanar());
+    }));
     if (along) {
         const copy = transformShape(face.shape, new Matrix3D());
         return prism(copy, n, Math.min(0, d), Math.max(0, d));

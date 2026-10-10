@@ -33,7 +33,7 @@ export default {
     },
 
     "[command='edit-polygon'] solidify-viewport": {
-        "d": "gizmo:polygon:diameter",
+        "d": "gizmo:polygon:radius",
     },
 
     "[command='radial-array'] solidify-viewport, [command='rectangular-array'] solidify-viewport": {

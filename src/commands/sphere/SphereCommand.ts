@@ -1,6 +1,6 @@
 import Command from "../../command/Command";
 import { targetsLabel } from "../../components/dialog/Prompt";
-import { diameter, Measurements } from "../../command/Measurements";
+import { Measurements, radius } from "../../command/Measurements";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
@@ -29,11 +29,10 @@ export class SphereCommand extends Command {
 
         const measurements = new Measurements(this.editor).resource(this);
         const { point: p2 } = await pointPicker.execute(({ point: p2 }) => {
-            const radius = p1.distanceTo(p2);
-            sphere.radius = radius;
+            sphere.radius = p1.distanceTo(p2);
             sphere.update();
             keyboard.toggle(sphere.isOverlapping);
-            measurements.set(diameter(p1, p2));
+            measurements.set(radius(p1, p2));
         }).resource(this);
         measurements.reset();
 
