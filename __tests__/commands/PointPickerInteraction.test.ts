@@ -75,6 +75,30 @@ test('the point follows the mouse again once pointer capture is lost', async () 
     expect(point.length()).toBeGreaterThan(0.1);
 });
 
+test('tapping Shift over a snap adds guide lines through it, as in Plasticity', async () => {
+    const activate = jest.spyOn((pointPicker as any).model, 'activateSnapped');
+    const promise = pointPicker.execute();
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift' }));
+    expect(activate).toHaveBeenCalledTimes(1);
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 50, clientY: 50 }));
+    await promise;
+});
+
+test('Alt does not', async () => {
+    const activate = jest.spyOn((pointPicker as any).model, 'activateSnapped');
+    const promise = pointPicker.execute();
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt' }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Alt' }));
+    expect(activate).not.toHaveBeenCalled();
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 50, clientY: 50 }));
+    await promise;
+});
+
 test('execute with no callback and preresult', async () => {
     const preresult: PointResult = { point: new THREE.Vector3(), info: { orientation: new THREE.Quaternion(), snap: new PointSnap() } };
     const result = await pointPicker.execute({ result: preresult });

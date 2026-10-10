@@ -228,8 +228,9 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                     if (e.repeat) return;
                     if (isNavigating) return;
 
-                    // Alt locks onto the snap under the cursor (Shift is reserved for holding grid snapping on).
-                    if (e.key === "Alt") {
+                    // Shift, as in Plasticity: held, it locks onto the snap under the cursor; let go, it adds guide lines
+                    // through that point to snap to
+                    if (e.key === "Shift") {
                         this.model.choose(info?.snap, info, true);
                     }
                 }
@@ -237,7 +238,7 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                 const onKeyUp = (e: KeyboardEvent) => {
                     if (isNavigating) return;
 
-                    if (e.key === "Alt") {
+                    if (e.key === "Shift") {
                         const oldChoice = this.model.choice;
                         this.model.choose(undefined);
                         // TODO: need to pass all last snap results
