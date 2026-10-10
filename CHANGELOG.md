@@ -1,3 +1,18 @@
+[1.0.6]
+
+- [x] feat: Enhance gizmo rendering and measurement features
+- [x] feat: Implement Ctrl key functionality to bypass snapping and add related tests
+- [x] feat: Update Keybindings component layout for improved responsiveness and styling
+- [x] feat: Add HeightAxisSnap and implement height restriction in PointPicker for improved snapping functionality
+- [x] feat: Enhance backup functionality with thumbnail support and improve SnapManager comments
+- [x] refactor: update gizmo materials and geometries for consistency
+- [x] refactor: update comments and improve material color handling across components
+- [x] feat: Implement placeClear function for label positioning and add tests for its functionality
+- [x] feat: Implement touchpad detection for initial orbit mode selection and add related tests
+- [x] feat: implement gizmo interaction improvements and occlusion handling
+- [x] feat: replace toolbar with mini bar for enhanced command access
+- [x] feat: update default theme to dark mode and adjust related styles for improved UI consistency
+
 [1.0.5]
 
 - [x] feat: Enhance boolean operations and extrude functionality
