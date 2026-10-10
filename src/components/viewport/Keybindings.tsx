@@ -28,7 +28,7 @@ export default (editor: Editor) => {
                 section.push(name);
             }
             const result = [...sections].map(([prefix, values]) =>
-                <dl class="grid grid-cols-2 auto-rows-[minmax(1.25rem,auto)] w-52 text-xs bg-transparent text-ui-text min-h-24 min-w-[6rem]">
+                <dl class="grid grid-cols-[auto_minmax(6rem,auto)] auto-rows-[minmax(1.25rem,auto)] gap-x-2 items-center text-xs bg-transparent text-ui-text">
                     {[...values].map(postfix => {
                         const command = `${prefix}:${postfix}`;
                         const bindings = keymaps.findKeyBindings({ command });
@@ -41,8 +41,8 @@ export default (editor: Editor) => {
                         if (desc === undefined) console.error("Description missing from (icons.ts)", command);
 
                         return <>
-                            <dt class="px-1">
-                                <label class="float-right px-1 mr-1.5 text-center rounded ring-1 text-[11px] font-medium leading-4 min-w-[1.5rem] bg-ui-surface ring-ui-border text-ui-text">{keystroke}</label>
+                            <dt class="justify-self-end">
+                                <label class="block px-1 text-center rounded ring-1 text-[11px] font-medium leading-4 min-w-[1.75rem] bg-ui-surface ring-ui-border text-ui-text">{keystroke}</label>
                             </dt>
                             <dd>{desc}</dd>
                         </>
@@ -50,7 +50,7 @@ export default (editor: Editor) => {
                 </dl>
             );
             // Above the command's options; the sections wrap where there isn't room for them side by side
-            render(<div class="flex flex-wrap gap-y-2 gap-x-8">
+            render(<div class="flex flex-wrap items-start gap-y-3 gap-x-6">
                 {result}
             </div>, this);
         }
