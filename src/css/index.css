@@ -7,11 +7,12 @@
    before this loads) */
 :root {
     --ui-bg: #111115;
-    --ui-viewport: #27272a;
-    --ui-surface: #18181b;
+    /* The bars and panels a step lighter than the 3D view they float over */
+    --ui-viewport: #1c1c20;
+    --ui-surface: #27272a;
     --ui-raised: rgb(255 255 255 / 0.06);
     --ui-hover: rgb(255 255 255 / 0.1);
-    --ui-border: rgb(255 255 255 / 0.08);
+    --ui-border: #3f3f46;
     --ui-divider: rgb(255 255 255 / 0.06);
     --ui-backdrop: rgb(0 0 0 / 0.5);
     --ui-shadow: rgb(0 0 0 / 0.4);

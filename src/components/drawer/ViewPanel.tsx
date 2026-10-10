@@ -54,7 +54,7 @@ export default (editor: Editor) => {
                     </div>
                     <div class="p-4">
                         <h2 class={section}>Camera</h2>
-                        <div class="flex gap-0.5 p-0.5 mx-2 rounded-md bg-ui-raised">
+                        <div class="flex gap-0.5 p-0.5 rounded-md bg-ui-raised">
                             {this.segment("Perspective", perspective, () => { if (!perspective) viewport.togglePerspective() })}
                             {this.segment("Orthographic", !perspective, () => { if (perspective) viewport.togglePerspective() })}
                         </div>
@@ -96,7 +96,7 @@ export default (editor: Editor) => {
         }
 
         private segment(name: string, on: boolean, onClick: () => void) {
-            return <button class={`flex-1 py-1 text-xs rounded ${on ? 'bg-ui-tint text-ui-accent' : 'text-ui-muted hover:text-ui-title'}`} aria-pressed={on} onClick={onClick}>{name}</button>
+            return <button class={`flex-1 px-2 py-1 min-w-0 text-[11px] truncate rounded ${on ? 'bg-ui-tint text-ui-accent' : 'text-ui-muted hover:text-ui-title'}`} aria-pressed={on} onClick={onClick}>{name}</button>
         }
 
         private toggle(name: string, on: boolean, onClick: () => void) {

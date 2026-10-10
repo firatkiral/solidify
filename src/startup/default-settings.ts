@@ -3,8 +3,8 @@ import { ThemeSetting } from "./Appearance";
 
 export default {
     Appearance: {
-        // Light, dark, or as the system is
-        theme: 'system' as ThemeSetting,
+        // Light, dark, or as the system is; dark unless chosen otherwise
+        theme: 'dark' as ThemeSetting,
     },
 
     Viewport: {

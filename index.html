@@ -10,10 +10,10 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script>
-        // Light or dark before anything shows, as Settings › Appearance has it or as the system is (Appearance.ts keeps it
-        // up to date once the app starts)
+        // Light or dark before anything shows, as Settings › Appearance has it (dark until chosen) or as the system is
+        // (Appearance.ts keeps it up to date once the app starts)
         (function () {
-            var theme = 'system';
+            var theme = 'dark';
             try {
                 var match = /theme:\s*'(light|dark|system)'/.exec(localStorage.getItem('solidify:settings') || '');
                 if (match) theme = match[1];
