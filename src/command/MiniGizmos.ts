@@ -13,6 +13,7 @@ import { CircleGeometry } from "../util/Util";
 import { AbstractGizmo, EditorLike, GizmoHelper, Intersector, Mode, MovementInfo } from "./AbstractGizmo";
 import { GizmoMaterial } from "./GizmoMaterials";
 import { KeyboardInterpreter, TextCalculator } from "./KeyboardInterpreter";
+import { placeClear } from "./ScreenLabel";
 
 /**
  * In this file are a collection of "mini" gizmos that can be used alone or composed into a more complex gizmo.
@@ -72,6 +73,7 @@ export abstract class CircularGizmo<T> extends AbstractGizmo<T> {
     protected readonly circle = new Line2(circleGeometry, this.material.line2);
     protected readonly torus = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.15, 4, 24), this.editor.gizmos.invisible);
     readonly helper?: GizmoHelper<T> = new DashedLineMagnitudeHelper();
+    override get labelAnchor(): THREE.Object3D { return this.circle }
 
     constructor(private readonly longName: string, editor: EditorLike, protected readonly material: GizmoMaterial, readonly state: AbstractValueStateMachine<T>) {
         super(longName.split(':')[0], editor);
@@ -191,6 +193,7 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
     protected abstract readonly material: GizmoMaterial;
     protected abstract readonly state: MagnitudeStateMachine;
     protected readonly hasCommand: boolean = true;
+    override get labelAnchor(): THREE.Object3D { return this.tip }
 
     protected readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
 
@@ -414,6 +417,7 @@ export abstract class PlanarGizmo<T> extends AbstractGizmo<T> {
     }
 
     protected readonly square = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), this.material.mesh);
+    override get labelAnchor(): THREE.Object3D { return this.square }
     protected readonly knob = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), this.editor.gizmos.invisible);
     protected readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
     protected readonly startMousePosition = new THREE.Vector3();
@@ -710,16 +714,18 @@ export class NumberHelper<T = number> extends Helper implements GizmoHelper<T>, 
         this.element.remove();
     }
 
-    // A pinned readout follows the handle, and shows when the handle does
+    // A showing readout follows the handle as it renders; a pinned one shows when the handle does
     update(camera: THREE.Camera) {
         super.update(camera);
         const { measured, viewport } = this;
-        if (measured === undefined || !measured.pinned || viewport === undefined || viewport.camera !== camera) return;
-        let shown = true;
-        for (let o: THREE.Object3D | null = this; o !== null; o = o.parent) shown &&= o.visible;
-        this.element.hidden = !shown;
-        if (!this.typing) this.text.textContent = this.formatted(measured.value() as unknown as T);
-        this.project();
+        if (viewport === undefined || viewport.camera !== camera || this.element.parentNode === null) return;
+        if (measured !== undefined && measured.pinned) {
+            let shown = true;
+            for (let o: THREE.Object3D | null = this; o !== null; o = o.parent) shown &&= o.visible;
+            this.element.hidden = !shown;
+            if (!this.typing) this.text.textContent = this.formatted(measured.value() as unknown as T);
+        }
+        if (!this.element.hidden) this.project();
     }
 
     onStart(viewport: Viewport, position: THREE.Vector2) {
@@ -740,12 +746,45 @@ export class NumberHelper<T = number> extends Helper implements GizmoHelper<T>, 
         this.project();
     }
 
+    // The gizmo it reads out: the nearest one among its parents
+    private get gizmo(): AbstractGizmo<any> | undefined {
+        for (let o = this.parent; o !== null; o = o.parent) if (o instanceof AbstractGizmo) return o;
+    }
+
     private readonly at = new THREE.Vector3();
+    private readonly origin = new THREE.Vector3();
+    private readonly away = new THREE.Vector3();
+    // Clear of its gizmo's handle on screen, past it the way it stands from the gizmo's origin, so it never covers the
+    // handle (see placeClear). At the origin, an axis handle (an arrow at zero) still points along its axis; a ring
+    // has no way of its own: its readout goes away from the handle of the gizmo it rides on (down from an arrow whose
+    // base it sits at), or from that gizmo's origin (past an arrow whose tip it sits on), and otherwise the way most
+    // clear of the handles around it (see clearestWay).
     private project() {
-        const projected = this.getWorldPosition(this.at).project(this.viewport!.camera);
-        this.viewport!.denormalizeScreenPosition(projected as any);
-        this.element.style.top = projected.y + 'px';
-        this.element.style.left = projected.x + 'px';
+        const viewport = this.viewport!;
+        const gizmo = this.gizmo, handle = gizmo?.labelAnchor;
+        if (gizmo === undefined || handle === undefined) {
+            const projected = this.getWorldPosition(this.at).project(viewport.camera);
+            viewport.denormalizeScreenPosition(projected as any);
+            this.element.style.top = projected.y + 'px';
+            this.element.style.left = projected.x + 'px';
+            return;
+        }
+        const { at, origin, away } = this;
+        handle.getWorldPosition(at);
+        away.subVectors(at, gizmo.getWorldPosition(origin));
+        if (away.lengthSq() < 1e-12 && gizmo instanceof AbstractAxisGizmo) away.set(0, 1, 0).transformDirection(gizmo.matrixWorld);
+        let carrier: THREE.Object3D | null = gizmo.parent;
+        while (away.lengthSq() < 1e-12 && carrier !== null) {
+            const outer = carrier instanceof AbstractGizmo ? carrier.labelAnchor : undefined;
+            if (outer !== undefined) {
+                away.subVectors(at, outer.getWorldPosition(origin));
+                if (away.lengthSq() < 1e-12) away.subVectors(at, carrier.getWorldPosition(origin));
+                break;
+            }
+            carrier = carrier.parent;
+        }
+        if (away.lengthSq() < 1e-12) clearestWay(gizmo, at, viewport, away);
+        if (!placeClear(this.element, viewport, at, away, reach(handle, at))) this.element.hidden = true;
     }
 
     onKeyPress(value: T, text: KeyboardInterpreter): void {
@@ -771,6 +810,57 @@ export class NumberHelper<T = number> extends Helper implements GizmoHelper<T>, 
     cancel() { this.unmeasure() }
     finish() { this.unmeasure() }
     interrupt() { this.unmeasure() }
+}
+
+// How far a handle reaches from a point on it, in world units: the bounds of what shows of it and what it carries (as a
+// ring on an arrow's tip), but not its readouts or axis lines
+const bounds = new THREE.Sphere();
+function reach(handle: THREE.Object3D, from: THREE.Vector3): number {
+    handle.updateWorldMatrix(false, true);
+    let result = 0;
+    const visit = (o: THREE.Object3D) => {
+        if (!o.visible || (o instanceof Helper && !(o instanceof AbstractGizmo))) return;
+        const geometry = (o as Partial<THREE.Mesh>).geometry;
+        if (geometry !== undefined) {
+            if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
+            const sphere = geometry.boundingSphere;
+            if (sphere !== null && sphere.radius >= 0) {
+                bounds.copy(sphere).applyMatrix4(o.matrixWorld);
+                result = Math.max(result, bounds.center.distanceTo(from) + bounds.radius);
+            }
+        }
+        for (const child of o.children) visit(child);
+    };
+    visit(handle);
+    return result;
+}
+
+// The way on screen most clear of the handles of the gizmos around a point (a move gizmo's arrows and squares, around its
+// screen ring): across the widest gap between them, or up with none around. As a world direction, for placeClear.
+const around = new THREE.Vector3(), centre = new THREE.Vector3(), screenRight = new THREE.Vector3(), screenUp = new THREE.Vector3();
+function clearestWay(gizmo: AbstractGizmo<any>, at: THREE.Vector3, viewport: Viewport, way: THREE.Vector3) {
+    const { camera } = viewport;
+    const rect = viewport.domElement.getBoundingClientRect();
+    centre.copy(at).project(camera);
+    const angles: number[] = [];
+    gizmo.parent?.traverseVisible(o => {
+        if (o === gizmo || !(o instanceof AbstractGizmo)) return;
+        const handle = o.labelAnchor;
+        if (handle === undefined || !handle.visible) return;
+        handle.getWorldPosition(around).project(camera);
+        const dx = (around.x - centre.x) * rect.width, dy = (around.y - centre.y) * rect.height;
+        if (Math.hypot(dx, dy) > 1) angles.push(Math.atan2(dy, dx));
+    });
+    let angle = Math.PI / 2;
+    angles.sort((a, b) => a - b);
+    let widest = 0;
+    for (const [i, from] of angles.entries()) {
+        const to = i + 1 < angles.length ? angles[i + 1] : angles[0] + 2 * Math.PI;
+        if (to - from > widest) { widest = to - from; angle = (from + to) / 2 }
+    }
+    screenRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+    screenUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+    way.copy(screenRight).multiplyScalar(Math.cos(angle)).addScaledVector(screenUp, Math.sin(angle));
 }
 
 // The number readout among a gizmo's helpers

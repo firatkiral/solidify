@@ -57,7 +57,7 @@ export class ThreePointBoxCommand extends Command {
             box.p4 = p4;
             box.update();
             keyboard.toggle(box.isOverlapping);
-            measurements.set(height(baseCenter, heightNormal, p4.clone().sub(baseCorner).dot(heightNormal)));
+            measurements.set(height(baseCenter, heightNormal, p4.clone().sub(baseCorner).dot(heightNormal), baseCenter.distanceTo(baseCorner)));
         }).resource(this);
         measurements.reset();
 
@@ -126,7 +126,7 @@ export class CornerBoxCommand extends Command {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);
-            measurements.set(height(baseCenter, heightNormal, p3.clone().sub(p2).dot(heightNormal)));
+            measurements.set(height(baseCenter, heightNormal, p3.clone().sub(p2).dot(heightNormal), baseCenter.distanceTo(p2)));
         }).resource(this);
         measurements.reset();
 
@@ -222,7 +222,7 @@ export class CenterBoxCommand extends Command {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);
-            measurements.set(height(p1, heightNormal, p3.clone().sub(p2).dot(heightNormal)));
+            measurements.set(height(p1, heightNormal, p3.clone().sub(p2).dot(heightNormal), p1.distanceTo(p2)));
         }).resource(this);
         measurements.reset();
 

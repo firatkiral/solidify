@@ -67,6 +67,9 @@ export abstract class AbstractGizmo<I> extends Helper implements Executable<I, v
     readonly picker = new THREE.Group();
     readonly helper?: GizmoHelper<I>;
 
+    // The handle its readout stands clear of on screen (see NumberHelper)
+    get labelAnchor(): THREE.Object3D | undefined { return undefined }
+
     constructor(readonly title: string, protected readonly editor: EditorLike) {
         super();
 

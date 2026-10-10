@@ -52,7 +52,7 @@ export class CylinderCommand extends Command {
             cylinder.p2 = p3;
             cylinder.update();
             keyboard.toggle(cylinder.isOverlapping);
-            measurements.set(height(p1, axis, p3.clone().sub(p1).dot(axis)));
+            measurements.set(height(p1, axis, p3.clone().sub(p1).dot(axis), p1.distanceTo(p2)));
         }).resource(this);
         measurements.reset();
 

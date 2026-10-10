@@ -99,7 +99,6 @@ export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
 
     constructor(name: string, editor: EditorLike, material: GizmoMaterial) {
         super(name, editor, material);
-        this.helper.position.set(0.5, 1, 0);
         this.add(this.helper);
     }
 

@@ -31,8 +31,7 @@ export class ThreePointArcCommand extends Command {
         await pointPicker.execute(({ point }) => {
             arc.p2 = point;
             arc.update();
-            const normal = end.clone().sub(p1).cross(point.clone().sub(p1)).normalize();
-            try { measurements.set(arcHeight(p1, end, arc.middle, normal)) }
+            try { measurements.set(arcHeight(p1, end, arc.middle)) }
             catch { measurements.reset() } // collinear points have no arc
         }).resource(this);
         measurements.reset();

@@ -147,8 +147,7 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
 class PushCurveGizmo extends AbstractAxisGizmo {
     readonly state = new MagnitudeStateMachine(0, false);
     protected material = this.editor.gizmos.default;
-    private readonly readout = new NumberHelper();
-    readonly helper = new CompositeHelper([new AxisHelper(this.material.line), this.readout]);
+    readonly helper = new CompositeHelper([new AxisHelper(this.material.line), new NumberHelper()]);
     readonly tip = new THREE.Mesh(arrowGeometry, this.editor.gizmos.default.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.editor.gizmos.default.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
@@ -161,12 +160,6 @@ class PushCurveGizmo extends AbstractAxisGizmo {
     }
 
     // render(length: number) { super.render(-length - 0.35) }
-
-    // The readout stays by the arrow as it moves
-    render(length: number) {
-        super.render(length);
-        this.readout?.position.copy(this.tip.position);
-    }
 
     protected accumulate(original: number, sign: number, dist: number): number {
         return original + dist

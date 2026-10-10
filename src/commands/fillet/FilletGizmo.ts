@@ -47,6 +47,7 @@ export class FilletSolidGizmo extends CompositeGizmo<FilletParams> {
 
         this.add(main, stretchFillet, stretchChamfer, this.profile);
         main.tip.add(angle);
+        stretchFillet.readoutHandle = stretchChamfer.readoutHandle = main.tip;
 
         this.toggle(this.mode);
     }
@@ -357,6 +358,10 @@ class FilletStretchGizmo extends AbstractAxialScaleGizmo {
     readonly tip = new THREE.Mesh();
     protected readonly shaft = new THREE.Mesh();
     protected readonly knob = new THREE.Mesh();
+
+    // Typed into only, it has no handle of its own; its readout stands clear of the handle it stretches with
+    readoutHandle?: THREE.Object3D;
+    override get labelAnchor(): THREE.Object3D { return this.readoutHandle ?? this.tip }
 
     constructor(name: string, editor: EditorLike) {
         super(name, editor, editor.gizmos.default);

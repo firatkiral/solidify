@@ -11,24 +11,26 @@ import { CancellableRegisterable } from "../util/CancellableRegisterable";
 import { CancellableRegistor } from "../util/CancellableRegistor";
 import { Helper, Helpers } from "../util/Helpers";
 import { formatAngle, formatLength } from "../util/Units";
+import { placeClear } from "./ScreenLabel";
 
 // The dimensions shown while drawing a shape, as in Plasticity: faint guide lines (radii, angle arcs, dimension
-// brackets) with labels that state their units. Offsets are in gizmo units (see Helper.scaleIndependentOfZoom), so
-// they keep their size on screen as the camera moves.
+// brackets) with labels that state their units. Bracket offsets are in gizmo units (see Helper.scaleIndependentOfZoom),
+// so they keep their size on screen as the camera moves; labels stand clear of what they mark on screen (see
+// placeClear), so they never cover it.
 
 export type Dimension =
     | { tag: 'line', from: THREE.Vector3, to: THREE.Vector3 }
     | { tag: 'polyline', points: THREE.Vector3[] }
-    // A label centered on a point
-    | { tag: 'label', at: THREE.Vector3, text: string }
-    // A label just off the middle of a segment, on its left when looking down the normal
-    | { tag: 'beside', from: THREE.Vector3, to: THREE.Vector3, normal: THREE.Vector3, text: string }
-    // A dimension bracket standing off a segment towards outward, labelled with the segment's length
+    // A label clear of a point, past it the way away points
+    | { tag: 'label', at: THREE.Vector3, away: THREE.Vector3, text: string }
+    // A label beside the middle of a segment: on its left when looking down the normal, or to its side on screen
+    | { tag: 'beside', from: THREE.Vector3, to: THREE.Vector3, normal?: THREE.Vector3, text: string }
+    // A dimension bracket standing off a segment towards outward, labelled with the segment's length outside it
     | { tag: 'bracket', from: THREE.Vector3, to: THREE.Vector3, outward: THREE.Vector3 }
-    // A gizmo-style readout standing off base along direction
-    | { tag: 'readout', base: THREE.Vector3, direction: THREE.Vector3, text: string };
+    // A gizmo-style readout past the end of a length, along its direction, clear of what spreads radius around the end
+    | { tag: 'readout', at: THREE.Vector3, direction: THREE.Vector3, radius: number, text: string };
 
-const besideOffset = 0.1, bracketOffset = 1, readoutOffset = 2;
+const bracketOffset = 1;
 const labelClass = 'absolute z-50 px-2 py-1 text-xs text-center whitespace-nowrap rounded pointer-events-none text-ui-title opacity-30 -translate-x-1/2 -translate-y-1/2';
 const readoutClass = 'axis-helper';
 
@@ -37,7 +39,7 @@ const lineColor = () => new THREE.Color(paletteColor('title') || theme.colors.ne
 // Plasticity draws guides at 10% opacity blending in sRGB; blending in linear space as here, 3% looks the same
 const lineOpacity = 0.03;
 
-type Label = { at: THREE.Vector3, text: string, readout: boolean };
+type Label = { at: THREE.Vector3, away: THREE.Vector3, radius?: number, text: string, readout: boolean };
 
 export class Measurements extends Helper implements CancellableRegisterable {
     private readonly material = new LineMaterial({ color: lineColor().getHex(), opacity: lineOpacity, transparent: true, linewidth: 1, depthWrite: false, fog: false, toneMapped: false });
@@ -76,36 +78,33 @@ export class Measurements extends Helper implements CancellableRegisterable {
                 case 'polyline':
                     for (let i = 1; i < d.points.length; i++) segment(d.points[i - 1], d.points[i]);
                     break;
-                case 'label': labels.push({ at: d.at, text: d.text, readout: false }); break;
+                case 'label': labels.push({ at: d.at, away: d.away, text: d.text, readout: false }); break;
                 case 'beside': {
                     const mid = d.from.clone().lerp(d.to, 0.5);
                     const direction = d.to.clone().sub(d.from).normalize();
-                    const side = d.normal.clone().cross(direction);
-                    // A segment along the normal has no left; step off it sideways on screen instead
-                    if (side.lengthSq() < 1e-12) side.copy(this.eye).cross(direction);
-                    side.normalize().multiplyScalar(besideOffset * this.factor(camera, mid));
-                    labels.push({ at: mid.add(side), text: d.text, readout: false });
+                    const side = d.normal !== undefined ? d.normal.clone().cross(direction) : new THREE.Vector3();
+                    // Without a normal, or along it, there's no left; go to its side on screen instead
+                    if (side.lengthSq() < 1e-12) side.setFromMatrixColumn(camera.matrixWorld, 2).cross(direction);
+                    labels.push({ at: mid, away: side, text: d.text, readout: false });
                     break;
                 }
                 case 'bracket': {
                     const stand = d.outward.clone().multiplyScalar(bracketOffset * this.factor(camera, d.from));
                     const a = d.from.clone().add(stand), b = d.to.clone().add(stand);
                     segment(d.from, a); segment(a, b); segment(b, d.to);
-                    labels.push({ at: a.clone().lerp(b, 0.5), text: formatLength(d.from.distanceTo(d.to)), readout: false });
+                    // A rectangle without width yet has no outward; go to the bracket's side on screen instead
+                    const away = d.outward.lengthSq() > 1e-12 ? d.outward : new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 2).cross(d.to.clone().sub(d.from));
+                    labels.push({ at: a.clone().lerp(b, 0.5), away, text: formatLength(d.from.distanceTo(d.to)), readout: false });
                     break;
                 }
-                case 'readout': {
-                    const at = d.direction.clone().multiplyScalar(readoutOffset * this.factor(camera, d.base)).add(d.base);
-                    labels.push({ at, text: d.text, readout: true });
-                    break;
-                }
+                case 'readout': labels.push({ at: d.at, away: d.direction, radius: d.radius, text: d.text, readout: true }); break;
             }
         }
 
         this.lines.visible = positions.length > 0;
         if (positions.length > 0) this.lines.geometry.setPositions(positions);
         this.material.resolution.set(viewport.domElement.offsetWidth, viewport.domElement.offsetHeight);
-        this.place(viewport, camera, labels);
+        this.place(viewport, labels);
     }
 
     private readonly scratch = new THREE.Object3D();
@@ -113,8 +112,7 @@ export class Measurements extends Helper implements CancellableRegisterable {
         return Helper.scaleIndependentOfZoom(this.scratch, camera, at);
     }
 
-    private readonly projected = new THREE.Vector3();
-    private place(viewport: Viewport, camera: THREE.Camera, labels: Label[]) {
+    private place(viewport: Viewport, labels: Label[]) {
         let elements = this.elements.get(viewport);
         if (elements === undefined) this.elements.set(viewport, elements = []);
         while (elements.length < labels.length) {
@@ -124,15 +122,12 @@ export class Measurements extends Helper implements CancellableRegisterable {
         }
         while (elements.length > labels.length) elements.pop()!.remove();
 
-        const rect = viewport.domElement.getBoundingClientRect();
         labels.forEach((label, i) => {
             const element = elements![i];
-            const projected = this.projected.copy(label.at).project(camera);
             element.className = label.readout ? readoutClass : labelClass;
             element.textContent = label.text;
-            element.hidden = projected.z < -1 || projected.z > 1;
-            element.style.left = (1 + projected.x) / 2 * rect.width + 'px';
-            element.style.top = (1 - projected.y) / 2 * rect.height + 'px';
+            element.hidden = false; // so it has a size to stand clear by
+            element.hidden = !placeClear(element, viewport, label.at, label.away, label.radius);
         });
     }
 
@@ -154,12 +149,12 @@ export class Measurements extends Helper implements CancellableRegisterable {
     }
 }
 
-// The radius from the center to a point on the circle, labelled halfway along: circles, spheres and cylinder bases. Round
-// things are sized by their radius everywhere, as in their dialogs and gizmos.
+// The radius from the center to a point on the circle, labelled beside it halfway along: circles, spheres and cylinder
+// bases. Round things are sized by their radius everywhere, as in their dialogs and gizmos.
 export function radius(center: THREE.Vector3, through: THREE.Vector3): Dimension[] {
     return [
         { tag: 'line', from: center.clone(), to: through.clone() },
-        { tag: 'label', at: center.clone().lerp(through, 0.5), text: formatLength(center.distanceTo(through)) },
+        { tag: 'beside', from: center.clone(), to: through.clone(), text: formatLength(center.distanceTo(through)) },
     ];
 }
 
@@ -175,10 +170,14 @@ export function length(from: THREE.Vector3, to: THREE.Vector3, normal: THREE.Vec
     return [{ tag: 'beside', from: from.clone(), to: to.clone(), normal: normal.clone(), text: formatLength(from.distanceTo(to)) }];
 }
 
-// The height of an arc's middle above the line between its ends, drawn from the middle of that line: three-point arcs
-export function arcHeight(start: THREE.Vector3, end: THREE.Vector3, middle: THREE.Vector3, normal: THREE.Vector3): Dimension[] {
+// The height of an arc's middle above the line between its ends, drawn from the middle of that line: three-point arcs.
+// It's labelled past the arc's middle, where the arc never reaches however deep it is.
+export function arcHeight(start: THREE.Vector3, end: THREE.Vector3, middle: THREE.Vector3): Dimension[] {
     const base = start.clone().lerp(end, 0.5);
-    return [{ tag: 'line', from: base, to: middle.clone() }, ...length(base, middle, normal)];
+    return [
+        { tag: 'line', from: base, to: middle.clone() },
+        { tag: 'label', at: middle.clone(), away: middle.clone().sub(base), text: formatLength(base.distanceTo(middle)) },
+    ];
 }
 
 // A line segment's length beside it, and the angle it turns from the reference direction, drawn as a ray and an arc
@@ -198,7 +197,7 @@ export function segment(from: THREE.Vector3, to: THREE.Vector3, normal: THREE.Ve
     const guide = arc(from, reference, axis, angle, distance);
     guide.points.unshift(from.clone());
     const middle = reference.clone().applyAxisAngle(axis, angle / 2).multiplyScalar(distance).add(from);
-    return [...result, guide, { tag: 'label', at: middle, text: formatAngle(angle) }];
+    return [...result, guide, { tag: 'label', at: middle, away: middle.clone().sub(from), text: formatAngle(angle) }];
 }
 
 // How far a center-point arc sweeps around the axis from its start, drawn just outside the arc
@@ -206,7 +205,7 @@ export function sweep(center: THREE.Vector3, start: THREE.Vector3, axis: THREE.V
     const r = 1.1 * center.distanceTo(start);
     const direction = start.clone().sub(center).normalize();
     const middle = direction.clone().applyAxisAngle(axis, angle / 2).multiplyScalar(r).add(center);
-    return [arc(center, direction, axis, angle, r), { tag: 'label', at: middle, text: formatAngle(angle) }];
+    return [arc(center, direction, axis, angle, r), { tag: 'label', at: middle, away: middle.clone().sub(center), text: formatAngle(angle) }];
 }
 
 // Dimension brackets on the two sides of a rectangle that meet at its first corner, standing off outwards
@@ -227,9 +226,11 @@ export function rectangleOf(rect: { corners: { p1: THREE.Vector3, p2: THREE.Vect
     }
 }
 
-// A height read out like a gizmo's, standing off the base center along the height
-export function height(base: THREE.Vector3, direction: THREE.Vector3, h: number): Dimension[] {
-    return [{ tag: 'readout', base: base.clone(), direction: direction.clone().multiplyScalar(Math.sign(h) || 1), text: formatLength(Math.abs(h)) }];
+// A height read out like a gizmo's, past the top of the height from the base center and clear of the top, which spreads
+// radius around it (a box's half diagonal, a cylinder's radius)
+export function height(base: THREE.Vector3, direction: THREE.Vector3, h: number, radius: number): Dimension[] {
+    const up = direction.clone().multiplyScalar(Math.sign(h) || 1);
+    return [{ tag: 'readout', at: base.clone().addScaledVector(up, Math.abs(h)), direction: up, radius, text: formatLength(Math.abs(h)) }];
 }
 
 function arc(center: THREE.Vector3, start: THREE.Vector3, axis: THREE.Vector3, angle: number, r: number, segments = 64) {

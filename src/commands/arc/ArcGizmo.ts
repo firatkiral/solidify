@@ -131,11 +131,6 @@ class ArcHeightGizmo extends AbstractAxisGizmo {
         this.state.push();
     }
 
-    render(height: number) {
-        super.render(height);
-        this.helper.position.set(0, height, 0);
-    }
-
     // Only the arrow keeps a constant screen size; the gizmo itself stays in world units so the arrow sits on the arc
     protected override scaleIndependentOfZoom(camera: THREE.Camera, worldPosition: THREE.Vector3) {
         const { relativeScale, tip, knob } = this;
@@ -166,6 +161,7 @@ export class ArcSweepGizmo extends AbstractGizmo<number> {
     readonly helper = new NumberHelper(formatAngle);
     private readonly material = this.editor.gizmos.default;
     private readonly tip = new THREE.Mesh(sphereGeometry, this.material.mesh);
+    override get labelAnchor(): THREE.Object3D { return this.tip }
     private readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
     private readonly guide = new THREE.Line(guideGeometry, this.material.line);
     private readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
@@ -199,10 +195,9 @@ export class ArcSweepGizmo extends AbstractGizmo<number> {
     }
 
     render(angle: number) {
-        const { tip, knob, guide, helper, radius } = this;
+        const { tip, knob, guide, radius } = this;
         tip.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
         knob.position.copy(tip.position);
-        helper.position.copy(tip.position);
         guide.scale.setScalar(radius);
     }
 

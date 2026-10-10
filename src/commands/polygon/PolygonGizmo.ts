@@ -51,6 +51,7 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
     private readonly material = this.editor.gizmos.default;
     private readonly shaft = new Line2(lineGeometry, this.material.line2);
     private readonly tip = new THREE.Mesh(sphereGeometry, this.material.mesh);
+    override get labelAnchor(): THREE.Object3D { return this.tip }
     private readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
     private readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
     private mode: 'pointer' | 'keyboard' = 'pointer';
@@ -82,10 +83,9 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
     }
 
     render(radius: number) {
-        const { tip, knob, shaft, helper, angle } = this;
+        const { tip, knob, shaft, angle } = this;
         tip.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
         knob.position.copy(tip.position);
-        helper.position.copy(tip.position);
         shaft.rotation.z = angle - Math.PI / 2;
         shaft.scale.y = radius;
     }

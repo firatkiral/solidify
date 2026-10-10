@@ -151,12 +151,10 @@ export class ScaleAxisGizmo extends AbstractAxialScaleGizmo {
 
 export class PlanarScaleGizmo extends PlanarGizmo<number> {
     readonly state = new MagnitudeStateMachine(1);
-    private readonly readout = new NumberHelper(factor => factor.toFixed(2)); // a scale factor has no unit
-    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), this.readout]);
+    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), new NumberHelper(factor => factor.toFixed(2))]); // a scale factor has no unit
 
     constructor(name: string, editor: EditorLike, material: GizmoMaterial) {
         super(name, editor, material);
-        this.readout.position.set(0.5, 1, 0);
         this.add(this.helper);
     }
 
