@@ -737,6 +737,29 @@ export default (editor: Editor) => {
                             <path d="M18 18L13.5 15L11 17L6 13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
+                case 'grip':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="9" cy="6" r="1.25" />
+                            <circle cx="15" cy="6" r="1.25" />
+                            <circle cx="9" cy="12" r="1.25" />
+                            <circle cx="15" cy="12" r="1.25" />
+                            <circle cx="9" cy="18" r="1.25" />
+                            <circle cx="15" cy="18" r="1.25" />
+                        </svg>, this);
+                case 'more':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="6" cy="12" r="1.5" />
+                            <circle cx="12" cy="12" r="1.5" />
+                            <circle cx="18" cy="12" r="1.5" />
+                        </svg>, this);
+                case 'search':
+                    return render(
+                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 17L21 21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M3 11C3 15.4183 6.58172 19 11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
                 default:
                     console.warn(`${this.name} is missing icon`);
             }

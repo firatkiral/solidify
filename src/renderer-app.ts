@@ -12,6 +12,7 @@ import ViewPanel from './components/drawer/ViewPanel';
 import NumberScrubber from './components/dialog/NumberScrubber';
 import Prompt from './components/dialog/Prompt';
 import Menu from './components/menu/Menu';
+import MiniBar from './components/minibar/MiniBar';
 import Outliner from './components/outliner/Outliner';
 import Planes from './components/planes/Planes';
 import Home from './components/home/Home';
@@ -23,7 +24,6 @@ import TitleBar from './components/title-bar/TitleBar';
 import Icon from './components/toolbar/Icon';
 import registerDefaultCommands from './components/toolbar/icons';
 import Palette from './components/toolbar/Palette';
-import Toolbar from './components/toolbar/Toolbar';
 import Tooltip from './components/tooltip/Tooltip';
 import UndoHistory from './components/undo-history/UndoHistory';
 import Keybindings from './components/viewport/Keybindings';
@@ -72,10 +72,11 @@ registerDefaultCommands(editor);
 
 Icon(editor);
 TitleBar(editor);
-Toolbar(editor);
 Keybindings(editor);
 Palette(editor);
 Viewport(editor);
+// After the viewport, whose camera and controls it reads as it connects
+MiniBar(editor);
 Creators(editor);
 NumberScrubber(editor);
 Dialog(editor);

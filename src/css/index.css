@@ -157,10 +157,6 @@
         right: calc(0.5rem + var(--drawer-inset, 0px));
     }
 
-    .centred-clear-of-drawer {
-        left: calc((100% - var(--drawer-inset, 0px)) / 2);
-    }
-
     /* Its left edge, half outside it */
     solidify-drawer>.drawer-handle {
         @apply absolute top-0 -left-1 z-10 w-2 h-full cursor-col-resize;
