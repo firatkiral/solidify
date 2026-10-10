@@ -70,6 +70,19 @@ describe(ConfigFiles, () => {
         expect(stored(ConfigFiles.userSettingsKey)).toEqual({ Autosave: { keep: 2 } });
     });
 
+    test("touchpad devices start with Touchpad on first launch", () => {
+        ConfigFiles.pickFirstOrbitMode(false);
+        expect(ConfigFiles.currentOrbitMode()).toBe('default');
+        ConfigFiles.pickFirstOrbitMode(true);
+        expect(ConfigFiles.currentOrbitMode()).toBe('touchpad');
+    });
+
+    test("a picked navigation is kept over the first launch one", () => {
+        ConfigFiles.updateOrbitControls('default');
+        ConfigFiles.pickFirstOrbitMode(true);
+        expect(ConfigFiles.currentOrbitMode()).toBe('default');
+    });
+
     test("changing the mouse controls keeps the other bindings", () => {
         items.set(ConfigFiles.userKeymapKey, `{ "body": { "x": "command:x" }, "orbit-controls": {} }`);
         ConfigFiles.updateOrbitControls('maya');

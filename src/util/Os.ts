@@ -10,3 +10,6 @@ export const os: string = (() => {
 
 export const isMac = os === 'darwin';
 export const isLinux = os === 'linux';
+
+// Most likely navigated with a touchpad or fingers: a Mac (iPads report as one too), a phone or a tablet
+export const prefersTouchpad = isMac || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);

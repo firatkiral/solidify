@@ -129,6 +129,12 @@ export class ConfigFiles {
         }
     }
 
+    // On first launch, before any navigation was picked, touchpad devices start with Touchpad
+    static pickFirstOrbitMode(touchpad: boolean) {
+        if (!touchpad || this.storage.getItem(this.userKeymapKey) !== null) return;
+        this.updateOrbitControls('touchpad');
+    }
+
     // Which preset the user keymap's orbit bindings are, or 'custom' when they were edited by hand
     static currentOrbitMode(): OrbitMode | 'custom' {
         let bindings: Record<string, string> = {};

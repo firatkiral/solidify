@@ -36,6 +36,7 @@ import { isDocument, isImportable } from './editor/ImporterExporter';
 import { OpenedFile } from './platform/Platform';
 import { setTheme } from './startup/Appearance';
 import { ConfigFiles } from './startup/ConfigFiles';
+import { prefersTouchpad } from './util/Os';
 
 
 ConfigFiles.loadTheme();
@@ -64,6 +65,7 @@ Object.defineProperty(window, 'cmd', {
     writable: false,
 })
 
+ConfigFiles.pickFirstOrbitMode(prefersTouchpad);
 ConfigFiles.loadKeymap(editor.keymaps);
 
 registerDefaultCommands(editor);
