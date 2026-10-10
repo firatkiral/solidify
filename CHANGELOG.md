@@ -1,3 +1,13 @@
+[1.0.5]
+
+- [x] feat: Enhance boolean operations and extrude functionality
+- [x] feat: Refactor geometry meshing to support angle precision and threaded kernel loading
+- [x] feat: Implement offset curve functionality with gap fill options
+- [x] feat: Add tests for FilletFaceFactory to validate fillet and chamfer face detection
+- [x] feat: Update measurements to use radius instead of diameter and add tests for radius functionality
+- [x] feat: Rename 'lock distances' to 'symmetric' and update related tests for clarity
+- [x] feat: Enhance PointPicker to support Shift key for guide line addition and snap locking
+
 [1.0.4]
 
 - [x] Remove SelectionProxy class and its methods
