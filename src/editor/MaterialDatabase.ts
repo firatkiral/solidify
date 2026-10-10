@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import c3d from '../kernel/kernel';
+import { themeChanged } from "../startup/Appearance";
 import controlPointIcon from '../components/viewport/img/control-point.svg';
-import { face_unhighlighted_matcap, region_unhighlighted } from "../visual_model/RenderedSceneBuilder";
+import { face_unhighlighted_matcap, region_unhighlighted, sceneColor } from "../visual_model/RenderedSceneBuilder";
 import { BetterRaycastingPointsMaterial } from "../visual_model/VisualModelRaycasting";
 import { EditorSignals } from "./EditorSignals";
 import { MaterialMemento, MementoOriginator } from "./History";
@@ -20,13 +21,24 @@ export default interface MaterialDatabase extends MementoOriginator<MaterialMeme
     get(id: number): THREE.Material & { color: THREE.Color };
 }
 
-const previewLine = new LineMaterial({ color: 0x000088, linewidth: 0.7 });
-const line = new LineMaterial({ color: 0x0, linewidth: 1.4 });
-const line_dashed = new LineMaterial({ color: 0x0, linewidth: 0.3, dashed: true, dashScale: 100, dashSize: 100, gapSize: 100 });
+const previewLine = new LineMaterial({ linewidth: 0.7 });
+const line = new LineMaterial({ linewidth: 1.4 });
+const line_dashed = new LineMaterial({ linewidth: 0.3, dashed: true, dashScale: 100, dashSize: 100, gapSize: 100 });
 line_dashed.depthFunc = THREE.AlwaysDepth;
 line_dashed.defines.USE_DASH = "";
 
-const point = new BetterRaycastingPointsMaterial({ color: 0x888888 });
+const point = new BetterRaycastingPointsMaterial();
+
+// From the 3D view's palette: solids' edges, seen or hidden, in the edge colour; points in the ink, as curves; the
+// preview while drawing a curve muted
+function colors() {
+    line.color.setStyle(sceneColor('scene-edge', '#18181b')).convertSRGBToLinear();
+    line_dashed.color.setStyle(sceneColor('scene-edge', '#18181b')).convertSRGBToLinear();
+    point.color.setStyle(sceneColor('scene-ink', '#d4d4d8')).convertSRGBToLinear();
+    previewLine.color.setStyle(sceneColor('muted', '#a1a1aa')).convertSRGBToLinear();
+}
+colors();
+themeChanged.add(colors);
 const surface = region_unhighlighted;
 const mesh = face_unhighlighted_matcap;
 const region = region_unhighlighted;

@@ -34,7 +34,7 @@ const hintLook: Look = { opacity: 0.5, width: 1.5, hoverOpacity: 0.5, hoverWidth
 // The axis line shown while dragging along an axis
 const guideOpacity = 0.45;
 
-// Handles in the logo's cyan, against the yellow of the selection; rings light grey. The same in both themes.
+// Handles in the logo's cyan; rings light grey. The same in both themes.
 const handleColor = '#00d7fe';
 const ringColor = '#d4d4d8';
 

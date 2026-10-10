@@ -25,8 +25,8 @@
     --ui-accent: #04a6fc;
     --ui-tint: rgb(10 143 249 / 0.2);
     --ui-tint-hover: rgb(10 143 249 / 0.3);
-    --ui-primary: #0766e2;
-    --ui-primary-hover: #0a8ff9;
+    --ui-primary: #0a8ff9;
+    --ui-primary-hover: #04a6fc;
     --ui-on-primary: #ffffff;
     --ui-focus: #00d7fe;
 
@@ -36,10 +36,15 @@
     --ui-warning: #fde047;
     --ui-success: #22c55e;
 
-    /* In the 3D view (Viewport.tsx and the scene read these) */
+    /* In the 3D view (Viewport.tsx and the scene read these). Each kind of object has its own neutral colour (solid,
+       edge, ink for curves, regions and points); hover and selected are the same for all of them, the accent's */
     --ui-grid: #3f3f46;
     --ui-grid-major: #52525b;
-    --ui-scene-hover: #fefce8;
+    --ui-scene-solid: #d4d4d7;
+    --ui-scene-edge: #18181b;
+    --ui-scene-ink: #d4d4d8;
+    --ui-scene-hover: #86d0ff;
+    --ui-scene-selected: #04a6fc;
 
     color-scheme: dark;
 }
@@ -77,7 +82,11 @@
 
     --ui-grid: #e4e4e7;
     --ui-grid-major: #d4d4d8;
-    --ui-scene-hover: #18181b;
+    --ui-scene-solid: #d4d4d7;
+    --ui-scene-edge: #18181b;
+    --ui-scene-ink: #3f3f46;
+    --ui-scene-hover: #3fb3fd;
+    --ui-scene-selected: #0766e2;
 
     color-scheme: light;
 }

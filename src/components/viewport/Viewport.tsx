@@ -60,8 +60,9 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     private readonly gridColor1 = new THREE.Color(this.colors.grid1).convertSRGBToLinear();
     private readonly gridColor2 = new THREE.Color(this.colors.grid2).convertSRGBToLinear();
     private readonly backgroundColor = new THREE.Color(this.colors.viewport).convertSRGBToLinear();
-    private readonly selectionOutlineColor = new THREE.Color(this.colors.yellow[400]).convertSRGBToLinear();
-    private readonly hoverOutlineColor = new THREE.Color(this.colors.yellow[50]).convertSRGBToLinear();
+    // The scene's selected and hover colours, as applyTheme sets them (these are the dark theme's)
+    private readonly selectionOutlineColor = new THREE.Color('#04a6fc').convertSRGBToLinear();
+    private readonly hoverOutlineColor = new THREE.Color('#86d0ff').convertSRGBToLinear();
 
     private readonly composer: EffectComposer;
     readonly outlinePassSelection: OutlinePass;
@@ -279,7 +280,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     private needsRender = true;
     private setNeedsRender() { this.needsRender = true }
 
-    // Its background, grid and hover outline from the palette, as the theme has them
+    // Its background, grid and the hover and selection outlines from the palette, as the theme has them
     private readonly applyTheme = () => {
         const set = (color: THREE.Color, name: string) => {
             const style = paletteColor(name);
@@ -289,8 +290,11 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
         set(this.gridColor1, 'grid');
         set(this.gridColor2, 'grid-major');
         set(this.hoverOutlineColor, 'scene-hover');
+        set(this.selectionOutlineColor, 'scene-selected');
         this.outlinePassHover.visibleEdgeColor.copy(this.hoverOutlineColor);
         this.outlinePassHover.hiddenEdgeColor.copy(this.hoverOutlineColor);
+        this.outlinePassSelection.visibleEdgeColor.copy(this.selectionOutlineColor);
+        this.outlinePassSelection.hiddenEdgeColor.copy(this.selectionOutlineColor);
         this.grid.recolor();
         this.setNeedsRender();
     }
@@ -647,7 +651,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             const { texture, loaded } = this.editor.textures.get(studio_small_03);
             texture.mapping = THREE.EquirectangularReflectionMapping;
             this.scene.environment = texture;
-            loaded.then(() => this.setNeedsRender());
+            Promise.all([loaded, this.editor.highlighter.unassignedLoaded]).then(() => this.setNeedsRender());
         } else {
             this.scene.environment = null;
             this.setNeedsRender();
@@ -824,6 +828,8 @@ export default (editor: Editor) => {
                 constructionPlane,
                 navigationControls,
             );
+            // Opens showing the materials; View › Override materials puts a matcap over them
+            this.model.isRenderMode = true;
         }
 
         // Follows its own size, whatever changed it (the window, a pane, the panels beside it), as it changes

@@ -14,7 +14,7 @@ import reflection_check_vertical_png from '../../img/matcap/reflection_check_ver
 import { MaterialMode } from '../../visual_model/RenderedSceneBuilder';
 import { Viewport } from '../viewport/Viewport';
 
-// The shadings outside render mode: a matcap, or a material mode
+// The shadings that override the materials: a matcap, or a material mode
 const shadings: { name: string, image: string, apply: (viewport: Viewport) => void }[] = [
     { name: "Ceramic", image: ceramic_dark_png, apply: viewport => viewport.matcap = ceramic_dark },
     { name: "Car paint", image: metal_carpaint_png, apply: viewport => viewport.matcap = metal_carpaint },
@@ -81,7 +81,9 @@ export default (editor: Editor) => {
                         {this.toggle("X-ray", viewport.isXRay, () => viewport.toggleXRay())}
 
                         <h2 class={section}>Shading</h2>
-                        {this.toggle("Render mode", viewport.isRenderMode, () => viewport.isRenderMode = !viewport.isRenderMode)}
+                        {this.toggle("Show edges", viewport.isShowingEdges, () => { viewport.toggleEdges(); this.render() })}
+                        {this.toggle("Show faces", viewport.isShowingFaces, () => { viewport.toggleFaces(); this.render() })}
+                        {this.toggle("Override materials", !viewport.isRenderMode, () => viewport.isRenderMode = !viewport.isRenderMode)}
                         {!viewport.isRenderMode &&
                             <div class="grid grid-cols-4 gap-2 px-2 my-2">
                                 {shadings.map(({ name, image, apply }) =>
@@ -89,8 +91,6 @@ export default (editor: Editor) => {
                                 )}
                             </div>
                         }
-                        {this.toggle("Show edges", viewport.isShowingEdges, () => { viewport.toggleEdges(); this.render() })}
-                        {this.toggle("Show faces", viewport.isShowingFaces, () => { viewport.toggleFaces(); this.render() })}
                     </div>
                 </>, this);
         }

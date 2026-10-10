@@ -3,7 +3,6 @@
  * features have been deleted. This is about 2x faster.
  */
 import {
-    AdditiveBlending,
     Color,
     DoubleSide,
     LinearFilter,
@@ -11,6 +10,7 @@ import {
     MeshBasicMaterial,
     MeshDepthMaterial,
     NoBlending,
+    NormalBlending,
     RGBADepthPacking,
     RGBAFormat,
     Scene,
@@ -33,7 +33,7 @@ class OutlinePass extends Pass {
         this.visibleEdgeColor = new Color(1, 1, 1);
         this.hiddenEdgeColor = new Color(0.1, 0.04, 0.02);
         this.usePatternTexture = false;
-        this.edgeStrength = 3.0;
+        this.edgeStrength = 1.0;
         this.pulsePeriod = 0;
 
         this._visibilityCache = new Map();
@@ -332,7 +332,8 @@ class OutlinePass extends Pass {
 					vec4 finalColor = edgeStrength * edgeValue;
 					gl_FragColor = finalColor;
 				}`,
-            blending: AdditiveBlending,
+            // Over the scene, so the outline is its own colour on any background (added, it washed out to white)
+            blending: NormalBlending,
             depthTest: false,
             depthWrite: false,
             transparent: true

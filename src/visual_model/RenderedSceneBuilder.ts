@@ -48,7 +48,7 @@ export class RenderedSceneBuilder {
         const bindings: signals.SignalBinding[] = [];
         bindings.push(signals.temporaryObjectAdded.add(({ view, ancestor }) => {
             let material = ancestor !== undefined ? this.scene.getMaterial(ancestor, true) : undefined;
-            material ??= this.mode.tag === 'rendered' ? defaultPhysicalMaterial : this.mode.material;
+            material ??= this.mode.tag === 'rendered' ? face_unassigned : this.mode.material;
             this.highlightItem(view, material);
         }));
         bindings.push(signals.renderPrepared.add(({ resolution }) => this.setResolution(resolution)));
@@ -56,6 +56,7 @@ export class RenderedSceneBuilder {
         bindings.push(signals.backupLoaded.add(this.highlight));
         bindings.push(signals.historyChanged.add(this.highlight));
         bindings.push(signals.quasimodeChanged.add(this.highlight));
+        bindings.push(themeChanged.add(this.highlight)); // For the control points' colour
         bindings.push(signals.hoverDelta.add(({ added, removed }) => {
             this.unhover(removed);
             this.hover(added);
@@ -66,7 +67,13 @@ export class RenderedSceneBuilder {
 
         this.setTheme(theme);
         this.setMatcap(ceramicDark);
+        const { texture, loaded } = this.textures.get(basic_side);
+        face_unassigned.matcap = texture;
+        this.unassignedLoaded = loaded;
     }
+
+    // Once the look of solids without a material has loaded
+    readonly unassignedLoaded: Promise<THREE.Texture>;
 
     private get selection() {
         switch (this.state.tag) {
@@ -310,7 +317,7 @@ export class RenderedSceneBuilder {
                 }
                 facegroup.mesh.material = [face_hovered, face_highlighted, material, face_hovered_phantom]
             } else {
-                facegroup.mesh.material = [face_hovered, face_highlighted, override ?? particularMaterial ?? defaultPhysicalMaterial, face_hovered_phantom];
+                facegroup.mesh.material = [face_hovered, face_highlighted, override ?? particularMaterial ?? face_unassigned, face_hovered_phantom];
             }
             facegroup.mesh.geometry.groups = [...hovered, ...selected, ...unselected, ...hovered_phantom];
         }
@@ -357,12 +364,6 @@ export class RenderedSceneBuilder {
 
     private setTheme(theme: Theme) {
         face_unhighlighted_matcap.color.setStyle(theme.colors.matcap).convertSRGBToLinear();
-        face_highlighted.color.setStyle(theme.colors.yellow[200]).convertSRGBToLinear();
-        face_hovered.color.setStyle(theme.colors.yellow[500]).convertSRGBToLinear();
-        line_unselected.color.setStyle(theme.colors.blue[400]).convertSRGBToLinear();
-        region_hovered.color.setStyle(theme.colors.blue[200]).convertSRGBToLinear();
-        region_highlighted.color.setStyle(theme.colors.blue[300]).convertSRGBToLinear();
-        region_unhighlighted.color.setStyle(theme.colors.blue[400]).convertSRGBToLinear();
     }
 
     async setMatcap(name: string): Promise<THREE.Texture> {
@@ -396,6 +397,8 @@ export class RenderedSceneBuilder {
     }
 }
 
+// The colours are set from the palette by sceneColors(), below
+
 const line_unselected = new LineMaterial({ linewidth: 1.5 });
 line_unselected.polygonOffset = true;
 line_unselected.polygonOffsetFactor = -20;
@@ -403,16 +406,11 @@ line_unselected.polygonOffsetUnits = -20;
 
 const line_edge = new LineMaterial({ linewidth: 1.4, vertexColors: true });
 
-const line_selected = new LineMaterial({ color: 0xffff00, linewidth: 2, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+const line_selected = new LineMaterial({ linewidth: 2, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 line_selected.depthFunc = THREE.AlwaysDepth;
 
-const line_hovered = new LineMaterial({ color: 0xffffff, linewidth: 2, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+const line_hovered = new LineMaterial({ linewidth: 2, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 line_hovered.depthFunc = THREE.AlwaysDepth;
-// Standing out from the 3D view's background, light or dark
-themeChanged.add(() => {
-    const style = paletteColor('scene-hover');
-    if (style !== '') line_hovered.color.setStyle(style).convertSRGBToLinear();
-});
 
 export const face_unhighlighted_matcap = new THREE.MeshMatcapMaterial();
 face_unhighlighted_matcap.fog = false;
@@ -438,9 +436,17 @@ face_unhighlighted_matcap.polygonOffset = true;
 face_unhighlighted_matcap.polygonOffsetFactor = 1;
 face_unhighlighted_matcap.polygonOffsetUnits = 2;
 
+// With the materials showing, a solid without one of its own: a plain neutral grey, without reflections, as CAD
+// programs show them
+const face_unassigned = new THREE.MeshMatcapMaterial();
+face_unassigned.fog = false;
+face_unassigned.polygonOffset = true;
+face_unassigned.polygonOffsetFactor = 1;
+face_unassigned.polygonOffsetUnits = 2;
+
 const face_highlighted = new THREE.MeshBasicMaterial();
 face_highlighted.fog = false;
-face_highlighted.opacity = 0.2;
+face_highlighted.opacity = 0.25;
 face_highlighted.transparent = true;
 face_highlighted.polygonOffset = true;
 face_highlighted.polygonOffsetFactor = 1;
@@ -454,7 +460,7 @@ face_highlighted_phantom.opacity = 0.0;
 const face_hovered = new THREE.MeshBasicMaterial();
 face_hovered.fog = false;
 face_hovered.transparent = true;
-face_hovered.opacity = 0.1;
+face_hovered.opacity = 0.15;
 face_hovered.polygonOffset = true;
 face_hovered.polygonOffsetFactor = 1;
 face_hovered.polygonOffsetUnits = 1;
@@ -467,7 +473,7 @@ face_hovered_phantom.side = THREE.DoubleSide;
 
 const region_hovered = new THREE.MeshBasicMaterial();
 region_hovered.fog = false;
-region_hovered.opacity = 0.5;
+region_hovered.opacity = 0.2;
 region_hovered.transparent = true;
 region_hovered.side = THREE.DoubleSide;
 region_hovered.polygonOffset = true;
@@ -477,7 +483,7 @@ region_hovered.depthFunc = THREE.AlwaysDepth;
 
 const region_highlighted = new THREE.MeshBasicMaterial();
 region_highlighted.fog = false;
-region_highlighted.opacity = 0.9;
+region_highlighted.opacity = 0.35;
 region_highlighted.transparent = true;
 region_highlighted.side = THREE.DoubleSide;
 region_highlighted.polygonOffset = true;
@@ -486,17 +492,49 @@ region_highlighted.polygonOffsetUnits = -1;
 
 export const region_unhighlighted = new THREE.MeshBasicMaterial();
 region_unhighlighted.fog = false;
-region_unhighlighted.opacity = 0.1;
+region_unhighlighted.opacity = 0.08;
 region_unhighlighted.transparent = true;
 region_unhighlighted.side = THREE.DoubleSide;
 region_unhighlighted.polygonOffset = true;
 region_unhighlighted.polygonOffsetFactor = -10;
 region_unhighlighted.polygonOffsetUnits = -1;
 
+// A curve's control points, as the bytes of its points' colours
+const controlPoint_hovered = new THREE.Color();
+const controlPoint_highlighted = new THREE.Color();
+const controlPoint_unhighlighted = new THREE.Color();
 
-const controlPoint_hovered = new THREE.Color(0xffff88);
-const controlPoint_highlighted = new THREE.Color(0xffff00);
-const controlPoint_unhighlighted = new THREE.Color(0xa000aa);
+// The 3D view's colours, from the palette in index.css (or the dark theme's where there's no page, as in tests). Each
+// kind of object has its own neutral colour, and the same two show what's hovered and what's selected: lines and
+// points in full, faces and regions as a tint
+export function sceneColor(name: string, dark: string) {
+    return paletteColor(name) || dark;
+}
+
+function sceneColors() {
+    const solid = sceneColor('scene-solid', '#d4d4d7');
+    const ink = sceneColor('scene-ink', '#d4d4d8');
+    const hover = sceneColor('scene-hover', '#86d0ff');
+    const selected = sceneColor('scene-selected', '#04a6fc');
+
+    face_unassigned.color.setStyle(solid).convertSRGBToLinear();
+    line_unselected.color.setStyle(ink).convertSRGBToLinear();
+    region_unhighlighted.color.setStyle(ink).convertSRGBToLinear();
+    controlPoint_unhighlighted.setStyle(ink);
+
+    line_hovered.color.setStyle(hover).convertSRGBToLinear();
+    face_hovered.color.setStyle(hover).convertSRGBToLinear();
+    face_hovered_phantom.color.setStyle(hover).convertSRGBToLinear();
+    region_hovered.color.setStyle(hover).convertSRGBToLinear();
+    controlPoint_hovered.setStyle(hover);
+
+    line_selected.color.setStyle(selected).convertSRGBToLinear();
+    face_highlighted.color.setStyle(selected).convertSRGBToLinear();
+    region_highlighted.color.setStyle(selected).convertSRGBToLinear();
+    controlPoint_highlighted.setStyle(selected);
+}
+sceneColors();
+themeChanged.add(sceneColors);
 
 const invisible = new THREE.MeshBasicMaterial({
     transparent: true,
@@ -522,13 +560,14 @@ const invisible_hovered = new THREE.MeshBasicMaterial({
 });
 
 
+// What a new material starts as: a matte grey
 export const defaultPhysicalMaterial = new THREE.MeshPhysicalMaterial({
-    metalness: 1,
-    roughness: 0.1,
+    metalness: 0,
+    roughness: 0.9,
     ior: 1.5,
     specularColor: new THREE.Color(0xffffff),
-    color: new THREE.Color(0xffffff),
-    envMapIntensity: 1,
+    color: new THREE.Color(0x9ea3a9).convertSRGBToLinear(),
+    envMapIntensity: 0.5,
     polygonOffset: true,
     polygonOffsetFactor: 1,
     polygonOffsetUnits: 2,

@@ -589,9 +589,9 @@ export class DashedLineMagnitudeHelper implements GizmoHelper<any> {
         this.element.setAttribute('preserveAspectRatio', 'none')
         this.element.classList.add('absolute', 'top-0', 'left-0', 'w-full', 'h-full');
 
-        // A 1px dashed line, light so it shows on the viewport, whatever the viewport's size
+        // A 1px dashed line, muted so it shows on the viewport, light or dark, whatever the viewport's size
         this.line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        this.line.setAttribute('style', 'stroke: rgb(255 255 255 / 0.5); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke');
+        this.line.setAttribute('style', 'stroke: var(--ui-muted); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke');
         this.element.appendChild(this.line);
     }
 
