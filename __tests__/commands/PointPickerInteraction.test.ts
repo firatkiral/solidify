@@ -128,3 +128,24 @@ test('defaults', async () => {
     const { point } = await promise;
     expect(point).toApproximatelyEqual(position);
 })
+test('holding Ctrl turns snapping off until released', async () => {
+    editor.snaps.snapToGrid = true;
+    editor.snaps.gridStep = 1e6;
+    const cb = jest.fn();
+    const promise = pointPicker.execute(cb);
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 80, clientY: 20 }));
+    expect(cb.mock.calls[0][0].point).toApproximatelyEqual(new THREE.Vector3());
+
+    // The point moves off the grid as soon as Ctrl goes down, without waiting for the mouse
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true }));
+    expect(cb).toHaveBeenCalledTimes(2);
+    expect(cb.mock.calls[1][0].point.length()).toBeGreaterThan(0.1);
+
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }));
+    expect(cb).toHaveBeenCalledTimes(3);
+    expect(cb.mock.calls[2][0].point).toApproximatelyEqual(new THREE.Vector3());
+
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 80, clientY: 20 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 80, clientY: 20 }));
+    await promise;
+});

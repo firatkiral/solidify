@@ -50,7 +50,7 @@ export default (editor: Editor) => {
             this.render();
         }
 
-        // Toggles show their setting. Clicking one changes it.
+        // Toggles show what is in effect: their setting, or off while Ctrl is held. Clicking one changes the setting.
         render = () => {
             const { snaps } = editor;
             const { pointPicker } = this;

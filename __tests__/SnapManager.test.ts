@@ -413,6 +413,70 @@ test("settings keep what the panel is set to, and put it back", () => {
     expect(restarted.snapToGridSetting).toBe(true);
 })
 
+describe("holding Ctrl", () => {
+    test("turns every toggle off until released, as if they were all switched off", () => {
+        snaps.snapToGrid = true;
+        snaps.gizmoSnapping = true;
+        snaps.angleSnapping = true;
+        const saved = snaps.settings;
+
+        snaps.bypass(true);
+        expect(snaps.enabled).toBe(false);
+        expect(snaps.snapToGrid).toBe(false);
+        expect(snaps.gizmoSnapping).toBe(false);
+        expect(snaps.angleSnapping).toBe(false);
+        for (const layer of [...SnapManager.objectLayers, visual.Layers.SnapAxis]) {
+            expect(snaps.activeLayers.isEnabled(layer)).toBe(false);
+        }
+
+        snaps.bypass(false);
+        expect(snaps.enabled).toBe(true);
+        expect(snaps.snapToGrid).toBe(true);
+        expect(snaps.gizmoSnapping).toBe(true);
+        expect(snaps.angleSnapping).toBe(true);
+        expect(snaps.settings).toEqual(saved);
+    })
+
+    test("leaves the toggles, and the settings kept between sessions, as they are", () => {
+        snaps.snapToGrid = true;
+        const saved = snaps.settings;
+        const changed = jest.fn();
+        signals.snapSettingsChanged.add(changed);
+
+        snaps.bypass(true);
+        expect(snaps.snapToGridSetting).toBe(true);
+        expect(snaps.isLayerOn(visual.Layers.Face)).toBe(true);
+        expect(snaps.settings).toEqual(saved);
+        expect(changed).not.toHaveBeenCalled();
+    })
+
+    test("tells the point picker to look again, once per press and release", () => {
+        const enabled = jest.fn(), disabled = jest.fn();
+        signals.snapsEnabled.add(enabled);
+        signals.snapsDisabled.add(disabled);
+
+        snaps.bypass(true);
+        snaps.bypass(true);
+        expect(disabled).toHaveBeenCalledTimes(1);
+        expect(enabled).not.toHaveBeenCalled();
+        snaps.bypass(false);
+        snaps.bypass(false);
+        expect(enabled).toHaveBeenCalledTimes(1);
+    })
+
+    test("still snaps to the layers a command forces on", () => {
+        const forced = snaps.forceLayers(visual.Layers.Curve);
+        snaps.bypass(true);
+        expect(snaps.enabled).toBe(true);
+        expect(snaps.activeLayers.isEnabled(visual.Layers.Curve)).toBe(true);
+        expect(snaps.activeLayers.isEnabled(visual.Layers.Face)).toBe(false);
+        expect(snaps.activeLayers.isEnabled(visual.Layers.SnapPoint)).toBe(false);
+
+        forced.dispose();
+        expect(snaps.enabled).toBe(false);
+    })
+})
+
 test("settings with steps off the ladder start over at one of the length unit", () => {
     snaps.settings = { ...snaps.settings, gridStep: 3, lengthStep: 25.4, angleStep: 7 };
     expect(snaps.gridStep).toBe(10);

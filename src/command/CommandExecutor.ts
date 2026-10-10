@@ -125,6 +125,7 @@ export class CommandExecutor {
                 disposable.dispose();
                 clickToFinish.dispose();
                 db.clearTemporaryObjects();
+                snaps.bypass(false);
                 PlaneDatabase.ScreenSpace.reset();
                 if (helpers.scene.children.length > 0) {
                     console.error("Helpers scene is not empty");

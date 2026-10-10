@@ -47,6 +47,7 @@ import { BrowserPlatform } from "../platform/BrowserPlatform";
 import { FileRef, OpenedFile, Platform } from "../platform/Platform";
 import { Backup, Slot } from "./serialization/Backup";
 import { SolidifyFileContents } from "./serialization/SolidifyFile";
+import { SnapBypass } from './snaps/SnapBypass';
 import { SnapManager } from './snaps/SnapManager';
 import { SolidCopier } from "./SolidCopier";
 import { TextureLoader } from "./TextureLoader";
@@ -98,6 +99,7 @@ export class Editor {
     readonly history = new History(this.originator, this.signals);
     readonly executor = new CommandExecutor(this);
     readonly keyboard = new KeyboardEventManager(this.keymaps);
+    readonly snapBypass = new SnapBypass(this.snaps);
     readonly document = new CurrentDocument(this.history, this.signals, () => this._db.items.length === 0 && this.empties.items.length === 0);
     readonly backup = new Backup(this.platform.autosaves, this.platform.locks, this.originator, this.document, this.signals, () => this.settings.Autosave.keep);
     readonly recent = new RecentDocuments(this.platform.recent);
@@ -116,6 +118,7 @@ export class Editor {
 
         this.disposable.add(new Disposable(() => window.removeEventListener('resize', this.onWindowResize)));
         this.disposable.add(new Disposable(() => window.removeEventListener('load', this.onWindowLoad)));
+        this.disposable.add(this.snapBypass);
 
         this.registry.attach(window);
         this.keymaps.defaultTarget = document.body;

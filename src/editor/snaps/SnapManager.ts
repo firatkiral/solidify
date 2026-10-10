@@ -31,21 +31,36 @@ type SnapMap = Map<c3d.SimpleName, ReadonlySet<PointSnap>>;
 type BasicSnap = PointSnap | RaycastableSnap;
 
 export class SnapManager implements MementoOriginator<SnapMemento> {
-    // The setters and getters are the panel toggles.
+    // The setters and the *Setting getters are the panel toggles; the plain getters are what is in effect, which is
+    // the toggle, or off while Ctrl is held (see bypass).
 
     // Snapping to objects: on while any of Point/Edge/Face/Curve is; with all four off nothing snaps (not even the origin,
     // axes or guide lines). Point is every snap point (corners, midpoints, centers, crossings); Edge, Face and Curve are
     // anywhere on the geometry itself. The origin and axes also need the Grid toggle.
     static readonly objectLayers: readonly visual.Layers[] = [visual.Layers.SnapPoint, visual.Layers.Face, visual.Layers.Curve, visual.Layers.CurveEdge];
-    get enabled() { return this.forcedMask !== 0 || SnapManager.objectLayers.some(layer => this.isLayerOn(layer)) }
+    get enabled() { return this.forcedMask !== 0 || (!this.bypassed && SnapManager.objectLayers.some(layer => this.isLayerOn(layer))) }
     isLayerOn(layer: visual.Layers) { return (this.layers.mask & (1 << layer)) !== 0 }
 
-    // The layers snapping raycasts against: the toggled ones, plus any a command forces on.
+    // The layers the panel toggles: the objects', and the origin and axes' (Grid)
+    private static readonly toggledMask = [...SnapManager.objectLayers, visual.Layers.SnapAxis].reduce((mask, layer) => mask | (1 << layer), 0);
+
+    // The layers snapping raycasts against: the toggled ones (none while Ctrl is held), plus any a command forces on.
     get activeLayers(): THREE.Layers {
-        if (this.forcedMask === 0) return this.layers;
+        if (!this.bypassed && this.forcedMask === 0) return this.layers;
         const layers = new THREE.Layers();
-        layers.mask = this.layers.mask | this.forcedMask;
+        const toggled = this.bypassed ? this.layers.mask & ~SnapManager.toggledMask : this.layers.mask;
+        layers.mask = toggled | this.forcedMask;
         return layers;
+    }
+
+    // Holding Ctrl turns every toggle off until it is released (see SnapBypass), as if they were all switched off,
+    // leaving the toggles themselves, and what is kept between sessions, as they are. Layers a command forces on still snap.
+    private bypassed = false;
+    bypass(held: boolean) {
+        if (this.bypassed === held) return;
+        this.bypassed = held;
+        if (held) this.signals.snapsDisabled.dispatch();
+        else this.signals.snapsEnabled.dispatch();
     }
 
     // For a command whose picks only make sense on some objects (e.g. points on curves): those layers snap until
@@ -63,7 +78,7 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
 
     private _snapToGrid = false;
     set snapToGrid(snapToGrid: boolean) { this.setSnapToGrid(snapToGrid); this.settingsChanged() }
-    get snapToGrid() { return this._snapToGrid }
+    get snapToGrid() { return this._snapToGrid && !this.bypassed }
     get snapToGridSetting() { return this._snapToGrid }
 
     // The origin and the X/Y/Z axes snap only while snapping to the grid
@@ -76,12 +91,12 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
     // Dragging a gizmo handle steps its value: lengths (and moves) by lengthStep in millimeters, angles by angleStep in degrees.
     private _gizmoSnapping = false;
     set gizmoSnapping(gizmoSnapping: boolean) { this._gizmoSnapping = gizmoSnapping; this.settingsChanged() }
-    get gizmoSnapping() { return this._gizmoSnapping }
+    get gizmoSnapping() { return this._gizmoSnapping && !this.bypassed }
     get gizmoSnappingSetting() { return this._gizmoSnapping }
 
     private _angleSnapping = false;
     set angleSnapping(angleSnapping: boolean) { this._angleSnapping = angleSnapping; this.settingsChanged() }
-    get angleSnapping() { return this._angleSnapping }
+    get angleSnapping() { return this._angleSnapping && !this.bypassed }
     get angleSnappingSetting() { return this._angleSnapping }
 
     // The length steps follow the length unit's system (see Units.ts); resetSteps puts them on one of the length unit.
