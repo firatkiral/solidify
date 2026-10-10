@@ -37,9 +37,7 @@ declare module './VisualModel' {
 
 Solids: {
     Solid.prototype.raycast = function (raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
-        _v1.setFromMatrixPosition(this.matrixWorld);
-        const distance = raycaster.ray.origin.distanceTo(_v1);
-        const level = this.lod.getObjectForDistance(distance)!;
+        const level = levelOfDetail(this, raycaster);
         const edges = level.children[0];
         const faces = level.children[1];
 
@@ -378,6 +376,17 @@ export class BetterRaycastingPoints extends THREE.Points {
             }
         }
     }
+}
+
+// Only the faces of a solid, as drawn from where the ray starts
+export function raycastFaces(solid: Solid, raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) {
+    raycaster.intersectObject(levelOfDetail(solid, raycaster).children[1], false, intersects);
+}
+
+function levelOfDetail(solid: Solid, raycaster: THREE.Raycaster) {
+    _v1.setFromMatrixPosition(solid.matrixWorld);
+    const distance = raycaster.ray.origin.distanceTo(_v1);
+    return solid.lod.getObjectForDistance(distance)!;
 }
 
 function getWorldSpaceHalfWidth(camera: THREE.Camera, distance: number, lineWidth: number, resolution: THREE.Vector2) {

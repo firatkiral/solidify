@@ -22,7 +22,7 @@ export class GizmoSnapPicker {
     }
 
     nearby(snaps: SnapManagerGeometryCache, scene: Scene): PointSnap[] {
-        return this.picker.nearby([], snaps);
+        return this.picker.nearby([], snaps, scene);
     }
 
     intersect(snaps: SnapManagerGeometryCache, scene: Scene): SnapResult[] {

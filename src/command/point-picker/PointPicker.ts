@@ -188,6 +188,12 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                     if (pressed) return;
 
                     lastMoveEvent = () => onPointerMove(e);
+                    // A gizmo under the cursor takes the move (it prevents its default): nothing snaps beneath it
+                    if (e.defaultPrevented) {
+                        info = undefined;
+                        presenter.clear();
+                        return;
+                    }
                     picker.setFromViewport(e, viewport);
                     const { presentation, intersections } = SnapPresentation.makeForPointPicker(picker, viewport, model, editor.scene, snapCache, editor.gizmos);
                     presenter.onPointerMove(viewport, presentation);
@@ -219,6 +225,8 @@ export class PointPicker implements Executable<PointResult, PointResult> {
                     if (isNavigating) return;
 
                     pressed = false;
+                    // Nothing to pick here, say over a gizmo or a body hiding the grid: the click does nothing
+                    if (info === undefined) return;
                     dispose();
                     finish();
                     info = undefined;

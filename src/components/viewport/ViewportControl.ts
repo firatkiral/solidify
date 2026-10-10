@@ -132,14 +132,14 @@ export abstract class ViewportControl extends THREE.EventDispatcher {
 
         switch (this.state.tag) {
             case 'none': {
-                const intersects = this.getIntersects(this.normalizedMousePosition, this.scene.selectableObjects);
+                const intersects = this.getHoverIntersects(moveEvent);
                 if (intersects.length === 0) break;
                 this.startHover(intersects, moveEvent);
                 this.state = { tag: 'hover', previousEvent: this.state.previousEvent };
                 break;
             }
             case 'hover': {
-                const intersects = this.getIntersects(this.normalizedMousePosition, this.scene.selectableObjects);
+                const intersects = this.getHoverIntersects(moveEvent);
                 if (intersects.length === 0) {
                     this.endHover();
                     this.state = { tag: 'none' };
@@ -258,9 +258,15 @@ export abstract class ViewportControl extends THREE.EventDispatcher {
     abstract endDrag(normalizedMousePosition: THREE.Vector2, upEvent: MouseEvent): void;
     abstract dblClick(intersections: intersectable.Intersection[], upEvent: MouseEvent): void;
 
+    // A gizmo under the cursor takes the move (it prevents its default), so nothing beneath it highlights
+    private getHoverIntersects(moveEvent: MouseEvent): intersectable.Intersection[] {
+        if (moveEvent.defaultPrevented) return [];
+        return this.getIntersects(this.normalizedMousePosition, this.scene.selectableObjects);
+    }
+
     private getIntersects(normalizedMousePosition: THREE.Vector2, objects: THREE.Object3D[], isXRay = this.viewport.isXRay): intersectable.Intersection[] {
         this.picker.setFromViewport(normalizedMousePosition, this.viewport);
-        return this.picker.intersect(objects, isXRay);
+        return this.picker.intersect(objects, isXRay, isXRay ? [] : this.scene.visibleObjects);
     }
 
     protected selectionModeChanged(selectionMode: SelectionModeSet) {

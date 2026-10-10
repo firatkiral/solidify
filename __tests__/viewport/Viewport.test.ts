@@ -236,11 +236,32 @@ test("togglePerspective", () => {
 test("toggleXRay", () => {
     const xray = new THREE.Layers();
     xray.set(visual.Layers.CurveEdge_XRay);
+    expect(viewport.isXRay).toBe(false);
+    expect(editor.layers.visible.test(xray)).toBe(false);
+    expect(editor.layers.intersectable.test(xray)).toBe(false);
+    viewport.toggleXRay();
+    expect(viewport.isXRay).toBe(true);
     expect(editor.layers.visible.test(xray)).toBe(true);
     expect(editor.layers.intersectable.test(xray)).toBe(true);
     viewport.toggleXRay();
+    expect(viewport.isXRay).toBe(false);
     expect(editor.layers.visible.test(xray)).toBe(false);
-    expect(editor.layers.intersectable.test(xray)).toBe(false);
+});
+
+test("showing edges again doesn't turn X-ray on", () => {
+    const xray = new THREE.Layers();
+    xray.set(visual.Layers.CurveEdge_XRay);
+    viewport.isShowingEdges = false;
+    viewport.isShowingEdges = true;
+    expect(viewport.isXRay).toBe(false);
+    expect(editor.layers.visible.test(xray)).toBe(false);
+
+    viewport.isXRay = true;
+    viewport.isShowingEdges = false;
+    expect(viewport.isXRay).toBe(true);
+    expect(editor.layers.visible.test(xray)).toBe(false);
+    viewport.isShowingEdges = true;
+    expect(editor.layers.visible.test(xray)).toBe(true);
 });
 
 test("toggleOverlays", () => {

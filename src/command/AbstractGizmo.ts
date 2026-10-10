@@ -239,16 +239,18 @@ export class BasicGizmoTriggerStrategy<I, O> extends GizmoTriggerStrategy<I, O> 
         const onPointerHover = (event: MouseEvent) => {
             stateMachine.update(viewport, event);
             stateMachine.pointerHover();
+            // Under the cursor, the gizmo takes the move: nothing beneath it highlights or snaps
+            if (stateMachine.state.tag === 'hover') event.preventDefault();
         }
 
         const disposables = new CompositeDisposable();
         disposables.add(this.registerCommands(gizmo, viewport, addEventHandlers));
         // NOTE: Gizmos take priority over viewport controls; capture:true it's received first here.
         domElement.addEventListener('pointerdown', onPointerDown, { capture: true });
-        domElement.addEventListener('pointermove', onPointerHover);
+        domElement.addEventListener('pointermove', onPointerHover, { capture: true });
         disposables.add(new Disposable(() => {
             domElement.removeEventListener('pointerdown', onPointerDown, { capture: true });
-            domElement.removeEventListener('pointermove', onPointerHover);
+            domElement.removeEventListener('pointermove', onPointerHover, { capture: true });
             domElement.ownerDocument.body.removeAttribute('gizmo');
         }));
         return disposables;

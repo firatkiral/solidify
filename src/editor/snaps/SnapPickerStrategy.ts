@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Viewport } from "../../components/viewport/Viewport";
 import { RaycastableTopologyItem } from "../../visual_model/Intersectable";
 import * as visual from "../../visual_model/VisualModel";
+import { FaceOcclusion } from "../../visual_model/FaceOcclusion";
 import { BetterRaycastingPoints } from "../../visual_model/VisualModelRaycasting";
 import { Empty, MeshEmpty } from "../Empties";
 import { Scene } from "../Scene";
@@ -43,9 +44,7 @@ export abstract class SnapPickerStrategy {
     }
 
     intersectWithGeometry(raycaster: THREE.Raycaster, snaps: SnapManagerGeometryCache, scene: Scene, preference: Snap | undefined): { restriction: Snap | undefined; geo_intersections_snaps: SnapAndIntersection[] } {
-        let visible = scene.visibleObjects;
-        visible = visible.filter(item => !item.isTemporaryOptimization); // FIXME: I dislike this approach; make TranslateFactory generate real TemporaryObjects rather than reusing the actual Items
-        const geoIntersections = raycaster.intersectObjects(visible, false);
+        const geoIntersections = raycaster.intersectObjects(this.snappable(scene), false);
         const geo_intersections_snaps = this.intersections2snaps(snaps, geoIntersections);
         let restriction = undefined;
         if (preference !== undefined && geo_intersections_snaps.length > 0) {
@@ -55,6 +54,17 @@ export abstract class SnapPickerStrategy {
             }
         }
         return { restriction, geo_intersections_snaps }
+    }
+
+    // The faces of what can be snapped to hide what's behind them, whether or not faces themselves snap
+    occlusion(viewport: Viewport, scene: Scene): FaceOcclusion {
+        return new FaceOcclusion(viewport.camera, this.snappable(scene), viewport.isShowingFaces);
+    }
+
+    private snappable(scene: Scene) {
+        let visible = scene.visibleObjects;
+        visible = visible.filter(item => !item.isTemporaryOptimization); // FIXME: I dislike this approach; make TranslateFactory generate real TemporaryObjects rather than reusing the actual Items
+        return visible;
     }
 
     intersectWithSnaps(additional: readonly THREE.Object3D[], pointss: readonly BetterRaycastingPoints[], raycaster: THREE.Raycaster, snaps: SnapManagerGeometryCache): SnapAndIntersection[] {
@@ -92,13 +102,21 @@ export abstract class SnapPickerStrategy {
         return { minDistance, results };
     }
 
-    processXRay(viewport: Viewport, results: (SnapResult & { distance: number })[], cplane_intersection_results: (SnapResult & { distance: number })[], minDistance: number) {
+    // The construction plane results are where the cursor's ray meets the plane, when the user set it explicitly
+    processXRay(viewport: Viewport, results: (SnapResult & { distance: number })[], cplane_intersection_results: (SnapResult & { distance: number })[], occlusion: FaceOcclusion, ray: THREE.Ray) {
         const { isXRay, isOrthoMode } = viewport;
         if (isOrthoMode) {
             results = results.filter(r => !(r.snap instanceof FaceSnap));
         }
         if (!isXRay) {
-            results = findAllIntersectionsVeryCloseTogether(results, minDistance);
+            // Faces hide the snaps behind them; the plane, where the cursor meets it, which may be off its grid step
+            const cplane = new Set(cplane_intersection_results);
+            results = results.filter(r => cplane.has(r) ? !occlusion.hidesAlong(ray, r.distance) : !occlusion.hides(r.position));
+            // The plane the user set hides what's behind it
+            if (cplane_intersection_results.length > 0) {
+                const behind = Math.min(...cplane_intersection_results.map(r => r.distance)) + 10e-3;
+                results = results.filter(r => cplane.has(r) || r.distance < behind);
+            }
             if (isOrthoMode && results.length === 0) {
                 // This case happens when intersecting a face above the construction plane in ortho and non-xray mode
                 results = cplane_intersection_results;
@@ -137,16 +155,4 @@ export abstract class SnapPickerStrategy {
         }
         return result;
     }
-}
-
-function findAllIntersectionsVeryCloseTogether<T extends { distance: number }>(intersections: T[], minDistance: number) {
-    if (intersections.length === 0) return [];
-
-    const result = [];
-    for (const intersection of intersections) {
-        if (Math.abs(minDistance - intersection.distance) < 10e-3) {
-            result.push(intersection);
-        }
-    }
-    return result;
 }

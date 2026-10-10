@@ -31,6 +31,8 @@ export default class LayerManager {
         _intersectable.disable(visual.Layers.ControlPoint);
         _intersectable.disable(visual.Layers.Unselectable);
 
+        this.updateXRay();
+
         signals.selectionModeChanged.add(this.selectionModeChanged);
     }
 
@@ -54,7 +56,7 @@ export default class LayerManager {
         _visible.disable(visual.Layers.CurveFragment);
         _visible.disable(visual.Layers.CurveFragment_XRay);
         _visible.enable(visual.Layers.Curve);
-        _visible.enable(visual.Layers.CurveEdge_XRay);
+        this.updateXRay();
 
         _intersectable.disable(visual.Layers.CurveFragment);
         _intersectable.disable(visual.Layers.CurveFragment_XRay);
@@ -115,25 +117,29 @@ export default class LayerManager {
         signals.visibleLayersChanged.dispatch();
     }
 
-    get isXRay() {
-        return this.visible.isEnabled(visual.Layers.CurveEdge_XRay);
-    }
+    // Off to start with, as in other CAD apps: then faces hide what's behind them
+    private _isXRay = false;
+    get isXRay() { return this._isXRay }
 
     setXRay(isSet: boolean) {
+        this._isXRay = isSet;
+        this.updateXRay();
+    }
+
+    toggleXRay() {
+        this.setXRay(!this._isXRay);
+    }
+
+    // The edges behind faces show in X-ray, while edges show at all
+    private updateXRay() {
         const { _visible, _intersectable } = this;
-        if (isSet) {
+        if (this._isXRay && this.isShowingEdges) {
             _visible.enable(visual.Layers.CurveEdge_XRay);
             _intersectable.enable(visual.Layers.CurveEdge_XRay);
         } else {
             _visible.disable(visual.Layers.CurveEdge_XRay);
             _intersectable.disable(visual.Layers.CurveEdge_XRay);
         }
-    }
-
-    toggleXRay() {
-        const { _visible, _intersectable } = this;
-        _visible.toggle(visual.Layers.CurveEdge_XRay);
-        _intersectable.toggle(visual.Layers.CurveEdge_XRay);
     }
 
     get isShowingEdges() {
@@ -145,14 +151,11 @@ export default class LayerManager {
         if (show) {
             _visible.enable(visual.Layers.CurveEdge);
             _intersectable.enable(visual.Layers.CurveEdge);
-            _visible.enable(visual.Layers.CurveEdge_XRay);
-            _intersectable.enable(visual.Layers.CurveEdge_XRay);
         } else {
             _visible.disable(visual.Layers.CurveEdge);
             _intersectable.disable(visual.Layers.CurveEdge);
-            _visible.disable(visual.Layers.CurveEdge_XRay);
-            _intersectable.disable(visual.Layers.CurveEdge_XRay);
         }
+        this.updateXRay();
         signals.visibleLayersChanged.dispatch();
     }
 

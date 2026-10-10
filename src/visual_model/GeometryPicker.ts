@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Viewport } from "../components/viewport/Viewport";
 import LayerManager from "../editor/LayerManager";
 import * as visual from '../visual_model/VisualModel';
+import { FaceOcclusion } from "./FaceOcclusion";
 import * as intersectable from "./Intersectable";
 import { ControlPoint, Curve3D, CurveEdge, Face, Region } from "./VisualModel";
 
@@ -25,13 +26,15 @@ export class GeometryPicker {
         this.raycaster.layers = layers.visible as THREE.Layers;
     }
 
-    intersect(objects: THREE.Object3D[], isXRay = this.viewport.isXRay): intersectable.Intersection[] {
-        const { raycaster } = this;
+    // The occluders are everything drawn, whose faces hide what's behind them, even when they can't be picked themselves
+    intersect(objects: THREE.Object3D[], isXRay = this.viewport.isXRay, occluders: readonly THREE.Object3D[] = objects): intersectable.Intersection[] {
+        const { raycaster, viewport } = this;
 
         this.raycaster.params = this.raycasterParams;
         let intersections = raycaster.intersectObjects(objects, false) as Unprojectable[];
         if (!isXRay) {
-            intersections = findAllVeryCloseTogether(intersections);
+            const occlusion = new FaceOcclusion(viewport.camera, occluders, viewport.isShowingFaces);
+            intersections = intersections.filter(i => !occlusion.hides(positionOf(i)));
         }
         const unprojected = this.unproject(intersections);
         const sorted = unprojected.sort(sort);
@@ -65,17 +68,12 @@ export class GeometryPicker {
 
 }
 
-function findAllVeryCloseTogether<T extends THREE.Intersection>(intersections: T[]) {
-    if (intersections.length === 0) return [];
-
-    const nearest = intersections[0];
-    const result = [];
-    for (const intersection of intersections) {
-        if (Math.abs(nearest.distance - intersection.distance) < 10e-2) {
-            result.push(intersection);
-        }
-    }
-    return result;
+// Where what was hit is, rather than where the ray passes closest to it: lines and points are hit from a little way off
+function positionOf(intersection: Unprojectable): THREE.Vector3 {
+    if (intersection.pointOnLine !== undefined) return intersection.pointOnLine;
+    const object = intersection.object;
+    if (object instanceof ControlPoint) return object.position.clone().applyMatrix4(object.points.matrixWorld);
+    return intersection.point;
 }
 
 function sort(i1: IntersectableWithTopologyItem & Unprojected, i2: IntersectableWithTopologyItem & Unprojected): number {

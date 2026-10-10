@@ -28,6 +28,7 @@ import '../matchers';
 import { PointSnap } from '../../src/editor/snaps/PointSnap';
 import { AxisSnap, PointAxisSnap } from '../../src/editor/snaps/AxisSnap';
 import { Scene } from '../../src/editor/Scene';
+import { PlaneDatabase } from '../../src/editor/PlaneDatabase';
 
 let editor: Editor;
 let layers: LayerManager;
@@ -78,6 +79,8 @@ describe(PointPickerSnapPicker, () => {
 
     beforeEach(() => {
         picker.setFromViewport(event, viewport);
+        // These rank made-up hits, whose distances don't match the box; in X-ray no face hides any of them
+        viewport.isXRay = true;
     });
 
     let box: visual.Solid;
@@ -346,7 +349,8 @@ describe('Integration test', () => {
                 test('with a restriction, cursorPosition and position differ', () => {
                     pointPicker.restrictToPlaneThroughPoint(new THREE.Vector3());
                     const actual = picker.intersect(pointPicker, cache, scene);
-                    expect(actual.length).toBe(2);
+                    // The bottom's center lands in the same place, but the top hides it
+                    expect(actual.length).toBe(1);
                     const first = actual[0];
                     expect(first.cursorPosition).toApproximatelyEqual(new THREE.Vector3(0.25, 0.25, 0.5));
                     expect(first.position).toApproximatelyEqual(new THREE.Vector3(0.25, 0.25, 0));
@@ -414,4 +418,88 @@ describe(PointSnapCache, () => {
         const points = pointss[0];
         expect(Array.from(points.geometry.attributes.position.array)).toEqual([1, 1, 1]);
     })
+});
+
+describe('faces hide what is behind them', () => {
+    // Snaps only right under the cursor, so each test sees just what's there
+    const params: RaycasterParams = { Line2: { threshold: 1 }, Points: { threshold: 1 } };
+
+    beforeEach(async () => {
+        const makeBox = new ThreePointBoxFactory(db, materials, signals);
+        makeBox.p1 = new THREE.Vector3();
+        makeBox.p2 = new THREE.Vector3(1, 0, 0);
+        makeBox.p3 = new THREE.Vector3(1, 1, 0);
+        makeBox.p4 = new THREE.Vector3(1, 1, 1);
+        const box = await makeBox.commit() as visual.Solid;
+        box.updateMatrixWorld();
+        cache.update();
+        picker = new PointPickerSnapPicker(params, { Points: { threshold: 1 } });
+    });
+
+    // From above, in front and to the right; the box's back left corners are hidden
+    function lookFromAboveFrontRight() {
+        const { camera } = viewport;
+        camera.position.set(3, -2, 2.5);
+        camera.lookAt(0.5, 0.5, 0.5);
+        camera.updateMatrixWorld();
+    }
+
+    function moveTo(point: THREE.Vector3) {
+        const ndc = point.clone().project(viewport.camera);
+        const clientX = (ndc.x + 1) / 2 * 100, clientY = (1 - ndc.y) / 2 * 100;
+        picker.setFromViewport(new MouseEvent('move', { clientX, clientY }), viewport);
+    }
+
+    const at = (point: THREE.Vector3) => (r: { position: THREE.Vector3 }) => r.position.distanceTo(point) < 1e-3;
+
+    test('a hidden corner does not snap or show nearby; in X-ray it does', () => {
+        lookFromAboveFrontRight();
+        const corner = new THREE.Vector3(0, 1, 0);
+        moveTo(corner);
+        expect(picker.intersect(pointPicker, cache, scene).some(at(corner))).toBe(false);
+        expect(picker.nearby(pointPicker, cache, scene).some(at(corner))).toBe(false);
+
+        viewport.isXRay = true;
+        expect(picker.intersect(pointPicker, cache, scene).some(at(corner))).toBe(true);
+        expect(picker.nearby(pointPicker, cache, scene).some(at(corner))).toBe(true);
+    });
+
+    test('a corner in view snaps', () => {
+        lookFromAboveFrontRight();
+        const corner = new THREE.Vector3(1, 0, 1);
+        moveTo(corner);
+        expect(picker.intersect(pointPicker, cache, scene).some(at(corner))).toBe(true);
+    });
+
+    describe('the grid', () => {
+        beforeEach(() => {
+            viewport.constructionPlane = PlaneDatabase.XY;
+            expect(viewport.preferConstructionPlane).toBe(false);
+            snaps.toggleLayer(visual.Layers.Face);
+        });
+
+        test('in perspective, with face snapping off, a body hides the grid behind it; beside it the grid snaps', () => {
+            if (!viewport.camera.isPerspectiveCamera) viewport.camera.toggle();
+            lookFromAboveFrontRight();
+            moveTo(new THREE.Vector3(0.3, 0.6, 1));
+            expect(picker.intersect(pointPicker, cache, scene).some(r => r.snap instanceof ConstructionPlaneSnap)).toBe(false);
+            moveTo(new THREE.Vector3(2.3, -0.6, 0));
+            expect(picker.intersect(pointPicker, cache, scene).some(r => r.snap instanceof ConstructionPlaneSnap)).toBe(true);
+        });
+
+        test('in X-ray, the grid behind a body snaps', () => {
+            if (!viewport.camera.isPerspectiveCamera) viewport.camera.toggle();
+            lookFromAboveFrontRight();
+            viewport.isXRay = true;
+            moveTo(new THREE.Vector3(0.3, 0.6, 1));
+            expect(picker.intersect(pointPicker, cache, scene).some(r => r.snap instanceof ConstructionPlaneSnap)).toBe(true);
+        });
+
+        test('in an ortho view, what is drawn is flattened onto the grid, so the grid snaps over a body', () => {
+            viewport.navigate(Orientation.posZ);
+            expect(viewport.isOrthoMode).toBe(true);
+            moveTo(new THREE.Vector3(0.3, 0.6, 1));
+            expect(picker.intersect(pointPicker, cache, scene).some(r => r.snap instanceof ConstructionPlaneSnap)).toBe(true);
+        });
+    });
 });

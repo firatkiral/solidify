@@ -149,3 +149,31 @@ test('holding Ctrl turns snapping off until released', async () => {
     domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 80, clientY: 20 }));
     await promise;
 });
+
+test('over a gizmo nothing snaps, and a click there does nothing', async () => {
+    // A gizmo under the cursor takes the move (prevents its default) and the press (stops it), before the point picker
+    const takeMove = (e: Event) => e.preventDefault();
+    const takePress = (e: Event) => e.stopImmediatePropagation();
+    domElement.addEventListener('pointermove', takeMove, { capture: true });
+    domElement.addEventListener('pointerdown', takePress, { capture: true });
+
+    const cb = jest.fn();
+    let picked = false;
+    const promise = pointPicker.execute(cb);
+    promise.then(() => picked = true, () => { });
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50, cancelable: true }));
+    expect(cb).toHaveBeenCalledTimes(0);
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 50, clientY: 50 }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(picked).toBe(false);
+
+    domElement.removeEventListener('pointermove', takeMove, { capture: true });
+    domElement.removeEventListener('pointerdown', takePress, { capture: true });
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50 }));
+    expect(cb).toHaveBeenCalledTimes(1);
+    domElement.dispatchEvent(new MouseEvent('pointerdown', { clientX: 50, clientY: 50 }));
+    domElement.dispatchEvent(new MouseEvent('pointerup', { clientX: 50, clientY: 50 }));
+    const { point } = await promise;
+    expect(point).toApproximatelyEqual(new THREE.Vector3());
+});

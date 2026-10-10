@@ -195,3 +195,18 @@ test('start(command)', done => {
 
     result.cancel();
 })
+test('hovering the gizmo takes the move from the viewport controls beneath it, which listen first', () => {
+    const domElement = viewport.renderer.domElement;
+    const prevented: boolean[] = [];
+    const control = (e: Event) => prevented.push(e.defaultPrevented);
+    domElement.addEventListener('pointermove', control);
+
+    const result = gizmo.execute(() => { });
+    result.then(() => { }, () => { });
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 50, clientY: 50, cancelable: true }));
+    domElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 0, clientY: 0, cancelable: true }));
+    result.cancel();
+    domElement.removeEventListener('pointermove', control);
+
+    expect(prevented).toEqual([true, false]);
+});

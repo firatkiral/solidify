@@ -876,13 +876,15 @@ function makeRenderTarget(renderer: THREE.WebGLRenderer): THREE.WebGLRenderTarge
         const device: string | undefined = debugRendererInfo === undefined ? undefined : renderer.getContext().getParameter(debugRendererInfo!.UNMASKED_RENDERER_WEBGL);
 
         // Since we render in Linear/HDR we need at least HalfFloatType for the buffer to avoid banding.
-        // Unfortunately, the 
+        // Unfortunately, the
+        // With a stencil buffer three.js gives a multisampled target 24 bits of depth; without, only 16, too few in
+        // perspective: faces pushed back by their polygon offset let the edges behind them show through
         if (device === "Apple M1") {
             // @ts-expect-error('three.js @types are out of date')
-            return new THREE.WebGLRenderTarget(size.width, size.height, { type: THREE.HalfFloatType, generateMipmaps: false, samples: 1 });
+            return new THREE.WebGLRenderTarget(size.width, size.height, { type: THREE.HalfFloatType, generateMipmaps: false, samples: 1, stencilBuffer: true });
         } else {
             // @ts-expect-error('three.js @types are out of date')
-            return new THREE.WebGLRenderTarget(size.width, size.height, { type: THREE.HalfFloatType, generateMipmaps: false, samples: 4 });
+            return new THREE.WebGLRenderTarget(size.width, size.height, { type: THREE.HalfFloatType, generateMipmaps: false, samples: 4, stencilBuffer: true });
         }
     }
 }

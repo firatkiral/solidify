@@ -41,7 +41,7 @@ export class SnapPicker {
         private readonly strategy: SnapPickerStrategy,
     ) { }
 
-    nearby(points: PointSnapCache[], snaps: SnapManagerGeometryCache): PointSnap[] {
+    nearby(points: PointSnapCache[], snaps: SnapManagerGeometryCache, scene: Scene): PointSnap[] {
         const { raycaster, strategy, viewport } = this;
         if (!snaps.enabled) return [];
         strategy.configureNearbyRaycaster(raycaster, snaps, viewport);
@@ -51,11 +51,15 @@ export class SnapPicker {
 
         const intersections = raycaster.intersectObjects(pointss, false);
         const snap_intersections = this.intersections2snaps(snaps, intersections);
+        // Of the nearest, only those not behind a face
+        const occlusion = viewport.isXRay ? undefined : strategy.occlusion(viewport, scene);
         let i = 0;
         const result: PointSnap[] = [];
         for (const { snap } of snap_intersections) {
             if (i++ >= 20) break;
-            result.push(snap as PointSnap);
+            const point = snap as PointSnap;
+            if (occlusion?.hides(point.position)) continue;
+            result.push(point);
         }
         return result;
     }
@@ -83,8 +87,8 @@ export class SnapPicker {
         const other_intersections_snaps = strategy.intersectWithSnaps(additional, pointss, raycaster, snaps);
 
         const grid: GridLike | undefined = snaps.snapToGrid ? new PlaneGrid(viewport.constructionPlane, snaps.gridStep) : undefined;
-        let { minDistance, results } = strategy.projectIntersections(viewport, geo_intersections_snaps, other_intersections_snaps, cplane_intersection_results, restriction, grid);
-        results = strategy.processXRay(viewport, results, cplane_intersection_results, minDistance);
+        let { results } = strategy.projectIntersections(viewport, geo_intersections_snaps, other_intersections_snaps, cplane_intersection_results, restriction, grid);
+        results = strategy.processXRay(viewport, results, cplane_intersection_results, strategy.occlusion(viewport, scene), raycaster.ray);
         return this.sort(results);
     }
 

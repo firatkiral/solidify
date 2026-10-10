@@ -29,7 +29,7 @@ export class PointPickerSnapPicker {
 
     nearby(pointPicker: PointPickerModel, snaps: SnapManagerGeometryCache, scene: Scene): PointSnap[] {
         const points = this.collectPickerSnaps(pointPicker).points;
-        return this.picker.nearby(points, snaps);
+        return this.picker.nearby(points, snaps, scene);
     }
 
     private collectPickerSnaps(pointPicker: PointPickerModel) {
@@ -60,7 +60,7 @@ export class PointPickerSnapPicker {
             } else {
                 const essential = picker.intersectPoints([pointPicker.snaps.essentialSnaps.cache], snaps);
                 if (essential.length > 0) return strategy.applyRestrictions(gridStep, pointPicker, viewport, essential);
-                return strategy.intersectConstructionPlane(gridStep, pointPicker, raycaster, viewport);
+                return this.unlessHidden(strategy.intersectConstructionPlane(gridStep, pointPicker, raycaster, viewport), scene);
             }
         }
 
@@ -90,10 +90,18 @@ export class PointPickerSnapPicker {
             return strategy.applyRestrictions(gridStep, pointPicker, viewport, result);
         }
 
-        if (cplaneIsFallback) intersections = intersections.concat(cplane);
+        if (cplaneIsFallback) intersections = intersections.concat(this.unlessHidden(cplane, scene));
         const restricted = strategy.applyRestrictions(gridStep, pointPicker, viewport, intersections);
 
         return findAllSnapsInTheSamePlace(restricted);
+    }
+
+    // In perspective a face in front hides the plane where the cursor meets it; in ortho what's drawn is flattened onto it
+    private unlessHidden(cplane: (SnapResult & { distance: number })[], scene: Scene) {
+        const { picker: { viewport }, strategy, raycaster } = this;
+        if (cplane.length === 0 || viewport.isXRay || viewport.isOrthoMode) return cplane;
+        const occlusion = strategy.occlusion(viewport, scene);
+        return cplane.filter(r => !occlusion.hidesAlong(raycaster.ray, r.distance));
     }
 }
 

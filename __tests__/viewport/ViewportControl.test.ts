@@ -231,3 +231,58 @@ test('drag meeting threshold, but startdrag returns false', () => {
     expect(endClick).toBeCalledTimes(0);
     expect(endDrag).toBeCalledTimes(0);
 })
+describe('hover', () => {
+    // From above, in front and to the right of the unit box; its edge at the back left corner is hidden
+    const hiddenEdgeMiddle = new THREE.Vector3(0, 1, 0.5);
+
+    beforeEach(() => {
+        camera.position.set(3, -2, 2.5);
+        camera.lookAt(0.5, 0.5, 0.5);
+        camera.updateMatrixWorld();
+        solid.lod.update(camera);
+    });
+
+    function moveTo(point: THREE.Vector3, init: MouseEventInit = {}) {
+        const ndc = point.clone().project(camera);
+        const clientX = (ndc.x + 1) / 2 * 100, clientY = (1 - ndc.y) / 2 * 100;
+        return new MouseEvent('pointermove', { clientX, clientY, ...init });
+    }
+
+    function isHiddenEdge(i: Intersection) {
+        const pointOnLine = (i as any).pointOnLine as THREE.Vector3 | undefined;
+        return i.object instanceof visual.CurveEdge && pointOnLine !== undefined
+            && Math.abs(pointOnLine.x - 0) < 1e-3 && Math.abs(pointOnLine.y - 1) < 1e-3;
+    }
+
+    test('a face hides the edges behind it', () => {
+        const startHover = jest.spyOn(control, 'startHover').mockImplementation(() => { });
+        control.onPointerMove(moveTo(hiddenEdgeMiddle));
+        expect(startHover).toBeCalledTimes(1);
+        const intersections = startHover.mock.calls[0][0];
+        expect(intersections.some(isHiddenEdge)).toBe(false);
+        expect(intersections.some(i => i.object instanceof visual.Face)).toBe(true);
+    });
+
+    test('in X-ray, the edges behind faces can be picked', () => {
+        viewport.isXRay = true;
+        const startHover = jest.spyOn(control, 'startHover').mockImplementation(() => { });
+        control.onPointerMove(moveTo(hiddenEdgeMiddle));
+        expect(startHover).toBeCalledTimes(1);
+        expect(startHover.mock.calls[0][0].some(isHiddenEdge)).toBe(true);
+    });
+
+    test('a move a gizmo took (its default prevented) highlights nothing, and ends a hover', () => {
+        const startHover = jest.spyOn(control, 'startHover').mockImplementation(() => { });
+        const endHover = jest.spyOn(control, 'endHover').mockImplementation(() => { });
+        control.onPointerMove(moveTo(new THREE.Vector3(0.5, 0.5, 1)));
+        expect(startHover).toBeCalledTimes(1);
+
+        const taken = moveTo(new THREE.Vector3(0.5, 0.5, 1), { cancelable: true });
+        taken.preventDefault();
+        control.onPointerMove(taken);
+        expect(endHover).toBeCalledTimes(1);
+
+        control.onPointerMove(taken);
+        expect(startHover).toBeCalledTimes(1);
+    });
+});
