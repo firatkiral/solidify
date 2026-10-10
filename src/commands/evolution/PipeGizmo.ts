@@ -10,7 +10,7 @@ import { PipeParams } from "./PipeFactory";
 
 export class PipeGizmo extends CompositeGizmo<PipeParams> {
     private readonly sectionSizeGizmo = new SectionSizeGizmo("pipe:section-size", this.editor);
-    private readonly angleGizmo = new PipeAngleGizmo("pipe:angle", this.editor, this.editor.gizmos.white);
+    private readonly angleGizmo = new PipeAngleGizmo("pipe:angle", this.editor, this.editor.gizmos.ring);
     private readonly thicknessGizmo = new ThicknessGizmo("pipe:thickness", this.editor);
 
     protected prepare(mode: Mode) {

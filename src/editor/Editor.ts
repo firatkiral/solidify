@@ -67,7 +67,7 @@ export class Editor {
     readonly signals = new EditorSignals();
     readonly registry = new CommandRegistry();
     readonly materials = new BasicMaterialDatabase(this.signals);
-    readonly gizmos = new GizmoMaterialDatabase(this.signals, this.styles);
+    readonly gizmos = new GizmoMaterialDatabase(this.signals);
     readonly copier = new SolidCopier();
     readonly meshCreator = new DoCacheMeshCreator(new ParallelMeshCreator(), this.copier);
     readonly _db = new GeometryDatabase(this.meshCreator, this.copier, this.materials, this.signals);
@@ -92,7 +92,7 @@ export class Editor {
     readonly keymaps = new KeymapManager();
     readonly tooltips = new TooltipManager({ keymapManager: this.keymaps, viewRegistry: null });
     readonly layers = new LayerManager(this.selection.selected, this.signals);
-    readonly helpers: Helpers = new Helpers(this.signals, this.styles);
+    readonly helpers: Helpers = new Helpers(this.signals);
     readonly changeSelection = new ChangeSelectionExecutor(this.selection, this.db, this.scene, this.signals);
     readonly commandForSelection = new SelectionCommandManager(this);
     readonly originator = new EditorOriginator(this._db, this.empties, this.scene, this.materials, this.selection.selected, this.snaps, this.crosses, this.curves, this.contours, this.viewports, this.images, this.meshes);

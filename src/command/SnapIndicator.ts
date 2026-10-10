@@ -27,7 +27,7 @@ export class SnapIndicator {
     }
 
     snapIndicatorFor(intersection: SnapResult): Helper {
-        const circle = new SimpleHelper(new Line2(snapGeometry, this.materials.darkGray.line2));
+        const circle = new SimpleHelper(new Line2(snapGeometry, this.materials.ring.line2));
 
         const { cursorPosition, orientation } = intersection;
         circle.position.copy(cursorPosition);

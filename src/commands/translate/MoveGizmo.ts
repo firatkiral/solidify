@@ -23,15 +23,16 @@ export class MoveGizmo extends CompositeGizmo<MoveParams> {
     private readonly red = this.materials.red;
     private readonly green = this.materials.green;
     private readonly blue = this.materials.blue;
-    private readonly yellow = this.materials.yellow;
-    private readonly cyan = this.materials.cyan;
-    private readonly magenta = this.materials.magenta;
+    // Each plane square in the colour of the axis normal to it
+    private readonly planeX = this.materials.planeX;
+    private readonly planeY = this.materials.planeY;
+    private readonly planeZ = this.materials.planeZ;
     private readonly x = new MoveAxisGizmo("move:x", this.editor, this.red);
     private readonly y = new MoveAxisGizmo("move:y", this.editor, this.green);
     private readonly z = new MoveAxisGizmo("move:z", this.editor, this.blue);
-    private readonly xy = new PlanarMoveGizmo("move:xy", this.editor, this.yellow);
-    private readonly yz = new PlanarMoveGizmo("move:yz", this.editor, this.cyan);
-    private readonly xz = new PlanarMoveGizmo("move:xz", this.editor, this.magenta);
+    private readonly xy = new PlanarMoveGizmo("move:xy", this.editor, this.planeZ);
+    private readonly yz = new PlanarMoveGizmo("move:yz", this.editor, this.planeX);
+    private readonly xz = new PlanarMoveGizmo("move:xz", this.editor, this.planeY);
     private readonly screen = new CircleMoveGizmo("move:screen", this.editor);
 
     readonly pivot = new THREE.Vector3();
@@ -124,7 +125,7 @@ export class CircleMoveGizmo extends CircularGizmo<THREE.Vector3> {
     readonly helper = new NumberHelper<THREE.Vector3>(move => formatLength(move.length()));
 
     constructor(name: string, editor: EditorLike) {
-        super(name, editor, editor.gizmos.white, new VectorStateMachine(new THREE.Vector3()));
+        super(name, editor, editor.gizmos.ring, new VectorStateMachine(new THREE.Vector3()));
         this.setup();
         this.add(this.helper);
     }

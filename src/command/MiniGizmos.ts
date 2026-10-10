@@ -137,7 +137,7 @@ export class AngleGizmo extends CircularGizmo<number> {
     get camera() { return this._camera }
 
     constructor(name: string, editor: EditorLike, material?: GizmoMaterial) {
-        super(name, editor, material ?? editor.gizmos.white, new MagnitudeStateMachine(0));
+        super(name, editor, material ?? editor.gizmos.ring, new MagnitudeStateMachine(0));
         this.setup();
         this.add(this.helper);
     }
@@ -473,6 +473,8 @@ export abstract class PlanarGizmo<T> extends AbstractGizmo<T> {
 
 export const sphereGeometry = new THREE.SphereGeometry(0.1, 16, 16);
 export const boxGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+// A flat square across the handle's axis, for handles that pick a plane
+export const plateGeometry = new THREE.BoxGeometry(0.26, 0.012, 0.26);
 
 // The distance gizmo is a pin with a ball on top for moving objects. It's initial length is always 1,
 // unlike the length gizmo, whose length is equal to the value it emits.
@@ -587,9 +589,9 @@ export class DashedLineMagnitudeHelper implements GizmoHelper<any> {
         this.element.setAttribute('preserveAspectRatio', 'none')
         this.element.classList.add('absolute', 'top-0', 'left-0', 'w-full', 'h-full');
 
+        // A 1px dashed line, light so it shows on the viewport, whatever the viewport's size
         this.line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        this.line.classList.add('stroke', 'stroke-black');
-        this.line.setAttribute('style', 'stroke-width: 0.002; stroke-dasharray: 0.006');
+        this.line.setAttribute('style', 'stroke: rgb(255 255 255 / 0.5); stroke-width: 1px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke');
         this.element.appendChild(this.line);
     }
 

@@ -8,7 +8,7 @@ import { RevolutionParams } from './RevolutionFactory';
 
 export class RevolutionGizmo extends CompositeGizmo<RevolutionParams> {
     private readonly thickness = new RevolutionMagnitudeGizmo("revolution:thickness", this.editor);
-    private readonly angle = new RevolutionAngleGizmo("revolution:angle", this.editor, this.editor.gizmos.white);
+    private readonly angle = new RevolutionAngleGizmo("revolution:angle", this.editor, this.editor.gizmos.ring);
 
     prepare() {
         const { thickness, angle, params } = this;

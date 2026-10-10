@@ -3,14 +3,14 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import c3d from '../../kernel/kernel';
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { AbstractAxisGizmo, AngleGizmo, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, Measure, NumberHelper, sphereGeometry } from "../../command/MiniGizmos";
+import { AbstractAxisGizmo, AngleGizmo, arrowGeometry, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, Measure, NumberHelper, sphereGeometry } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { deunit, point2point, vec2vec } from "../../util/Conversion";
 import { OffsetFaceParams } from "./OffsetFaceFactory";
 
 export class OffsetFaceGizmo extends CompositeGizmo<OffsetFaceParams> {
     private readonly distance = new ExtrudeLikeGizmo("offset-face:distance", this.editor);
-    private readonly angle = new AngleGizmo("offset-face:angle", this.editor, this.editor.gizmos.white);
+    private readonly angle = new AngleGizmo("offset-face:angle", this.editor, this.editor.gizmos.ring);
 
     constructor(params: OffsetFaceParams, editor: EditorLike, private readonly hint?: THREE.Vector3) {
         super(params, editor);
@@ -101,8 +101,10 @@ export class ExtrudeLikeGizmo extends AbstractAxisGizmo {
     protected readonly shaft = new Line2(lineGeometry, this.editor.gizmos.default.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
 
-    constructor(name: string, editor: EditorLike) {
+    // An arrow where it pushes a face along its normal; a sphere where it sets a radius (see RefilletGizmo)
+    constructor(name: string, editor: EditorLike, tip: THREE.BufferGeometry = arrowGeometry) {
         super(name, editor);
+        this.tip.geometry = tip;
         this.setup();
         this.add(this.helper);
     }

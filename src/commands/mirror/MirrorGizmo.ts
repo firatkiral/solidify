@@ -3,7 +3,7 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import { AbstractGizmo, EditorLike, Intersector, Mode, MovementInfo } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
 import { GizmoMaterial } from "../../command/GizmoMaterials";
-import { AbstractAxisGizmo, AxisHelper, boxGeometry, lineGeometry } from "../../command/MiniGizmos";
+import { AbstractAxisGizmo, AxisHelper, lineGeometry, plateGeometry } from "../../command/MiniGizmos";
 import { ProxyCamera } from "../../components/viewport/ProxyCamera";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { MoveAxisGizmo } from "../translate/MoveGizmo";
@@ -40,14 +40,14 @@ export class MirrorGizmo extends CompositeGizmo<MirrorParams> {
     private readonly red = this.materials.red;
     private readonly green = this.materials.green;
     private readonly blue = this.materials.blue;
-    private readonly yellow = this.materials.yellow;
+    private readonly handle = this.materials.doubleSided;
     private readonly x = new MirrorAxisGizmo("mirror:x", this.editor, this.red);
     private readonly y = new MirrorAxisGizmo("mirror:y", this.editor, this.green);
     private readonly z = new MirrorAxisGizmo("mirror:z", this.editor, this.blue);
     private readonly _x = new MirrorAxisGizmo("mirror:-x", this.editor, this.red);
     private readonly _y = new MirrorAxisGizmo("mirror:-y", this.editor, this.green);
     private readonly _z = new MirrorAxisGizmo("mirror:-z", this.editor, this.blue);
-    private readonly move = new MirrorMoveGizmo("mirror:move", this.editor, this.yellow);
+    private readonly move = new MirrorMoveGizmo("mirror:move", this.editor, this.handle);
 
     prepare() {
         const { x, y, z, _x, _y, _z, move } = this;
@@ -102,8 +102,9 @@ export class MirrorGizmo extends CompositeGizmo<MirrorParams> {
     get shouldRescaleOnZoom() { return false }
 }
 
+// Picks the plane across its axis, so a flat square on the axis
 class MirrorAxisGizmo extends AbstractGizmo<boolean>  {
-    readonly tip: THREE.Mesh<any, any> = new THREE.Mesh(boxGeometry, this.material.mesh);
+    readonly tip: THREE.Mesh<any, any> = new THREE.Mesh(plateGeometry, this.material.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.material.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
     readonly helper = new AxisHelper(this.material.line);

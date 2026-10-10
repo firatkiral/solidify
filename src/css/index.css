@@ -171,8 +171,9 @@
         @apply block w-full h-full;
     }
 
+    /* Centred on the point it labels */
     .axis-helper {
-        @apply absolute z-50 px-2 py-1 max-w-xs text-xs text-center rounded-md ring-1 shadow-lg pointer-events-none text-ui-text bg-ui-surface ring-ui-border shadow-ui-shadow;
+        @apply absolute z-50 px-2 py-1 max-w-xs text-xs text-center whitespace-nowrap rounded-md ring-1 shadow-lg pointer-events-none text-ui-text bg-ui-surface ring-ui-border shadow-ui-shadow -translate-x-1/2 -translate-y-1/2;
     }
 
     .tooltip {

@@ -20,15 +20,16 @@ export class ScaleGizmo extends CompositeGizmo<ScaleParams> {
     private readonly red = this.materials.red;
     private readonly green = this.materials.green;
     private readonly blue = this.materials.blue;
-    private readonly yellow = this.materials.yellow;
-    private readonly magenta = this.materials.magenta;
-    private readonly cyan = this.materials.cyan;
+    // Each plane square in the colour of the axis normal to it
+    private readonly planeX = this.materials.planeX;
+    private readonly planeY = this.materials.planeY;
+    private readonly planeZ = this.materials.planeZ;
     private readonly x = new ScaleAxisGizmo("scale:x", this.editor, this.red);
     private readonly y = new ScaleAxisGizmo("scale:y", this.editor, this.green);
     private readonly z = new ScaleAxisGizmo("scale:z", this.editor, this.blue);
-    private readonly xy = new PlanarScaleGizmo("scale:xy", this.editor, this.yellow);
-    private readonly yz = new PlanarScaleGizmo("scale:yz", this.editor, this.cyan);
-    private readonly xz = new PlanarScaleGizmo("scale:xz", this.editor, this.magenta);
+    private readonly xy = new PlanarScaleGizmo("scale:xy", this.editor, this.planeZ);
+    private readonly yz = new PlanarScaleGizmo("scale:yz", this.editor, this.planeX);
+    private readonly xz = new PlanarScaleGizmo("scale:xz", this.editor, this.planeY);
     private readonly xyz = new CircleScaleGizmo("scale:xyz", this.editor);
 
     get pivot() { return this.position }
@@ -93,7 +94,7 @@ export class CircleScaleGizmo extends CircularGizmo<number> {
     readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), new NumberHelper(factor => factor.toFixed(2))]); // a scale factor has no unit
 
     constructor(name: string, editor: EditorLike) {
-        super(name, editor, editor.gizmos.white, new MagnitudeStateMachine(1));
+        super(name, editor, editor.gizmos.ring, new MagnitudeStateMachine(1));
         this.setup();
         this.add(this.helper);
         this.render(this.state.current);

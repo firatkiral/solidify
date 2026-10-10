@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2";
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { AbstractAxialScaleGizmo, AngleGizmo, boxGeometry, DistanceGizmo, lineGeometry, MagnitudeStateMachine, Measure } from "../../command/MiniGizmos";
+import { AbstractAxialScaleGizmo, AngleGizmo, arrowGeometry, boxGeometry, DistanceGizmo, lineGeometry, MagnitudeStateMachine, Measure } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { ExtrudeParams } from "./ExtrudeFactory";
 
@@ -11,7 +11,7 @@ const Y = new THREE.Vector3(0, 1, 0);
 
 export class ExtrudeGizmo extends CompositeGizmo<ExtrudeParams> {
     private readonly distance1Gizmo = new ExtrudeDistanceGizmo("extrude:distance1", this.editor);
-    private readonly race1Gizmo = new ExtrudeAngleGizmo("extrude:race1", this.editor, this.editor.gizmos.white);
+    private readonly race1Gizmo = new ExtrudeAngleGizmo("extrude:race1", this.editor, this.editor.gizmos.ring);
     private readonly thicknessGizmo = new MagnitudeGizmo("extrude:thickness", this.editor);
 
     protected prepare(mode: Mode) {
@@ -58,9 +58,15 @@ export class ExtrudeGizmo extends CompositeGizmo<ExtrudeParams> {
     get shouldRescaleOnZoom() { return false }
 }
 
+// An arrow, as it pushes along one direction
 export class ExtrudeDistanceGizmo extends DistanceGizmo {
     protected minShaft = 1;
-    
+
+    constructor(name: string, editor: EditorLike) {
+        super(name, editor);
+        this.tip.geometry = arrowGeometry;
+    }
+
     onInterrupt(cb: (radius: number) => void) {
         this.state.push();
     }

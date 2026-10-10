@@ -10,6 +10,9 @@ export const X = freeze(new THREE.Vector3(1, 0, 0));
 export const Z = freeze(new THREE.Vector3(0, 0, 1));
 export const Y = freeze(new THREE.Vector3(0, 1, 0));
 
+// The colour of each axis wherever one is shown: the navigator, the world axes and the gizmos
+export const axisColors = freeze({ x: '#ff3653', y: '#8adb00', z: '#2c8fff' });
+
 export const _X = freeze(new THREE.Vector3(-1, 0, 0));
 export const _Y = freeze(new THREE.Vector3(0, -1, 0));
 export const _Z = freeze(new THREE.Vector3(0, 0, -1));

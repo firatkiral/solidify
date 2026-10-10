@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import Command from "../../command/Command";
+import { boxGeometry } from "../../command/MiniGizmos";
 import { MultilineCommand } from "../curve/MultilineCommand";
 import { FilletMagnitudeGizmo } from '../fillet/FilletGizmo';
 import { OffsetFaceGizmo } from "../modifyface/OffsetFaceGizmo";
@@ -38,6 +39,7 @@ export class ThinSolidCommand extends Command {
         }
 
         const gizmo = new FilletMagnitudeGizmo("thin-solid:thickness", this.editor);
+        gizmo.tip.geometry = boxGeometry; // a thickness, as in Extrude and Pipe
         const dialog = new ThinSolidDialog(thin, this.editor.signals);
 
         dialog.execute(async (params) => {

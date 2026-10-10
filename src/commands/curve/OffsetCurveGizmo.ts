@@ -9,8 +9,8 @@ import { OffsetCurveParams } from "./OffsetContourFactory";
 
 export class OffsetCurveGizmo extends CompositeGizmo<OffsetCurveParams> {
     private readonly materials = this.editor.gizmos;
-    private readonly yellow = this.materials.yellow;
-    private readonly n = new OffsetAxisGizmo('offset-curve:distance', this.editor, this.yellow);
+    private readonly handle = this.materials.doubleSided;
+    private readonly n = new OffsetAxisGizmo('offset-curve:distance', this.editor, this.handle);
     private originalPosition!: THREE.Vector3;
 
     protected prepare(mode: Mode) {

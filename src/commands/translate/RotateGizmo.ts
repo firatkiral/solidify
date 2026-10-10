@@ -17,11 +17,11 @@ export class RotateGizmo extends CompositeGizmo<RotateParams> {
     private readonly red = this.materials.red;
     private readonly green = this.materials.green;
     private readonly blue = this.materials.blue;
-    private readonly white = this.materials.white;
+    private readonly ring = this.materials.ring;
     private readonly x = new AxisAngleGizmo("rotate:x", this.editor, this.red);
     private readonly y = new AxisAngleGizmo("rotate:y", this.editor, this.green);
     private readonly z = new AxisAngleGizmo("rotate:z", this.editor, this.blue);
-    private readonly screen = new AngleGizmo("rotate:screen", this.editor, this.white);
+    private readonly screen = new AngleGizmo("rotate:screen", this.editor, this.ring);
     private readonly occluder = new OccluderGizmo("rotate:occluder", this.editor, this.materials.occlude);
 
     private readonly trigger = new AdvancedGizmoTriggerStrategy<any, void>(this.editor);

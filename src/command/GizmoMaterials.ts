@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { EditorSignals } from "../editor/EditorSignals";
-import { Theme } from "../startup/ConfigFiles";
-import theme from '../startup/default-theme.json';
+import { axisColors } from "../util/Constants";
 
 const depthInfo: THREE.MaterialParameters = {
     depthTest: true,
@@ -25,24 +24,48 @@ export interface GizmoMaterial extends ActiveGizmoMaterial {
     hover: ActiveGizmoMaterial;
 }
 
+// How solid and how thick a gizmo is drawn, and on hover: handles solid with 2.5px lines, rings thinner so they sit
+// behind the handles, plane squares half see-through, hints faint
+type Look = { opacity: number, width: number, hoverOpacity: number, hoverWidth: number, lineOpacity?: number };
+const handleLook: Look = { opacity: 1, width: 2.5, hoverOpacity: 1, hoverWidth: 3.5 };
+const ringLook: Look = { opacity: 1, width: 1.75, hoverOpacity: 1, hoverWidth: 3 };
+const planeLook: Look = { opacity: 0.5, width: 2.5, hoverOpacity: 0.95, hoverWidth: 3.5 };
+const hintLook: Look = { opacity: 0.5, width: 1.5, hoverOpacity: 0.5, hoverWidth: 1.5, lineOpacity: 0.5 };
+// The axis line shown while dragging along an axis
+const guideOpacity = 0.45;
+
+// Handles in the logo's cyan, against the yellow of the selection; rings light grey. The same in both themes.
+const handleColor = '#00d7fe';
+const ringColor = '#d4d4d8';
+
+// A gizmo's colour, and on hover a lighter shade of it
+function colors(hex: string): [THREE.Color, THREE.Color] {
+    const normal = new THREE.Color(hex);
+    const hover = normal.clone().lerp(new THREE.Color('#ffffff'), 0.45);
+    return [normal.convertSRGBToLinear(), hover.convertSRGBToLinear()];
+}
+
 export class GizmoMaterialDatabase {
 
-    static make(normalColor: THREE.Color, hoverColor: THREE.Color, side = THREE.FrontSide): GizmoMaterial {
+    static make(normalColor: THREE.Color, hoverColor: THREE.Color, side: THREE.Side = THREE.FrontSide, look = handleLook): GizmoMaterial {
         return {
-            mesh: new THREE.MeshBasicMaterial(Object.assign({ opacity: 0.75, color: normalColor }, depthInfo, { side })),
-            line2: new LineMaterial({ ...depthInfo, color: normalColor.getHex(), opacity: 1, linewidth: 2, side }),
-            line: new THREE.LineBasicMaterial({ opacity: 0.75, color: normalColor }),
+            mesh: new THREE.MeshBasicMaterial(Object.assign({ opacity: look.opacity, color: normalColor }, depthInfo, { side })),
+            line2: new LineMaterial({ ...depthInfo, color: normalColor.getHex(), opacity: look.lineOpacity ?? 1, linewidth: look.width, side }),
+            line: new THREE.LineBasicMaterial({ transparent: true, opacity: guideOpacity, color: normalColor }),
             hover: {
-                mesh: new THREE.MeshBasicMaterial(Object.assign({ opacity: 1, color: hoverColor }, depthInfo, { side })),
-                line2: new LineMaterial(Object.assign({ color: hoverColor.getHex(), opacity: 1, linewidth: 3, }, depthInfo, { side })),
-                line: new THREE.LineBasicMaterial({ opacity: 1, color: hoverColor }),
+                mesh: new THREE.MeshBasicMaterial(Object.assign({ opacity: look.hoverOpacity, color: hoverColor }, depthInfo, { side })),
+                line2: new LineMaterial(Object.assign({ color: hoverColor.getHex(), opacity: look.lineOpacity ?? 1, linewidth: look.hoverWidth, }, depthInfo, { side })),
+                line: new THREE.LineBasicMaterial({ transparent: true, opacity: guideOpacity, color: hoverColor }),
             }
         }
     }
 
-    constructor(signals: EditorSignals, style: Theme = theme) {
+    private static of(hex: string, side: THREE.Side = THREE.FrontSide, look = handleLook) {
+        return GizmoMaterialDatabase.make(...colors(hex), side, look);
+    }
+
+    constructor(signals: EditorSignals) {
         signals.renderPrepared.add(({ resolution }) => this.setResolution(resolution));
-        this.setColor(style);
     }
 
     readonly invisible = new THREE.MeshBasicMaterial(Object.assign({
@@ -59,33 +82,25 @@ export class GizmoMaterialDatabase {
         opacity: 0,
     }, depthInfo));
 
+    // Handles that set a value (distances, radii, thicknesses), and the same drawn from both sides
+    readonly default = GizmoMaterialDatabase.of(handleColor);
+    readonly doubleSided = GizmoMaterialDatabase.of(handleColor, THREE.DoubleSide);
 
-    private _default!: GizmoMaterial;
-    get default() { return this._default }
+    // The axes
+    readonly red = GizmoMaterialDatabase.of(axisColors.x);
+    readonly green = GizmoMaterialDatabase.of(axisColors.y);
+    readonly blue = GizmoMaterialDatabase.of(axisColors.z);
 
-    private _red!: GizmoMaterial;
-    get red() { return this._red }
+    // Plane handles, in the colour of the axis normal to the plane: planeZ is the XY plane
+    readonly planeX = GizmoMaterialDatabase.of(axisColors.x, THREE.DoubleSide, planeLook);
+    readonly planeY = GizmoMaterialDatabase.of(axisColors.y, THREE.DoubleSide, planeLook);
+    readonly planeZ = GizmoMaterialDatabase.of(axisColors.z, THREE.DoubleSide, planeLook);
 
-    private _darkGray!: GizmoMaterial;
-    get darkGray() { return this._darkGray }
+    // Angle and screen-space rings, and the snap ring
+    readonly ring = GizmoMaterialDatabase.of(ringColor, THREE.FrontSide, ringLook);
 
-    private _green!: GizmoMaterial;
-    get green() { return this._green }
-
-    private _blue!: GizmoMaterial;
-    get blue() { return this._blue }
-
-    private _yellow!: GizmoMaterial;
-    get yellow() { return this._yellow }
-
-    private _white!: GizmoMaterial;
-    get white() { return this._white }
-
-    private _magenta!: GizmoMaterial;
-    get magenta() { return this._magenta }
-
-    private _cyan!: GizmoMaterial;
-    get cyan() { return this._cyan }
+    // Where a handle can be dragged to
+    readonly hint = GizmoMaterialDatabase.of(handleColor, THREE.FrontSide, hintLook);
 
     // A quirk of three.js is that to render lines with any thickness, you need to use
     // a LineMaterial whose resolution must be set before each render
@@ -98,46 +113,6 @@ export class GizmoMaterialDatabase {
     }
 
     get all() {
-        return [this.default, this.red, this.darkGray, this.green, this.blue, this.yellow, this.white, this.magenta, this.cyan];
-    }
-
-    private setColor(style: Theme) {
-        for (const color of this.all) {
-            if (color === undefined) continue;
-            color.line.dispose(); color.line2.dispose(); color.mesh.dispose();
-            color.hover.line.dispose(); color.hover.line2.dispose(); color.hover.mesh.dispose();
-        }
-
-        const red = new THREE.Color(style.colors.red[600]).convertSRGBToLinear();
-        const green = new THREE.Color(style.colors.green[600]).convertSRGBToLinear();
-        const blue = new THREE.Color(style.colors.blue[600]).convertSRGBToLinear();
-        const dark = new THREE.Color(style.colors.neutral[800]).convertSRGBToLinear();
-        const yellow = new THREE.Color(style.colors.yellow[300]).convertSRGBToLinear();
-        const white = new THREE.Color(style.colors.neutral[50]).convertSRGBToLinear();
-
-        const red_hover = new THREE.Color(style.colors.red[400]).convertSRGBToLinear();
-        const green_hover = new THREE.Color(style.colors.green[400]).convertSRGBToLinear();
-        const blue_hover = new THREE.Color(style.colors.blue[400]).convertSRGBToLinear();
-        const dark_hover = new THREE.Color(style.colors.neutral[500]).convertSRGBToLinear();
-        const yellow_hover = new THREE.Color(style.colors.yellow[200]).convertSRGBToLinear();
-        const white_hover = new THREE.Color(style.colors.white).convertSRGBToLinear();
-
-        this._default = GizmoMaterialDatabase.make(yellow, yellow_hover);
-        this._red = GizmoMaterialDatabase.make(red, red_hover);
-        this._darkGray = GizmoMaterialDatabase.make(dark, dark_hover);
-        this._green = GizmoMaterialDatabase.make(green, green_hover);
-        this._blue = GizmoMaterialDatabase.make(blue, blue_hover);
-        this._white = GizmoMaterialDatabase.make(white, white_hover);
-
-        const magenta = new THREE.Color().lerpColors(red, blue, 0.5);
-        const magenta_hover = new THREE.Color().lerpColors(red_hover, blue_hover, 0.5);
-
-        const cyan = new THREE.Color().lerpColors(green, blue, 0.5);
-        const cyan_hover = new THREE.Color().lerpColors(green_hover, blue_hover, 0.5);
-
-        this._yellow = GizmoMaterialDatabase.make(yellow, yellow_hover, THREE.DoubleSide);
-        this._magenta = GizmoMaterialDatabase.make(magenta, magenta_hover, THREE.DoubleSide)
-        this._cyan = GizmoMaterialDatabase.make(cyan, cyan_hover, THREE.DoubleSide);
+        return [this.default, this.doubleSided, this.red, this.green, this.blue, this.planeX, this.planeY, this.planeZ, this.ring, this.hint];
     }
 }
-

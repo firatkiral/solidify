@@ -3,7 +3,7 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import { AbstractGizmo, MovementInfo, EditorLike, Intersector, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
 import { GizmoMaterial } from "../../command/GizmoMaterials";
-import { arrowGeometry, AxisHelper, lineGeometry } from "../../command/MiniGizmos";
+import { AxisHelper, lineGeometry, plateGeometry } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { CutParams } from "./CutFactory";
 
@@ -49,8 +49,9 @@ export class CutGizmo extends CompositeGizmo<CutParams> {
     }
 }
 
+// Picks the plane across its axis, so a flat square on the axis
 class MirrorAxisGizmo extends AbstractGizmo<boolean>  {
-    readonly tip = new THREE.Mesh(arrowGeometry, this.material.mesh);
+    readonly tip = new THREE.Mesh(plateGeometry, this.material.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.material.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
     readonly helper = new AxisHelper(this.material.line);

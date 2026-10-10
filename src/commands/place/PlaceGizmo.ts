@@ -12,11 +12,12 @@ const Y = new THREE.Vector3(0, 1, 0);
 const Z = new THREE.Vector3(0, 0, 1);
 export class PlaceGizmo extends CompositeGizmo<PlaceParams> {
     private readonly materials = this.editor.gizmos;
-    private readonly blue = this.materials.blue;
-    private readonly yellow = this.materials.yellow;
-    private readonly z = new ScaleAxisGizmo("place:scale", this.editor, this.blue);
-    private readonly offset = new MirrorMoveGizmo("place:offset", this.editor, this.yellow);
-    private readonly angle = new AxisAngleGizmo("place:angle", this.editor, this.blue);
+    // Its handles set a scale, an offset and an angle, none of them along a world axis, so in the handle colour
+    private readonly handle = this.materials.default;
+    private readonly doubleSided = this.materials.doubleSided;
+    private readonly z = new ScaleAxisGizmo("place:scale", this.editor, this.handle);
+    private readonly offset = new MirrorMoveGizmo("place:offset", this.editor, this.doubleSided);
+    private readonly angle = new AxisAngleGizmo("place:angle", this.editor, this.handle);
 
     readonly pivot = new THREE.Vector3();
 

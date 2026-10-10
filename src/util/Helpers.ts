@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { ProxyCamera } from "../components/viewport/ProxyCamera";
 import { EditorSignals } from '../editor/EditorSignals';
-import { Theme } from '../startup/ConfigFiles';
 import * as visual from "../visual_model/VisualModel";
+import { axisColors } from './Constants';
 
 // Helpers are little visualization tools like gizmos that should
 // be rendered as a separate pass from the main scene so they appear
@@ -66,7 +66,7 @@ export class Helpers {
     readonly scene = new THREE.Scene();
     readonly axes: THREE.AxesHelper;
 
-    constructor(signals: EditorSignals, styles: Theme) {
+    constructor(signals: EditorSignals) {
         const axes = new THREE.AxesHelper(1); // each viewport scales it to its grid
         axes.layers.set(visual.Layers.Overlay);
         this.axes = axes;
@@ -77,9 +77,9 @@ export class Helpers {
         material.fog = false;
 
         axes.setColors(
-            new THREE.Color(styles.colors.red[600]).convertSRGBToLinear(),
-            new THREE.Color(styles.colors.green[600]).convertSRGBToLinear(),
-            new THREE.Color(styles.colors.blue[600]).convertSRGBToLinear());
+            new THREE.Color(axisColors.x).convertSRGBToLinear(),
+            new THREE.Color(axisColors.y).convertSRGBToLinear(),
+            new THREE.Color(axisColors.z).convertSRGBToLinear());
     }
 
     add(...objects: Helper[]) {

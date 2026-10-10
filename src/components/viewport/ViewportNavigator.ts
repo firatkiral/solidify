@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Pass } from "three/examples/jsm/postprocessing/Pass";
-import { Y } from "../../util/Constants";
+import { axisColors, Y } from "../../util/Constants";
 import { OrbitControls } from "./OrbitControls";
 import { Viewport } from "./Viewport";
 
@@ -35,9 +35,9 @@ export class ViewportNavigatorGizmo extends THREE.Object3D {
         panel.addEventListener('pointerdown', e => e.stopPropagation());
         viewport.domElement.appendChild(panel);
 
-        const color1 = new THREE.Color('#ff3653').convertSRGBToLinear();
-        const color2 = new THREE.Color('#8adb00').convertSRGBToLinear();
-        const color3 = new THREE.Color('#2c8fff').convertSRGBToLinear();
+        const color1 = new THREE.Color(axisColors.x).convertSRGBToLinear();
+        const color2 = new THREE.Color(axisColors.y).convertSRGBToLinear();
+        const color3 = new THREE.Color(axisColors.z).convertSRGBToLinear();
 
         const interactiveObjects: THREE.Object3D[] = [];
 

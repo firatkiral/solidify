@@ -2,14 +2,14 @@ import * as THREE from "three";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { Measure } from "../../command/MiniGizmos";
+import { Measure, sphereGeometry } from "../../command/MiniGizmos";
 import { deunit } from "../../util/Conversion";
 import { FilletFaceParams } from './ModifyFaceFactory';
 import { ExtrudeLikeGizmo, OffsetFaceGizmo } from "./OffsetFaceGizmo";
 
 
 export class RefilletGizmo extends CompositeGizmo<FilletFaceParams> {
-    private readonly distance = new ExtrudeLikeGizmo("refillet-face:distance", this.editor);
+    private readonly distance = new ExtrudeLikeGizmo("refillet-face:distance", this.editor, sphereGeometry);
 
     constructor(params: FilletFaceParams, editor: EditorLike, private readonly hint?: THREE.Vector3) {
         super(params, editor);
