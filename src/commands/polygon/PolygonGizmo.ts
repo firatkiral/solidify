@@ -55,9 +55,8 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
     private readonly plane = new THREE.Mesh(planeGeometry, this.editor.gizmos.invisible);
     private mode: 'pointer' | 'keyboard' = 'pointer';
 
-    // From the pointer to the ball when grabbed, so the ball doesn't jump to the pointer; and the angle it had then
+    // From the pointer to the ball when grabbed, so the ball doesn't jump to the pointer
     private readonly grab = new THREE.Vector3();
-    private startAngle = 0;
 
     constructor(name: string, editor: EditorLike) {
         super(name.split(':')[0], editor);
@@ -103,7 +102,6 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
         const point = this.pointerPoint(intersect);
         if (point === undefined) this.grab.set(0, 0, 0);
         else this.grab.copy(this.tip.position).sub(point);
-        this.startAngle = this.angle;
     }
 
     onPointerMove(cb: (radius: number) => void, intersect: Intersector, info: MovementInfo): number | undefined {
@@ -145,21 +143,18 @@ class PolygonVertexGizmo extends AbstractGizmo<number> {
         return this.state.current;
     }
 
-    // While gizmo snapping is on, the radius steps by the length step, counted from where the drag started
+    // While gizmo snapping is on, the radius steps to multiples of the length step
     private stepLength(radius: number, event: MouseEvent) {
         const { snaps } = this.editor;
         if (!snaps.gizmoSnapping) return radius;
-        const start = this.state.original;
-        return start + roundToStep(radius - start, snaps.lengthStep);
+        return roundToStep(radius, snaps.lengthStep);
     }
 
-    // While angle snapping is on, the angle steps by the angle step, counted from where the drag started
+    // While angle snapping is on, the angle steps to multiples of the angle step
     private stepAngle(angle: number, event: MouseEvent) {
         const { snaps } = this.editor;
         if (!snaps.angleSnapping) return angle;
-        const start = this.startAngle;
-        const delta = Math.atan2(Math.sin(angle - start), Math.cos(angle - start));
-        return start + deg2rad(roundToStep(rad2deg(delta), snaps.angleStep));
+        return deg2rad(roundToStep(rad2deg(angle), snaps.angleStep));
     }
 
     // The pointer in the gizmo's XY, in its coordinates; undefined when that plane is edge-on

@@ -33,8 +33,8 @@ export default {
 
     Snaps: {
         // The Snaps panel as it was last left: what snaps, and the steps in millimeters (one of the length unit to begin
-        // with) and degrees
-        grid: false,
+        // with) and degrees. Points snap to the grid from the first launch.
+        grid: true,
         handles: false,
         angles: false,
         point: true,

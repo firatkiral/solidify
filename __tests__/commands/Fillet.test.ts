@@ -253,6 +253,19 @@ describe(MultiFilletFactory, () => {
         expect(multi.distance2).toBe(0)
     })
 
+    it('keeps distance2 apart from distance1, also when the edges change', async () => {
+        const multi = new MultiFilletFactory(db, materials, signals);
+        multi.edges = [box1.edges.get(0), box2.edges.get(0)];
+        multi.distance1 = 0.1;
+        multi.distance2 = 0.2;
+        expect(multi.distance1).toBe(0.1);
+        expect(multi.distance2).toBe(0.2);
+
+        multi.edges = [box1.edges.get(0)];
+        expect(multi.factories[0].distance1).toBe(0.1);
+        expect(multi.factories[0].distance2).toBe(0.2);
+    })
+
     it.skip('using distance (not distance1 or distance2) uses the optimization', async () => {
         const multi = new MultiFilletFactory(db, materials, signals);
         multi.edges = [box1.edges.get(0), box2.edges.get(0)];

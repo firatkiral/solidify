@@ -64,6 +64,13 @@ export class SpiralGizmo extends CompositeGizmo<SpiralParams> {
         return super.execute(cb, Mode.Persistent);
     }
 
+    // Shows values set elsewhere, such as in the dialog
+    render(params: SpiralParams) {
+        this.angleGizmo.value = params.angle;
+        this.lengthGizmo.value = params.p2.distanceTo(params.p1);
+        this.radiusGizmo.value = params.radius;
+    }
+
     get shouldRescaleOnZoom() { return false }
 }
 

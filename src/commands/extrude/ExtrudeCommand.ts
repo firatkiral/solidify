@@ -1,10 +1,13 @@
 import * as THREE from "three";
 import Command, { EditorLike } from "../../command/Command";
+import { Measure } from "../../command/MiniGizmos";
 import { ObjectPicker } from "../../command/ObjectPicker";
 import { targetsLabel } from "../../components/dialog/Prompt";
 import { PointPicker } from "../../command/point-picker/PointPicker";
 import { SelectionMode } from "../../selection/SelectionModeSet";
+import c3d from '../../kernel/kernel';
 import { Y, Z } from "../../util/Constants";
+import { deunit, point2point } from "../../util/Conversion";
 import * as visual from "../../visual_model/VisualModel";
 import { MultiBooleanFactory } from "../boolean/BooleanFactory";
 import { PossiblyBooleanKeyboardGizmo } from "../boolean/BooleanKeyboardGizmo";
@@ -25,13 +28,14 @@ export class ExtrudeCommand extends Command {
         const gizmo = new ExtrudeGizmo(extrude, this.editor);
         const booleanKeyboard = new PossiblyBooleanKeyboardGizmo("extrude", this.editor);
         const directionKeyboard = new ExtrudeKeyboardGizmo(this.editor);
-        const dialog = new ExtrudeDialog(extrude, this.editor.signals);
+        const dialog = new ExtrudeDialog(extrude, this.editor.signals, () => gizmo.measure);
 
         booleanKeyboard.prepare(extrude, () => dialog.render()).resource(this);
         directionKeyboard.execute(onKeyPress(extrude, gizmo, dialog).bind(this)).resource(this);
 
         gizmo.position.copy(this.point ?? extrude.center);
         gizmo.quaternion.setFromUnitVectors(Y, extrude.direction);
+        gizmo.measure = totalThickness(this.editor, gizmo.position, extrude.direction);
 
         gizmo.execute(async params => {
             extrude.syncDistances();
@@ -76,6 +80,23 @@ export class ExtrudeCommand extends Command {
         for (const face of selected.faces) { selected.removeFace(face) }
         for (const region of selected.regions) { selected.removeRegion(region) }
     }
+}
+
+// Extruding one face of a solid, or one region drawn on a face, shows the solid's total thickness there, as offsetting
+// the face does: the extrusion adds to it going out of the solid and takes from it going in
+function totalThickness(editor: EditorLike, at: THREE.Vector3, direction: THREE.Vector3): Measure | undefined {
+    const { db, scene, selection: { selected } } = editor;
+    if (selected.faces.size + selected.regions.size + selected.curves.size !== 1) return undefined;
+    let under: { face: c3d.Face, normal: THREE.Vector3 } | undefined;
+    if (selected.faces.size === 1) {
+        under = { face: db.lookupTopologyItem([...selected.faces][0]), normal: direction };
+    } else if (selected.regions.size === 1) {
+        const visibleSolids = scene.visibleObjects.filter((item): item is visual.Solid => item instanceof visual.Solid);
+        [under] = solidsUnderRegion(db, [...selected.regions][0], visibleSolids);
+    }
+    const thickness = under?.face.GetThickness(point2point(at));
+    if (under === undefined || thickness === undefined) return undefined;
+    return new Measure('Total', deunit(thickness), Math.sign(direction.dot(under.normal)) || 1);
 }
 
 function ExtrudeFactory(editor: EditorLike) {

@@ -76,19 +76,26 @@ export class ScaleGizmo extends CompositeGizmo<ScaleParams> {
         return super.execute(cb, mode);
     }
 
+    // Shows a scale set elsewhere, such as in the dialog: on the axis handles, in the gizmo's own axes, with the planar
+    // and uniform handles back at 1, so the next drag multiplies it (see set in execute)
     render(params: ScaleParams) {
-        this.x.value = params.scale.x;
-        this.y.value = params.scale.y;
-        this.z.value = params.scale.z;
+        const local = params.scale.clone().applyQuaternion(this.quaternion.clone().invert());
+        this.x.value = Math.abs(local.x);
+        this.y.value = Math.abs(local.y);
+        this.z.value = Math.abs(local.z);
+        for (const planar of [this.xy, this.yz, this.xz]) planar.value = 1;
+        this.xyz.value = 1;
     }
 }
 
 export class CircleScaleGizmo extends CircularGizmo<number> {
     private denominator = 1;
+    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), new NumberHelper(factor => factor.toFixed(2))]); // a scale factor has no unit
 
     constructor(name: string, editor: EditorLike) {
         super(name, editor, editor.gizmos.white, new MagnitudeStateMachine(1));
         this.setup();
+        this.add(this.helper);
         this.render(this.state.current);
     }
 
@@ -105,6 +112,12 @@ export class CircleScaleGizmo extends CircularGizmo<number> {
         this.render(this.state.current);
         cb(this.state.current);
         return magnitude;
+    }
+
+    get value() { return this.state.current }
+    set value(magnitude: number) {
+        this.state.original = magnitude;
+        this.render(magnitude);
     }
 
     render(magnitude: number) {
@@ -137,7 +150,14 @@ export class ScaleAxisGizmo extends AbstractAxialScaleGizmo {
 
 export class PlanarScaleGizmo extends PlanarGizmo<number> {
     readonly state = new MagnitudeStateMachine(1);
-    readonly helper = new DashedLineMagnitudeHelper();
+    private readonly readout = new NumberHelper(factor => factor.toFixed(2)); // a scale factor has no unit
+    readonly helper = new CompositeHelper<number>([new DashedLineMagnitudeHelper(), this.readout]);
+
+    constructor(name: string, editor: EditorLike, material: GizmoMaterial) {
+        super(name, editor, material);
+        this.readout.position.set(0.5, 1, 0);
+        this.add(this.helper);
+    }
 
     onPointerMove(cb: (value: number) => void, intersect: Intersector, info: MovementInfo) {
         const { plane, denominator, state } = this;
@@ -155,7 +175,7 @@ export class PlanarScaleGizmo extends PlanarGizmo<number> {
         return magnitude;
     }
 
-    render(magnitude: number) {
+    override render(magnitude: number) {
         this.handle.position.set(0.3 * magnitude, 0.3 * magnitude, 0);
         this.knob.position.copy(this.handle.position);
     }

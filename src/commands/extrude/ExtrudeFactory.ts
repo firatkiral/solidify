@@ -156,9 +156,9 @@ export class RegionExtrudeFactory extends AbstractExtrudeFactory {
     set direction(direction: THREE.Vector3) { this._direction = direction }
 }
 
-// The solids with a flat face under the region, and that face's outward normal, so the region can be extruded into them
-// like the face itself
-export function solidsUnderRegion(db: DatabaseLike, region: visual.PlaneInstance<visual.Region>, solids: visual.Solid[]): { solid: visual.Solid, normal: THREE.Vector3 }[] {
+// The solids with a flat face under the region, that face and its outward normal, so the region can be extruded into
+// them like the face itself
+export function solidsUnderRegion(db: DatabaseLike, region: visual.PlaneInstance<visual.Region>, solids: visual.Solid[]): { solid: visual.Solid, face: c3d.Face, normal: THREE.Vector3 }[] {
     const placement = db.lookup(region).GetPlacement();
     const inside = pointInside(region);
     const box = new THREE.Box3().setFromObject(region).expandByScalar(10e-4);
@@ -171,7 +171,7 @@ export function solidsUnderRegion(db: DatabaseLike, region: visual.PlaneInstance
             const { u, v } = face.NearPointProjection(point2point(inside));
             const { faceU, faceV } = face.GetFaceParam(u, v);
             if (inside.manhattanDistanceTo(point2point(face.Point(faceU, faceV))) >= 10e-4) continue;
-            result.push({ solid, normal: vec2vec(face.Normal(faceU, faceV), 1) });
+            result.push({ solid, face, normal: vec2vec(face.Normal(faceU, faceV), 1) });
             break;
         }
     }

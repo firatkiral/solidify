@@ -3,13 +3,14 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import { ProxyCamera } from "../components/viewport/ProxyCamera";
 import { Viewport } from "../components/viewport/Viewport";
+import { CancellablePromise } from "../util/CancellablePromise";
 import { CancellableRegisterable } from "../util/CancellableRegisterable";
 import { CancellableRegistor } from "../util/CancellableRegistor";
 import { deg2rad, rad2deg, roundToStep } from "../util/Conversion";
 import { formatAngle, formatLength, fromLengthUnit, lengthUnit } from "../util/Units";
 import { Helper } from "../util/Helpers";
 import { CircleGeometry } from "../util/Util";
-import { AbstractGizmo, EditorLike, GizmoHelper, Intersector, MovementInfo } from "./AbstractGizmo";
+import { AbstractGizmo, EditorLike, GizmoHelper, Intersector, Mode, MovementInfo } from "./AbstractGizmo";
 import { GizmoMaterial } from "./GizmoMaterials";
 import { KeyboardInterpreter, TextCalculator } from "./KeyboardInterpreter";
 
@@ -159,12 +160,11 @@ export class AngleGizmo extends CircularGizmo<number> {
         this.mode = 'pointer';
     }
 
-    // Angles step by the angle step, counted from the angle the drag started at, while angle snapping is on.
+    // Angles step to multiples of the angle step while angle snapping is on.
     protected truncate(angle: number, event: MouseEvent): number {
         const { snaps } = this.editor;
         if (!snaps.angleSnapping) return angle;
-        const start = this.state.original;
-        return start + deg2rad(roundToStep(rad2deg(angle - start), snaps.angleStep));
+        return deg2rad(roundToStep(rad2deg(angle), snaps.angleStep));
     }
 
     override onKeyPress(cb: (angle: number) => void, text: KeyboardInterpreter) {
@@ -205,14 +205,36 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
         super(longName.split(':')[0], editor);
     }
 
-    // Lengths step by the gizmo length step, counted from the value the drag started at, while gizmo snapping is on;
-    // ratios (scale) opt out.
+    // Lengths step to multiples of the gizmo length step while gizmo snapping is on, as shown (see Measure); ratios
+    // (scale) opt out.
     protected get stepsAsLength() { return true }
     protected stepLength(length: number, event: MouseEvent): number {
         const { snaps } = this.editor;
         if (!this.stepsAsLength || !snaps.gizmoSnapping) return length;
-        const start = this.state.original;
-        return start + roundToStep(length - start, snaps.lengthStep);
+        const { measure } = this;
+        if (measure === undefined) return roundToStep(length, snaps.lengthStep);
+        return measure.value(roundToStep(measure.shown(length), snaps.lengthStep));
+    }
+
+    // The real size this handle sets, which its readout shows and typing and snapping go by. Pinned, the readout
+    // shows from the start; otherwise only while dragging or typing.
+    private _measure?: Measure;
+    get measure() { return this._measure }
+    set measure(measure: Measure | undefined) { this.setMeasure(measure, true) }
+    setMeasure(measure: Measure | undefined, pinned: boolean) {
+        this._measure = measure;
+        const readout = findReadout(this.helper);
+        if (readout === undefined) return;
+        const viewport = this.editor.activeViewport ?? [...this.editor.viewports][0];
+        if (measure === undefined || viewport === undefined) readout.unmeasure();
+        else readout.measure(viewport, measure, () => this.state.current, pinned);
+    }
+
+    override execute(cb: (value: number) => void, mode?: Mode): CancellablePromise<void> {
+        const executing = super.execute(cb, mode);
+        const unmeasure = () => findReadout(this.helper)?.unmeasure();
+        executing.then(unmeasure, unmeasure);
+        return executing;
     }
 
     protected setup() {
@@ -276,10 +298,11 @@ export abstract class AbstractAxisGizmo extends AbstractGizmo<number>  {
         return this.state.current;
     }
 
-    // Lengths are typed in the length unit
+    // Lengths are typed in the length unit, as shown (see Measure)
     override onKeyPress(cb: (distance: number) => void, text: KeyboardInterpreter) {
         const typed = TextCalculator.calculate(text.state);
-        const distance = typed !== undefined && this.stepsAsLength ? fromLengthUnit(typed) : typed;
+        const shown = typed !== undefined && this.stepsAsLength ? fromLengthUnit(typed) : typed;
+        const distance = shown !== undefined && this.measure !== undefined ? this.measure.value(shown) : shown;
         if (distance === undefined) {
             this.mode = 'pointer';
             return this.state.current;
@@ -385,6 +408,10 @@ export abstract class PlanarGizmo<T> extends AbstractGizmo<T> {
     protected denominator = 1;
     abstract readonly state: AbstractValueStateMachine<T>;
     get value() { return this.state.current }
+    set value(value: T) {
+        this.state.original = value;
+        this.render(value);
+    }
 
     protected readonly square = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), this.material.mesh);
     protected readonly knob = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), this.editor.gizmos.invisible);
@@ -629,57 +656,107 @@ points.push(new THREE.Vector3(0, -10_000, 0));
 points.push(new THREE.Vector3(0, 10_000, 0));
 axisGeometry.setFromPoints(points);
 
-// The gizmo's value as text, with its unit: lengths by default
-export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>, CancellableRegisterable {
-    private readonly element: HTMLElement;
-    private viewport?: Viewport;
+// What a handle shows instead of its own value: the real size it sets, like a face's total thickness when the
+// handle's value is how far the face moves. Shown = base + rate × value. Switched to offset (by the field in the
+// command's dialog that shows it too), it shows the value itself.
+export class Measure {
+    offset = false;
+    constructor(readonly label: string, readonly base: number, readonly rate: number) { }
+    get name() { return this.offset ? 'Offset' : this.label }
+    shown(value: number) { return this.offset ? value : this.base + this.rate * value }
+    value(shown: number) { return this.offset ? shown : (shown - this.base) / this.rate }
+}
 
-    constructor(private readonly format: (t: number) => string = formatLength) {
+// The gizmo's value as text, with its unit: lengths by default; shown while dragging or typing. Measured, it shows the
+// measure instead (see Measure); pinned, it shows all along.
+export class NumberHelper<T = number> extends Helper implements GizmoHelper<T>, CancellableRegisterable {
+    private readonly element = document.createElement('div');
+    private readonly text = document.createElement('span');
+    private viewport?: Viewport;
+    private measured?: { measure: Measure, value: () => number, pinned: boolean };
+    private typing = false;
+
+    constructor(private readonly format: (t: T) => string = formatLength as unknown as (t: T) => string) {
         super();
-        const div = document.createElement('div');
-        div.className = 'axis-helper';
-        this.element = div;
+        this.element.className = 'axis-helper';
+        this.element.append(this.text);
         this.position.set(0, 2, 0);
     }
 
-    onStart(viewport: Viewport, position: THREE.Vector2) {
+    private formatted(value: T) {
+        const { measured } = this;
+        return this.format((measured === undefined ? value : measured.measure.shown(value as unknown as number)) as unknown as T);
+    }
+
+    private get pinned() { return this.measured?.pinned ?? false }
+
+    private mount(viewport: Viewport) {
+        if (this.viewport !== viewport || this.element.parentNode === null) viewport.domElement.appendChild(this.element);
         this.viewport = viewport;
-        viewport.domElement.appendChild(this.element);
-        this.element.hidden = true;
     }
 
-    onMove(position: THREE.Vector2 | THREE.Vector3, value: number) {
+    measure(viewport: Viewport, measure: Measure, value: () => number, pinned: boolean) {
+        this.measured = { measure, value, pinned };
+        if (!pinned) return;
+        this.mount(viewport);
+        this.text.textContent = this.formatted(value() as unknown as T);
         this.element.hidden = false;
-        this.element.textContent = this.format(value);
+    }
+
+    unmeasure() {
+        this.measured = undefined;
+        this.element.remove();
+    }
+
+    // A pinned readout follows the handle, and shows when the handle does
+    update(camera: THREE.Camera) {
+        super.update(camera);
+        const { measured, viewport } = this;
+        if (measured === undefined || !measured.pinned || viewport === undefined || viewport.camera !== camera) return;
+        let shown = true;
+        for (let o: THREE.Object3D | null = this; o !== null; o = o.parent) shown &&= o.visible;
+        this.element.hidden = !shown;
+        if (!this.typing) this.text.textContent = this.formatted(measured.value() as unknown as T);
         this.project();
     }
 
-    onPointPickerMove(viewport: Viewport, value: number) {
-        if (this.viewport !== viewport) {
-            this.viewport = viewport;
-            viewport.domElement.appendChild(this.element);
-        }
+    onStart(viewport: Viewport, position: THREE.Vector2) {
+        this.mount(viewport);
+        this.element.hidden = !this.pinned;
+    }
+
+    onMove(position: THREE.Vector2 | THREE.Vector3, value: T) {
         this.element.hidden = false;
-        this.element.textContent = this.format(value);
+        this.text.textContent = this.formatted(value);
         this.project();
     }
 
-    private readonly worldPosition = new THREE.Vector3();
+    onPointPickerMove(viewport: Viewport, value: T) {
+        this.mount(viewport);
+        this.element.hidden = false;
+        this.text.textContent = this.formatted(value);
+        this.project();
+    }
+
+    private readonly at = new THREE.Vector3();
     private project() {
-        const projected = this.getWorldPosition(this.worldPosition).project(this.viewport!.camera);
+        const projected = this.getWorldPosition(this.at).project(this.viewport!.camera);
         this.viewport!.denormalizeScreenPosition(projected as any);
         this.element.style.top = projected.y + 'px';
         this.element.style.left = projected.x + 'px';
     }
 
-    onKeyPress(value: number, text: KeyboardInterpreter): void {
+    onKeyPress(value: T, text: KeyboardInterpreter): void {
+        this.typing = true;
         this.element.hidden = false;
-        this.element.textContent = this.format === formatLength ? `${text.state} ${lengthUnit()}` : text.state;
+        this.text.textContent = (this.format as unknown) === formatLength ? `${text.state} ${lengthUnit()}` : text.state;
         this.project();
     }
 
     onEnd() {
-        this.element.parentNode?.removeChild(this.element);
+        this.typing = false;
+        if (!this.pinned) this.element.remove();
+        else this.text.textContent = this.formatted(this.measured!.value() as unknown as T);
     }
 
     onInterrupt() { this.onEnd() }
@@ -689,9 +766,18 @@ export class NumberHelper extends THREE.Object3D implements GizmoHelper<number>,
         return this;
     }
 
-    cancel() { this.onEnd() }
-    finish() { this.onEnd() }
-    interrupt() { this.onEnd() }
+    cancel() { this.unmeasure() }
+    finish() { this.unmeasure() }
+    interrupt() { this.unmeasure() }
+}
+
+// The number readout among a gizmo's helpers
+function findReadout(helper: GizmoHelper<any> | undefined): NumberHelper<any> | undefined {
+    if (helper instanceof NumberHelper) return helper;
+    if (helper instanceof CompositeHelper) for (const h of helper.helpers) {
+        const found = findReadout(h);
+        if (found !== undefined) return found;
+    }
 }
 
 export class AxisHelper extends Helper implements GizmoHelper<any>, CancellableRegisterable {
@@ -722,7 +808,7 @@ export class AxisHelper extends Helper implements GizmoHelper<any>, CancellableR
 }
 
 export class CompositeHelper<I> extends THREE.Object3D implements GizmoHelper<I> {
-    constructor(private readonly helpers: GizmoHelper<I>[]) {
+    constructor(readonly helpers: GizmoHelper<I>[]) {
         super();
         for (const helper of helpers) {
             if (helper instanceof THREE.Object3D) this.add(helper);

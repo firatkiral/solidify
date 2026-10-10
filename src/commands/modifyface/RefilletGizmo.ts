@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
+import { Measure } from "../../command/MiniGizmos";
+import { deunit } from "../../util/Conversion";
 import { FilletFaceParams } from './ModifyFaceFactory';
 import { ExtrudeLikeGizmo, OffsetFaceGizmo } from "./OffsetFaceGizmo";
 
@@ -24,6 +26,7 @@ export class RefilletGizmo extends CompositeGizmo<FilletFaceParams> {
         const { point, normal } = this.placement(this.hint);
         this.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
         this.position.copy(point);
+        distance.measure = this.measure();
 
         this.add(distance);
 
@@ -33,6 +36,15 @@ export class RefilletGizmo extends CompositeGizmo<FilletFaceParams> {
         });
 
         return super.execute(cb, finishFast);
+    }
+
+    // The fillet's radius, which grows by the distance (see refillet in the kernel), when every face has the same one
+    private measure(): Measure | undefined {
+        const { params: { faces }, editor: { db } } = this;
+        const radii = faces.map(view => db.lookupTopologyItem(view).GetCylinder()?.radius);
+        const radius = radii[0];
+        if (radius === undefined || radii.some(r => r === undefined || Math.abs(r - radius) > 1e-6)) return undefined;
+        return new Measure('Radius', deunit(radius), 1);
     }
 
     private placement(point?: THREE.Vector3): { point: THREE.Vector3; normal: THREE.Vector3; } {

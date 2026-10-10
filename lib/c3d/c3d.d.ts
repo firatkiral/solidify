@@ -2304,6 +2304,10 @@ declare module "*c3d.node" {
 
         async GetPlacement_async(): Promise < Placement3D >
         ;
+        GetCylinder(): { radius: number, boss: boolean } | undefined;
+
+        GetThickness(point: CartPoint3D): number | undefined;
+
         GetPlanePlacement(): Placement3D;
 
         async GetPlanePlacement_async(): Promise < Placement3D >

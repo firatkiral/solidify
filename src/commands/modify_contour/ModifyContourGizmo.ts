@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2";
 import { EditorLike, Intersector, Mode, MovementInfo } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { AbstractAxialScaleGizmo, AbstractAxisGizmo, arrowGeometry, AxisHelper, lineGeometry, MagnitudeStateMachine, sphereGeometry } from "../../command/MiniGizmos";
+import { AbstractAxialScaleGizmo, AbstractAxisGizmo, arrowGeometry, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, Measure, NumberHelper, sphereGeometry } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { Helper } from "../../util/Helpers";
 import { AdvancedGizmoTriggerStrategy } from "../../command/AdvancedGizmoTriggerStrategy";
@@ -82,6 +82,13 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
         disposable.add(segmentTrigger.execute());
         disposable.add(filletTrigger.execute());
 
+        // Each handle shows the size it changes, where there is one; from the start when it is the only one
+        const measures = segments.map(segment => params.segmentMeasures[segment.userData.index]);
+        const pinned = measures.filter(m => m !== undefined).length === 1;
+        for (const [i, measure] of measures.entries()) {
+            if (measure !== undefined) segments[i].setMeasure(new Measure(measure.label, measure.base, measure.rate), pinned);
+        }
+
         for (const segment of segments) {
             this.addGizmo(segment, d => {
                 this.disableCorners();
@@ -140,7 +147,8 @@ export class ModifyContourGizmo extends CompositeGizmo<ModifyContourParams> {
 class PushCurveGizmo extends AbstractAxisGizmo {
     readonly state = new MagnitudeStateMachine(0, false);
     protected material = this.editor.gizmos.default;
-    readonly helper = new AxisHelper(this.material.line);
+    private readonly readout = new NumberHelper();
+    readonly helper = new CompositeHelper([new AxisHelper(this.material.line), this.readout]);
     readonly tip = new THREE.Mesh(arrowGeometry, this.editor.gizmos.default.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.editor.gizmos.default.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
@@ -153,6 +161,12 @@ class PushCurveGizmo extends AbstractAxisGizmo {
     }
 
     // render(length: number) { super.render(-length - 0.35) }
+
+    // The readout stays by the arrow as it moves
+    render(length: number) {
+        super.render(length);
+        this.readout?.position.copy(this.tip.position);
+    }
 
     protected accumulate(original: number, sign: number, dist: number): number {
         return original + dist

@@ -30,6 +30,12 @@ interface OffsetPrecomputeInfo {
     beforeIsAfter: boolean;
 }
 
+export interface SegmentMeasure {
+    label: string;
+    base: number;
+    rate: number;
+}
+
 export interface OffsetResult {
     before_extended: c3d.Curve3D;
     active_new: c3d.Curve3D | undefined;
@@ -130,6 +136,42 @@ export class ModifyContourSegmentFactory extends GeometryFactory {
             });
         }
         return result;
+    }
+
+    // What pushing each segment changes, when that is a real size: shown = base + rate × distance. A circle's radius, a
+    // lone arc's height, an arc's radius in a contour (calculate() refillets a smooth one at r + d/2, offsets a sharp
+    // one to r − d), and a line's distance to the nearest line parallel to it on its other side.
+    get segmentMeasures(): (SegmentMeasure | undefined)[] {
+        const circle = this.circle;
+        if (circle !== undefined) return [{ label: 'Radius', base: deunit(circle.GetRadius()), rate: 1 }];
+
+        const arc = this.arc;
+        if (arc !== undefined) {
+            const { origin: middle, normal } = this.segmentAngles[0];
+            const chord = point2point(arc.GetLimitPoint(1)).add(point2point(arc.GetLimitPoint(2))).multiplyScalar(0.5);
+            return [{ label: 'Height', base: middle.clone().sub(chord).dot(normal), rate: 1 }];
+        }
+
+        const angles = this.segmentAngles;
+        const segments = this.contour.GetSegments().map(s => s.Cast<c3d.Curve3D>(s.IsA()));
+        return segments.map((segment, i) => {
+            if (!angles[i].pushable) return undefined;
+            if (segment.GetBasisCurve().IsA() === c3d.SpaceType.Arc3D) {
+                const { before, active, after } = this.precompute(i);
+                const radius = deunit((active as c3d.Arc3D).GetRadius());
+                return { label: 'Radius', base: radius, rate: isSmoothlyConnected(before, active, after) ? 0.5 : -1 };
+            }
+            if (!segment.IsStraight()) return undefined;
+            const { origin, normal } = angles[i];
+            let width: number | undefined;
+            for (const [j, other] of segments.entries()) {
+                if (j === i || !other.IsStraight() || Math.abs(normal.dot(angles[j].normal)) < 1 - 1e-6) continue;
+                const w = origin.clone().sub(angles[j].origin).dot(normal);
+                if (Math.abs(w) > 1e-6 && (width === undefined || Math.abs(w) < Math.abs(width))) width = w;
+            }
+            if (width === undefined) return undefined;
+            return { label: 'Width', base: Math.abs(width), rate: Math.sign(width) };
+        });
     }
 
     // Only lines, polylines and arcs can be pushed, and only next to the neighbors process() handles

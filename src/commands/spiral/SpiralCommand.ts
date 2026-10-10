@@ -42,11 +42,12 @@ export class SpiralCommand extends Command {
         measurements.reset();
 
         const dialog = new SpiralDialog(spiral, this.editor.signals);
+        const spiralGizmo = new SpiralGizmo(spiral, this.editor);
         dialog.execute(params => {
+            spiralGizmo.render(spiral);
             spiral.update();
         }).resource(this);
 
-        const spiralGizmo = new SpiralGizmo(spiral, this.editor);
         spiralGizmo.execute(params => {
             spiral.update();
             dialog.render();

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2";
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { AbstractAxialScaleGizmo, AngleGizmo, boxGeometry, DistanceGizmo, lineGeometry, MagnitudeStateMachine } from "../../command/MiniGizmos";
+import { AbstractAxialScaleGizmo, AngleGizmo, boxGeometry, DistanceGizmo, lineGeometry, MagnitudeStateMachine, Measure } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { ExtrudeParams } from "./ExtrudeFactory";
 
@@ -44,6 +44,10 @@ export class ExtrudeGizmo extends CompositeGizmo<ExtrudeParams> {
 
         return super.execute(cb, finishFast);
     }
+
+    // What the distance handle shows instead of the distance (see Measure)
+    get measure() { return this.distance1Gizmo.measure }
+    set measure(measure: Measure | undefined) { this.distance1Gizmo.measure = measure }
 
     render(params: ExtrudeParams) {
         this.distance1Gizmo.value = params.distance1;

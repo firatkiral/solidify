@@ -41,7 +41,7 @@ export class ThinSolidCommand extends Command {
         const dialog = new ThinSolidDialog(thin, this.editor.signals);
 
         dialog.execute(async (params) => {
-            gizmo.render(params.thickness1);
+            gizmo.value = params.thickness1;
             await thin.update();
         }).resource(this).then(() => this.finish(), () => this.cancel());
 

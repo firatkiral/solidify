@@ -18,7 +18,6 @@ import { CenterEllipseCommand, ThreePointEllipseCommand } from "./ellipse/Ellips
 import { EvolutionCommand } from "./evolution/EvolutionCommand";
 import { PipeCommand } from "./evolution/PipeCommand";
 import { RevolutionCommand } from "./evolution/RevolutionCommand";
-import { ExtensionShellCommand } from "./extend/ExtensionCommand";
 import { ExtrudeCommand } from "./extrude/ExtrudeCommand";
 import { FilletSolidCommand } from "./fillet/FilletCommand";
 import { LoftCommand } from "./loft/LoftCommand";
@@ -91,7 +90,6 @@ export {
     CenterBoxCommand,
     SpiralCommand,
     CharacterCurveCommand,
-    ExtensionShellCommand,
     DeleteCommand,
     MirrorCommand,
     TrimCommand,

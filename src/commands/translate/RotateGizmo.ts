@@ -92,9 +92,16 @@ export class RotateGizmo extends CompositeGizmo<RotateParams> {
         return super.execute(cb, finishFast, disposable);
     }
 
+    // Shows a rotation set elsewhere, such as in the dialog: on the handle for its axis, the others back at rest. A
+    // rotation about another axis has no handle; dragging one starts a rotation about its own axis, as after another handle.
     render(params: RotateParams) {
         this.position.copy(params.pivot);
-        this.z.value = params.angle;
+        const local = params.axis.clone().normalize().applyQuaternion(this.quaternion.clone().invert());
+        for (const [gizmo, axis] of [[this.x, X], [this.y, Y], [this.z, Z]] as const) {
+            const along = local.dot(axis);
+            gizmo.value = Math.abs(Math.abs(along) - 1) < 1e-6 ? Math.sign(along) * params.angle : 0;
+        }
+        this.screen.value = 0;
     }
 }
 
@@ -123,7 +130,7 @@ export class AxisAngleGizmo extends AngleGizmo {
         const angle = this.sign * info.angle + this.state.original;
         this.state.current = this.truncate(angle, info.event);
         cb(this.state.current);
-        return info.angle;
+        return this.state.current;
     }
 
     get shouldLookAtCamera() { return false }

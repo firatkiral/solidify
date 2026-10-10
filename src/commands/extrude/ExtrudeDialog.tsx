@@ -2,6 +2,7 @@ import { render } from 'preact';
 import c3d from '../../kernel/kernel';
 import { EditorSignals } from "../../editor/EditorSignals";
 import { AbstractDialog } from "../../command/AbstractDialog";
+import { Measure } from "../../command/MiniGizmos";
 import * as visual from '../../visual_model/VisualModel';
 import { ExtrudeParams, NewBody } from './ExtrudeFactory';
 
@@ -10,12 +11,19 @@ type ExtrudeDialogParams = ExtrudeParams & { symmetric: boolean, operation: numb
 export class ExtrudeDialog extends AbstractDialog<ExtrudeDialogParams> {
     name = "Extrude";
 
-    constructor(protected readonly params: ExtrudeDialogParams, signals: EditorSignals) {
+    // measure: what the first distance shows instead of the distance, if anything (see ExtrudeCommand)
+    constructor(protected readonly params: ExtrudeDialogParams, signals: EditorSignals, private readonly measure: () => Measure | undefined = () => undefined) {
         super(signals);
+    }
+
+    protected fromShown(key: string, value: any) {
+        const measure = this.measure();
+        return key === 'distance1' && measure !== undefined ? measure.value(value) : value;
     }
 
     render() {
         const { distance1, distance2, symmetric, operation, targets, race1, race2, thickness1, thickness2 } = this.params;
+        const measure = this.measure();
         const choice = (id: string, label: string, value: number) => <>
             <input type="radio" hidden name="operation" id={id} value={value} checked={operation === value} onClick={this.onChange}></input>
             <label for={id}>{label}</label>
@@ -40,7 +48,7 @@ export class ExtrudeDialog extends AbstractDialog<ExtrudeDialogParams> {
                     <li>
                         <label for="distance">Distance</label>
                         <div class="fields">
-                            <solidify-number-scrubber name="distance1" unit="length" value={distance1} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
+                            <solidify-number-scrubber name="distance1" unit="length" value={measure?.shown(distance1) ?? distance1} measure={measure?.name} onmeasure={() => this.switchMeasure(measure)} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                             <solidify-number-scrubber name="distance2" unit="length" value={distance2} onchange={this.onChange} onscrub={this.onChange} onfinish={this.onChange}></solidify-number-scrubber>
                         </div>
                     </li>

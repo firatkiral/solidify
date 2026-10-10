@@ -121,8 +121,17 @@ export class FilletSolidGizmo extends CompositeGizmo<FilletParams> {
         }
     }
 
-    render(length: number) {
-        this.main.render(length * Math.tan(Math.PI / 4));
+    // Shows distances set elsewhere, such as in the dialog: the handles at the first distance (negative for a chamfer),
+    // and a chamfer's angle from its two distances
+    render(params: FilletParams) {
+        const { main, stretchFillet, stretchChamfer, angle } = this;
+        const { distance1, distance2 } = params;
+        main.value = distance1;
+        stretchFillet.value = distance1;
+        stretchChamfer.value = -distance1;
+        if (distance1 !== 0 && distance2 !== 0) angle.value = Math.atan2(Math.abs(distance2), Math.abs(distance1));
+        // Before it runs, the dialog can already change it
+        if (angle.stateMachine !== undefined) angle.stateMachine.isEnabled = this.shouldShowAngle;
     }
 
     addVariable(point: THREE.Vector3, edge: c3d.CurveEdge, t: number): FilletMagnitudeGizmo {

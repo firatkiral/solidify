@@ -5,14 +5,16 @@ import * as THREE from "three";
 import { degToRad } from "three/src/math/MathUtils";
 import { Intersector, MovementInfo } from "../../src/command/AbstractGizmo";
 import { GizmoMaterialDatabase } from "../../src/command/GizmoMaterials";
-import { AngleGizmo, DistanceGizmo, LengthGizmo } from "../../src/command/MiniGizmos";
+import { KeyboardInterpreter } from "../../src/command/KeyboardInterpreter";
+import { AngleGizmo, DistanceGizmo, LengthGizmo, Measure } from "../../src/command/MiniGizmos";
 import { CircleMoveGizmo, MoveAxisGizmo, PlanarMoveGizmo } from "../../src/commands/translate/MoveGizmo";
 import { CircleScaleGizmo, PlanarScaleGizmo, ScaleAxisGizmo } from "../../src/commands/translate/ScaleGizmo";
 import { Viewport } from "../../src/components/viewport/Viewport";
 import { Editor } from "../../src/editor/Editor";
 import { EditorSignals } from '../../src/editor/EditorSignals';
 import { GeometryDatabase } from '../../src/editor/GeometryDatabase';
-import { Helpers } from "../../src/util/Helpers";
+import { Helper, Helpers } from "../../src/util/Helpers";
+import { formatLength, fromLengthUnit } from "../../src/util/Units";
 import { MakeViewport } from "../../__mocks__/FakeViewport";
 import '../matchers';
 
@@ -81,7 +83,7 @@ describe(AngleGizmo, () => {
         editor.snaps.angleSnapping = false;
     })
 
-    test("angle steps count from the angle the drag started at", () => {
+    test("angles step to multiples of the angle step, wherever the drag started", () => {
         const intersector = { raycast: jest.fn(), snap: jest.fn() } as Intersector;
         const cb = jest.fn();
         const event = new MouseEvent('move');
@@ -90,7 +92,7 @@ describe(AngleGizmo, () => {
         gizmo.onPointerEnter(intersector);
         gizmo.onPointerDown(cb, intersector, { viewport, event } as MovementInfo);
         gizmo.onPointerMove(cb, intersector, { angle: degToRad(11), viewport, event } as MovementInfo);
-        expect(gizmo.value).toBeCloseTo(degToRad(22));
+        expect(gizmo.value).toBeCloseTo(degToRad(25));
         editor.snaps.angleSnapping = false;
     })
 
@@ -229,7 +231,7 @@ describe(LengthGizmo, () => {
         editor.snaps.stepLengthStep(-1);
     })
 
-    test("steps count from the value the drag started at", () => {
+    test("lengths step to multiples of the length step, wherever the drag started", () => {
         const intersector = { raycast: jest.fn(), snap: jest.fn() };
         const cb = jest.fn();
         editor.snaps.gizmoSnapping = true;
@@ -239,7 +241,7 @@ describe(LengthGizmo, () => {
         gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
         intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 23, 0) })
         gizmo.onPointerMove(cb, intersector, { viewport, event: new MouseEvent('move') } as MovementInfo);
-        expect(gizmo.value).toBeCloseTo(57);
+        expect(gizmo.value).toBeCloseTo(60);
         editor.snaps.gizmoSnapping = false;
     })
 
@@ -300,6 +302,58 @@ describe(DistanceGizmo, () => {
         expect(gizmo.value).toBe(1);
         gizmo.onPointerUp(cb, intersector, info)
         gizmo.onPointerLeave(intersector);
+    })
+
+    describe("with a measure", () => {
+        const type = (text: string) => {
+            const keyboard = new KeyboardInterpreter();
+            for (const key of text) keyboard.interpret(new KeyboardEvent('keydown', { key }));
+            return keyboard;
+        }
+        const readout = () => [...viewport.domElement.querySelectorAll('.axis-helper')].map(e => e.textContent);
+        // A pinned readout goes on the active viewport
+        beforeEach(() => { editor.viewports.add(viewport) });
+
+        test("its readout shows the measure from the start, or the offset once switched", () => {
+            const measure = new Measure('Total', 30, 1);
+            gizmo.measure = measure;
+            expect(readout()).toEqual([formatLength(30)]);
+            // As the viewport does before it renders
+            const render = () => gizmo.traverse(o => { if (o instanceof Helper) o.update(viewport.camera) });
+            gizmo.value = 5;
+            render();
+            expect(readout()).toEqual([formatLength(35)]);
+
+            measure.offset = true;
+            render();
+            expect(readout()).toEqual([formatLength(5)]);
+        })
+
+        test("typing sets the measure, not the offset", () => {
+            const cb = jest.fn();
+            gizmo.measure = new Measure('Radius', 20, -1);
+            gizmo.onKeyPress(cb, type('15'));
+            expect(gizmo.value).toBeCloseTo(20 - fromLengthUnit(15));
+            expect(cb).toHaveBeenLastCalledWith(gizmo.value);
+
+            gizmo.measure!.offset = true;
+            gizmo.onKeyPress(cb, type('15'));
+            expect(gizmo.value).toBeCloseTo(fromLengthUnit(15));
+        })
+
+        test("snapping rounds the measure", () => {
+            const intersector = { raycast: jest.fn(), snap: jest.fn() };
+            const cb = jest.fn();
+            editor.snaps.gizmoSnapping = true;
+            gizmo.measure = new Measure('Total', 33, 1);
+            intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3() })
+            gizmo.onPointerDown(cb, intersector, {} as MovementInfo);
+            intersector.raycast.mockReturnValueOnce({ point: new THREE.Vector3(0, 11, 0) })
+            gizmo.onPointerMove(cb, intersector, { viewport, event: moveEvent } as MovementInfo);
+            // 33 + 11 = 44 rounds to 40, so the offset is 7
+            expect(gizmo.value).toBeCloseTo(40 - 33);
+            editor.snaps.gizmoSnapping = false;
+        })
     })
 })
 

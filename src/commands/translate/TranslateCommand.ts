@@ -221,6 +221,7 @@ abstract class AbstractRotateCommand extends Command implements PivotCommand {
 
         dialog.execute(async (params) => {
             await rotate.update();
+            gizmo.render(params);
         }).resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.execute(s => {

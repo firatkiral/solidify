@@ -437,15 +437,6 @@ export default (editor: Editor) => {
                             <path d="M13 19L17.8844 13.3016C18.5263 12.5526 18.5263 11.4474 17.8844 10.6984L13 5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M17 19L21.8844 13.3016C22.5263 12.5526 22.5263 11.4474 21.8844 10.6984L17 5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
-                case 'extension-shell':
-                    return render(
-                        <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M15.7001 12.3748L12.4685 16.4143C12.2283 16.7146 11.7717 16.7146 11.5315 16.4143L8.29985 12.3748C8.12455 12.1557 8.12455 11.8443 8.29985 11.6252L11.5315 7.58565C11.7717 7.28541 12.2283 7.28541 12.4685 7.58565L15.7001 11.6252C15.8755 11.8443 15.8755 12.1557 15.7001 12.3748Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M12 22V20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M12 4V2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M4 12H2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M22 12H20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>, this);
                 case 'cutting-solid':
                 case 'cut':
                     return render(
@@ -651,6 +642,21 @@ export default (editor: Editor) => {
                         <svg width="24" height="24" class="w-icon h-icon stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M20 20H4L16 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M12 20C12 17.8 11.1 15.6 9.2 13.9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                // A number field shows the real size (a ruler under its dimension line) or the offset (a push up from
+                // where it is); sized to sit in front of the number
+                case 'measure-total':
+                    return render(
+                        <svg width="24" height="24" class="w-3.5 h-3.5 stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 4V8M21 4V8M3 6H21" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M3 12.6C3 12.2686 3.26863 12 3.6 12H20.4C20.7314 12 21 12.2686 21 12.6V18.4C21 18.7314 20.7314 19 20.4 19H3.6C3.26863 19 3 18.7314 3 18.4V12.6Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M7 12V15M11 12V14M15 12V15M19 12V14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>, this);
+                case 'measure-offset':
+                    return render(
+                        <svg width="24" height="24" class="w-3.5 h-3.5 stroke-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M5 20H19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>, this);
                 case 'minus':
                     return render(

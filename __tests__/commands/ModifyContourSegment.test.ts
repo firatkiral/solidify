@@ -462,6 +462,16 @@ describe('A rectangle', () => {
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1, 1, 0));
     });
 
+    it('measures each side by its distance to the side opposite', () => {
+        modifyContour.contour = contour;
+        const measures = modifyContour.segmentMeasures;
+        expect(measures.map(m => m?.label)).toEqual(['Width', 'Width', 'Width', 'Width']);
+        for (const m of measures) expect(m!.base).toBeCloseTo(2);
+        // Pushing the left side out by 1, as above, makes it 3 wide
+        const { base, rate } = measures[3]!;
+        expect(base + rate * 1).toBeCloseTo(3);
+    });
+
     describe('with a fillet', () => {
         /**
          *       2
@@ -1421,6 +1431,13 @@ describe('A circle', () => {
         expect(bbox.max).toApproximatelyEqual(new THREE.Vector3(1.5, 1.5, 0));
     });
 
+    it('measures its radius', () => {
+        const [measure] = modifyContour.segmentMeasures;
+        expect(measure!.label).toBe('Radius');
+        expect(measure!.base).toBeCloseTo(1);
+        expect(measure!.rate).toBe(1);
+    });
+
     it('rejects shrinking the radius to zero', async () => {
         modifyContour.distance = -1;
         modifyContour.segment = 0;
@@ -1463,6 +1480,13 @@ describe('A lone arc', () => {
         const { origin, normal } = modifyContour.segmentAngles[0];
         expect(origin).toApproximatelyEqual(middle);
         expect(normal).toApproximatelyEqual(middle.clone().normalize());
+    });
+
+    it('measures its height off its chord', () => {
+        const [measure] = modifyContour.segmentMeasures;
+        expect(measure!.label).toBe('Height');
+        expect(measure!.base).toBeCloseTo(bulge);
+        expect(measure!.rate).toBe(1);
     });
 
     it('bulges out, keeping its endpoints', async () => {

@@ -47,9 +47,11 @@ export class PipeGizmo extends CompositeGizmo<PipeParams> {
 
     get shouldRescaleOnZoom() { return false }
 
+    // Shows values set elsewhere, such as in the dialog
     render(params: PipeParams) {
-        this.sectionSizeGizmo.render(1);
-        this.thicknessGizmo.render(params.thickness1);
+        this.sectionSizeGizmo.value = params.sectionSize;
+        this.angleGizmo.value = params.angle;
+        this.thicknessGizmo.value = params.thickness1;
     }
 }
 

@@ -4,13 +4,14 @@ import { CornerAngle, inst2curve, normalizeCurve } from '../../util/Conversion';
 import * as visual from '../../visual_model/VisualModel';
 import { ContourFilletFactory, SegmentAngle } from "./ContourFilletFactory";
 import { ModifyContourPointParams, MoveContourPointFactory } from "./ModifyContourPointFactory";
-import { ModifyContourSegmentFactory, ModifyContourSegmentParams } from "./ModifyContourSegmentFactory";
+import { ModifyContourSegmentFactory, ModifyContourSegmentParams, SegmentMeasure } from "./ModifyContourSegmentFactory";
 
 type Mode = 'fillet' | 'offset' | 'change-point';
 
 export interface ModifyContourParams extends ModifyContourSegmentParams, ModifyContourPointParams {
     mode: Mode;
     segmentAngles: SegmentAngle[];
+    segmentMeasures: (SegmentMeasure | undefined)[];
     cornerAngles: CornerAngle[];
     radiuses: number[];
     move: THREE.Vector3;
@@ -26,6 +27,7 @@ export class ModifyContourFactory extends GeometryFactory implements ModifyConto
     get radiuses() { return this.fillets.radiuses }
     set radiuses(radiuses: number[]) { this.fillets.radiuses = radiuses }
     get segmentAngles() { return this.segments.segmentAngles }
+    get segmentMeasures() { return this.segments.segmentMeasures }
     get cornerAngles() { return this.fillets.cornerAngles }
     get distance() { return this.segments.distance }
     set distance(distance: number) { this.segments.distance = distance }

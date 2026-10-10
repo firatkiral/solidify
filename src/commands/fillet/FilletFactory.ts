@@ -263,7 +263,7 @@ export class MultiFilletFactory extends MultiGeometryFactory<FilletFactory> impl
 
     get distance2() {
         if (this.factories.length === 0) return 0;
-        return this.factories[this.factories.length - 1].distance1;
+        return this.factories[this.factories.length - 1].distance2;
     }
     set distance2(d: number) {
         for (const factory of this.factories) factory.distance2 = d;

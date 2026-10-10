@@ -3,7 +3,7 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
 import { GizmoMaterial } from "../../command/GizmoMaterials";
-import { AbstractAxisGizmo, arrowGeometry, AxisHelper, lineGeometry, MagnitudeStateMachine } from "../../command/MiniGizmos";
+import { AbstractAxisGizmo, arrowGeometry, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, NumberHelper } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { OffsetCurveParams } from "./OffsetContourFactory";
 
@@ -50,7 +50,7 @@ export class OffsetAxisGizmo extends AbstractAxisGizmo {
     readonly tip = new THREE.Mesh(arrowGeometry, this.material.mesh);
     protected readonly shaft = new Line2(lineGeometry, this.material.line2);
     protected readonly knob = new THREE.Mesh(new THREE.SphereGeometry(0.2), this.editor.gizmos.invisible);
-    readonly helper = new AxisHelper(this.material.line);
+    readonly helper = new CompositeHelper([new AxisHelper(this.material.line), new NumberHelper()]);
 
     constructor(name: string, editor: EditorLike, protected readonly material: GizmoMaterial) {
         super(name, editor);

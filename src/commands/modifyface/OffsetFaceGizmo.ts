@@ -3,9 +3,9 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import c3d from '../../kernel/kernel';
 import { EditorLike, Mode } from "../../command/AbstractGizmo";
 import { CompositeGizmo } from "../../command/CompositeGizmo";
-import { AbstractAxisGizmo, AngleGizmo, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, NumberHelper, sphereGeometry } from "../../command/MiniGizmos";
+import { AbstractAxisGizmo, AngleGizmo, AxisHelper, CompositeHelper, lineGeometry, MagnitudeStateMachine, Measure, NumberHelper, sphereGeometry } from "../../command/MiniGizmos";
 import { CancellablePromise } from "../../util/CancellablePromise";
-import { point2point, vec2vec } from "../../util/Conversion";
+import { deunit, point2point, vec2vec } from "../../util/Conversion";
 import { OffsetFaceParams } from "./OffsetFaceFactory";
 
 export class OffsetFaceGizmo extends CompositeGizmo<OffsetFaceParams> {
@@ -28,6 +28,8 @@ export class OffsetFaceGizmo extends CompositeGizmo<OffsetFaceParams> {
         const { point, normal } = this.placement(this.hint);
         this.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
         this.position.copy(point);
+        this.point.copy(point);
+        distance.measure = this.measureAt(point);
 
         this.add(distance);
         distance.add(angle);
@@ -42,6 +44,32 @@ export class OffsetFaceGizmo extends CompositeGizmo<OffsetFaceParams> {
         });
 
         return super.execute(cb, finishFast);
+    }
+
+    private readonly point = new THREE.Vector3();
+
+    // Shows values set elsewhere, such as in the dialog
+    render(params: OffsetFaceParams) {
+        this.distance.value = params.distance;
+        this.angle.value = params.angle;
+        this.position.set(0, params.distance, 0).applyQuaternion(this.quaternion).add(this.point);
+    }
+
+    // The faces can change while it runs (see OffsetFaceCommand)
+    remeasure() { this.distance.measure = this.measureAt(this.point) }
+    get measure() { return this.distance.measure }
+
+    // With one face, the handle shows the size it sets, as Shapr3D does: a flat face's total thickness back to the face
+    // opposite it, a round wall's radius (a boss grows and a hole shrinks as the face moves out). Several faces, or
+    // other faces, show the offset.
+    private measureAt(point: THREE.Vector3): Measure | undefined {
+        const { params: { faces }, editor: { db } } = this;
+        if (faces.length !== 1) return undefined;
+        const face = db.lookupTopologyItem(faces[0]);
+        const thickness = face.GetThickness(point2point(point));
+        if (thickness !== undefined) return new Measure('Total', deunit(thickness), 1);
+        const cylinder = face.GetCylinder();
+        if (cylinder !== undefined) return new Measure('Radius', deunit(cylinder.radius), cylinder.boss ? 1 : -1);
     }
 
     private placement(point?: THREE.Vector3): { point: THREE.Vector3, normal: THREE.Vector3 } {

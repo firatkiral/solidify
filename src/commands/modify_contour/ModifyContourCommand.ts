@@ -129,6 +129,7 @@ export class RotateControlPointCommand extends Command {
 
         dialog.execute(async (params) => {
             await rotate.update();
+            gizmo.render(params);
         }).resource(this).then(() => this.finish(), () => this.cancel());
 
         gizmo.position.copy(centroid);

@@ -19,7 +19,7 @@ export default (editor: Editor) => {
 
     class Scrubber extends HTMLElement {
         private state: ScrubberState = { tag: 'none' };
-        static get observedAttributes() { return ['value']; }
+        static get observedAttributes() { return ['value', 'measure']; }
 
         private _precision = 3;
         get precision() { return this._precision }
@@ -266,12 +266,12 @@ export default (editor: Editor) => {
             const onBlur = () => { that.state = { tag: 'none' }; that.render() };
             let input;
 
-            const classes = `py-1 px-2 w-full h-6 text-xs leading-tight text-center align-middle rounded bg-ui-raised text-ui-text ${this.isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-ui-hover'}`;
+            const classes = `py-1 px-2 w-full h-6 text-xs leading-tight text-center rounded-md bg-ui-raised text-ui-text ${this.isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-ui-hover'}`;
             switch (this.state.tag) {
                 case 'none':
                 case 'dragging':
-                    input = <div class={classes} onPointerDown={this.onPointerDown} disabled={this.isDisabled} tabIndex={0} onFocus={this.onFocus}>
-                        <span class="prefix"></span>
+                    input = <div class={`flex justify-center items-center ${classes}`} onPointerDown={this.onPointerDown} disabled={this.isDisabled} tabIndex={0} onFocus={this.onFocus}>
+                        <span class="flex prefix">{this.measureToggle()}</span>
                         <span class="value">{full}</span>
                         <span class="suffix">{suffix}</span>
                     </div>
@@ -286,6 +286,23 @@ export default (editor: Editor) => {
             if (disabled !== undefined) checkbox = <input type="checkbox" checked={!this.isDisabled} onChange={this.toggle} onMouseDown={e => e.preventDefault()}></input>;
 
             render(<> {checkbox} {input} </>, this);
+        }
+
+        // With measure="Total" (or "Radius", "Offset"...), the field shows that kind of value, and an icon in front of it
+        // switches it: the field fires 'measure' and its owner changes the value and the measure it shows.
+        private measureToggle() {
+            const measure = this.getAttribute('measure');
+            if (measure === null || this.isDisabled) return null;
+            const offset = measure === 'Offset';
+            const onClick = (e: Event) => {
+                e.stopPropagation();
+                this.dispatchEvent(new Event('measure'));
+            };
+            return <button type="button" class={`flex items-center mr-1 ${offset ? 'text-ui-accent' : 'text-ui-faint hover:text-ui-title'}`} aria-label={`${measure}, click to switch`} onPointerDown={e => e.stopPropagation()} onClick={onClick}>
+                {/* An icon draws once, when attached; the key swaps it for a new one */}
+                <solidify-icon key={offset ? 'offset' : 'total'} name={offset ? 'measure-offset' : 'measure-total'}></solidify-icon>
+                <solidify-tooltip placement="top">{`${measure}, click to switch`}</solidify-tooltip>
+            </button>;
         }
 
         attributeChangedCallback(name: string, oldValue: any, newValue: any) {

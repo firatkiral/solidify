@@ -31,7 +31,7 @@ export class FilletSolidCommand extends Command {
         dialog.execute(async (params) => {
             gizmo.toggle(fillet.mode);
             keyboard.toggle(fillet.mode);
-            gizmo.render(params.distance1);
+            gizmo.render(params);
             await fillet.update();
         }).resource(this).then(() => this.finish(), () => this.cancel());
 

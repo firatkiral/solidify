@@ -17,6 +17,7 @@ export class LoftCommand extends Command {
         const dialog = new LoftDialog(loft, this.editor.signals);
 
         dialog.execute(async (params) => {
+            gizmo.value = params.thickness1;
             await loft.update();
         }).resource(this).then(() => this.finish(), () => this.cancel());
 

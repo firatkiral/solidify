@@ -583,6 +583,48 @@ export class Face extends TopologyItem {
     IsPlanar() { return this.adaptor().GetType() === oc.GeomAbs_SurfaceType.GeomAbs_Plane }
     surfaceType() { return this.adaptor().GetType() }
 
+    // A cylindrical face's radius, and whether the material is inside it (a boss) rather than around it (a hole);
+    // undefined for other faces
+    GetCylinder(): { radius: number, boss: boolean } | undefined {
+        if (this.adaptor().GetType() !== oc.GeomAbs_SurfaceType.GeomAbs_Cylinder) return undefined;
+        const cylinder = this.adaptor().Cylinder();
+        const axis = cylinder.Axis();
+        const radius = cylinder.Radius();
+        const origin = cart(axis.Location()), direction = vec(axis.Direction());
+        axis.delete(); cylinder.delete();
+        const { point, normal } = this.GetAnyPointOn();
+        const d = new Vector3D(point.x - origin.x, point.y - origin.y, point.z - origin.z);
+        const along = dot(d, direction);
+        const radial = new Vector3D(d.x - along * direction.x, d.y - along * direction.y, d.z - along * direction.z);
+        return { radius, boss: dot(radial, normal) > 0 };
+    }
+
+    // How far the solid goes on behind this planar face at p, a point on it: the distance back to the nearest face of
+    // the solid that is parallel to it, faces the other way and lies right behind p. Undefined when there is none.
+    GetThickness(p: CartPoint3D): number | undefined {
+        if (!this.IsPlanar()) return undefined;
+        const { normal } = this.GetAnyPointOn();
+        let result: number | undefined;
+        for (const other of this.solid.GetFaces()) {
+            if (other.index === this.index || !other.IsPlanar()) continue;
+            const { point, normal: n } = other.GetAnyPointOn();
+            if (dot(normal, n) > -1 + 1e-9) continue;
+            const distance = dot(new Vector3D(p.x - point.x, p.y - point.y, p.z - point.z), normal);
+            if (distance < 1e-6 || (result !== undefined && distance >= result)) continue;
+            const behind = new CartPoint3D(p.x - normal.x * distance, p.y - normal.y * distance, p.z - normal.z * distance);
+            if (other.contains(behind)) result = distance;
+        }
+        return result;
+    }
+
+    private contains(p: CartPoint3D) {
+        const vertex = new oc.BRepBuilderAPI_MakeVertex(gpPnt(p)).Vertex();
+        const nearest = new oc.BRepExtrema_DistShapeShape(vertex, this.shape);
+        const result = nearest.IsDone() && nearest.Value() < 1e-5;
+        nearest.delete();
+        return result;
+    }
+
     GetAnyPointOn() {
         const [u, v] = this.toSurface(0.5, 0.5);
         return { point: this.surfacePoint(u, v), normal: this.surfaceNormal(u, v) };

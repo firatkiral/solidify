@@ -7,6 +7,7 @@ import { AbstractAxisGizmo, arrowGeometry, AxisHelper, CircularGizmo, CompositeH
 import { ProxyCamera } from "../../components/viewport/ProxyCamera";
 import { CancellablePromise } from "../../util/CancellablePromise";
 import { roundToStep } from "../../util/Conversion";
+import { formatLength } from "../../util/Units";
 import { MoveParams } from "./TranslateItemFactory";
 
 const X = new THREE.Vector3(1, 0, 0);
@@ -77,16 +78,29 @@ export class MoveGizmo extends CompositeGizmo<MoveParams> {
         return super.execute(cb, mode);
     }
 
+    // Shows a move set elsewhere, such as in the dialog: on the axis handles, in the gizmo's own axes, with the planar
+    // and screen handles back at rest, so the next drag adds to it (see set in execute)
     render(params: MoveParams) {
-        this.x.value = params.move.x;
-        this.y.value = params.move.y;
-        this.z.value = params.move.z;
+        const local = params.move.clone().applyQuaternion(this.quaternion.clone().invert());
+        this.x.value = local.x;
+        this.y.value = local.y;
+        this.z.value = local.z;
+        for (const planar of [this.xy, this.yz, this.xz]) planar.value = new THREE.Vector3();
+        this.screen.value = new THREE.Vector3();
         this.position.copy(this.pivot).add(params.move);
     }
 }
 
 export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
     readonly state = new VectorStateMachine(new THREE.Vector3());
+    // How far it has moved
+    readonly helper = new NumberHelper<THREE.Vector3>(move => formatLength(move.length()));
+
+    constructor(name: string, editor: EditorLike, material: GizmoMaterial) {
+        super(name, editor, material);
+        this.helper.position.set(0.5, 1, 0);
+        this.add(this.helper);
+    }
 
     onPointerMove(cb: (value: THREE.Vector3) => void, intersect: Intersector, info: MovementInfo) {
         const { plane, startMousePosition, state } = this;
@@ -106,11 +120,13 @@ export class PlanarMoveGizmo extends PlanarGizmo<THREE.Vector3> {
 
 export class CircleMoveGizmo extends CircularGizmo<THREE.Vector3> {
     private readonly delta = new THREE.Vector3();
-    helper = undefined;
+    // How far it has moved
+    readonly helper = new NumberHelper<THREE.Vector3>(move => formatLength(move.length()));
 
     constructor(name: string, editor: EditorLike) {
         super(name, editor, editor.gizmos.white, new VectorStateMachine(new THREE.Vector3()));
         this.setup();
+        this.add(this.helper);
     }
 
     onPointerMove(cb: (delta: THREE.Vector3) => void, intersect: Intersector, info: MovementInfo) {

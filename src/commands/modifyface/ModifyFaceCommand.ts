@@ -38,7 +38,7 @@ export class OffsetFaceCommand extends Command {
         offset.faces = faces;
 
         const gizmo = new OffsetFaceGizmo(offset, this.editor, this.point);
-        const dialog = new OffsetFaceDialog(offset, this.agent, this.editor.signals);
+        const dialog = new OffsetFaceDialog(offset, this.agent, this.editor.signals, () => gizmo.measure);
         const keyboard = new OffsetFaceKeyboardGizmo(this.editor);
 
         const objectPicker = new ObjectPicker(this.editor, undefined, 'viewport-selector[quasimode]');
@@ -51,6 +51,7 @@ export class OffsetFaceCommand extends Command {
         }).resource(this);
 
         dialog.execute(async (params) => {
+            gizmo.render(offset);
             await offset.update();
         }).resource(this).then(() => this.finish(), () => this.cancel());
 
@@ -64,6 +65,8 @@ export class OffsetFaceCommand extends Command {
 
         quasimode.execute(delta => {
             offset.faces = [...objectPicker.selection.selected.faces];
+            gizmo.remeasure();
+            dialog.render();
         }, 1, Number.MAX_SAFE_INTEGER, SelectionMode.Face).resource(this)
 
         await this.finished;

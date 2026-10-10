@@ -2,6 +2,7 @@ import { CompositeDisposable, Disposable } from "event-kit";
 import { Prompt } from "../components/dialog/Prompt";
 import { EditorSignals } from "../editor/EditorSignals";
 import { AlreadyFinishedError, CancellablePromise } from "../util/CancellablePromise";
+import type { Measure } from "./MiniGizmos";
 import { Executable } from "./Quasimode";
 import * as THREE from 'three';
 
@@ -15,13 +16,24 @@ export abstract class AbstractDialog<T> extends HTMLElement implements Executabl
     connectedCallback() { this.render() }
     disconnectedCallback() { }
 
-    constructor(private readonly signals: EditorSignals) {
+    constructor(protected readonly signals: EditorSignals) {
         super();
         this.render = this.render.bind(this);
     }
 
     abstract get name(): string;
     abstract render(): void;
+
+    // From what a field shows to the value it sets; the same unless the field shows a measure (see Measure)
+    protected fromShown(key: string, value: any): any { return value }
+
+    // A field showing a measure switches it between the real size and the offset (see NumberScrubber)
+    protected switchMeasure(measure: Measure | undefined) {
+        if (measure === undefined) return;
+        measure.offset = !measure.offset;
+        this.render();
+        this.signals.gizmoChanged.dispatch();
+    }
 
     protected onChange = (e: Event) => {
         e.stopPropagation();
@@ -46,6 +58,7 @@ export abstract class AbstractDialog<T> extends HTMLElement implements Executabl
                 }
 
                 const key = e.target.getAttribute('name')!;
+                value = this.fromShown(key, value);
                 if (/\./.test(key)) {
                     const [key1, key2] = key.split(/\./);
                     this.params[key1 as keyof T][key2 as keyof T[keyof T]] = value;

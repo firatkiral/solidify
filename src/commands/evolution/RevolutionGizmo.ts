@@ -32,9 +32,10 @@ export class RevolutionGizmo extends CompositeGizmo<RevolutionParams> {
         return super.execute(cb, finishFast);
     }
 
+    // Shows values set elsewhere, such as in the dialog
     render(params: RevolutionParams) {
-        // this.angle.render(params.side1);
-        this.thickness.render(params.thickness1);
+        this.angle.value = params.side1;
+        this.thickness.value = params.thickness1;
     }
 
     get shouldRescaleOnZoom() { return false }
