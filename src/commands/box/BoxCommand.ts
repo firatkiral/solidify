@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { targetsLabel } from "../../components/dialog/Prompt";
 import Command from "../../command/Command";
 import { height, Measurements, rectangleOf } from "../../command/Measurements";
-import { PointPicker, PointResult } from "../../command/point-picker/PointPicker";
+import { pickHeight, PointPicker, PointResult } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import * as visual from "../../visual_model/VisualModel";
 import { PossiblyBooleanKeyboardGizmo } from "../boolean/BooleanKeyboardGizmo";
@@ -53,7 +53,7 @@ export class ThreePointBoxCommand extends Command {
         const base = ThreePointRectangleFactory.orthogonal(p1, p2, p3);
         const baseCenter = base.p1.clone().lerp(base.p3, 0.5), baseCorner = base.p3.clone();
         const heightNormal = ThreePointBoxFactory.heightNormal(base.p1, base.p2, base.p3).clone();
-        await pointPicker.execute(({ point: p4 }) => {
+        await pickHeight(this.editor, baseCorner, heightNormal, ({ point: p4 }) => {
             box.p4 = p4;
             box.update();
             keyboard.toggle(box.isOverlapping);
@@ -79,7 +79,7 @@ export class CornerBoxCommand extends Command {
         const dialog = new BoxDialog(box, this.editor.signals);
         const gizmo = new EditBoxGizmo(box, this.editor);
 
-        let pointPicker = new PointPicker(this.editor);
+        const pointPicker = new PointPicker(this.editor);
         pointPicker.facePreferenceMode = 'strong';
         pointPicker.straightSnaps.delete(AxisSnap.X);
         pointPicker.straightSnaps.delete(AxisSnap.Y);
@@ -121,10 +121,8 @@ export class CornerBoxCommand extends Command {
         const keyboard = new PossiblyBooleanKeyboardGizmo("box", this.editor);
         keyboard.prepare(box).resource(this);
 
-        pointPicker = new PointPicker(this.editor);
-        pointPicker.restrictToLine(p2, box.heightNormal);
         const heightNormal = box.heightNormal.clone(), baseCenter = p1.clone().lerp(p2, 0.5);
-        await pointPicker.execute(({ point: p3 }) => {
+        await pickHeight(this.editor, p2, heightNormal, ({ point: p3 }) => {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);
@@ -179,7 +177,7 @@ export class CenterBoxCommand extends Command {
         box.targets = [...selection.solids];
         let { pr1, pr2 } = this;
 
-        let pointPicker = new PointPicker(this.editor);
+        const pointPicker = new PointPicker(this.editor);
         pointPicker.facePreferenceMode = 'strong';
         pointPicker.straightSnaps.delete(AxisSnap.X);
         pointPicker.straightSnaps.delete(AxisSnap.Y);
@@ -219,10 +217,8 @@ export class CenterBoxCommand extends Command {
         const keyboard = new PossiblyBooleanKeyboardGizmo("box", this.editor);
         keyboard.prepare(box).resource(this);
 
-        pointPicker = new PointPicker(this.editor);
-        pointPicker.restrictToLine(p2, box.heightNormal);
         const heightNormal = box.heightNormal.clone();
-        await pointPicker.execute(({ point: p3 }) => {
+        await pickHeight(this.editor, p2, heightNormal, ({ point: p3 }) => {
             box.p3 = p3;
             box.update();
             keyboard.toggle(box.isOverlapping);

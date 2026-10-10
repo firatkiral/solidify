@@ -106,7 +106,7 @@ export class AxisSnap extends RaycastableSnap implements ChoosableSnap {
     isCoplanar(plane: THREE.Plane): boolean {
         const { o, n } = this;
         const a = o, b = o.clone().add(n);
-        return plane.distanceToPoint(a) < 10e-6 && plane.distanceToPoint(b) < 10e-6;
+        return Math.abs(plane.distanceToPoint(a)) < 10e-6 && Math.abs(plane.distanceToPoint(b)) < 10e-6;
     }
 }
 
@@ -141,5 +141,13 @@ export class LineAxisSnap extends AxisSnap {
     override isValid(pt: THREE.Vector3): boolean {
         const { n } = this;
         return Math.abs(pt.dot(n)) > 10e-6;
+    }
+}
+
+// The height off a base, along its normal: points in the base's plane give no height, wherever the base is
+export class HeightAxisSnap extends LineAxisSnap {
+    override isValid(pt: THREE.Vector3): boolean {
+        const { n, o } = this;
+        return Math.abs(this.valid.copy(pt).sub(o).dot(n)) > 10e-6;
     }
 }

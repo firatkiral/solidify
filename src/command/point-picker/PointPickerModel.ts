@@ -6,7 +6,7 @@ import { DatabaseLike } from "../../editor/DatabaseLike";
 import { EditorSignals } from '../../editor/EditorSignals';
 import { ConstructionPlane } from "../../editor/snaps/ConstructionPlaneSnap";
 import { AxisAxisCrossPointSnap, AxisCurveCrossPointSnap, CurveEdgeSnap, CurveEndPointSnap, CurvePointSnap, CurveSnap, FaceCenterPointSnap, FaceSnap } from "../../editor/snaps/Snaps";
-import { AxisSnap, LineAxisSnap, PointAxisSnap } from "../../editor/snaps/AxisSnap";
+import { AxisSnap, HeightAxisSnap, LineAxisSnap, PointAxisSnap } from "../../editor/snaps/AxisSnap";
 import { PlaneSnap } from "../../editor/snaps/PlaneSnap";
 import { PointSnap } from "../../editor/snaps/PointSnap";
 import { ChoosableSnap, RaycastableSnap, OrRestriction, Restriction, Snap } from "../../editor/snaps/Snap";
@@ -229,7 +229,15 @@ export class PointPickerModel {
     }
 
     restrictToLine(origin: THREE.Vector3, direction: THREE.Vector3) {
-        const line = new LineAxisSnap(direction, origin);
+        this.restrictToAxis(new LineAxisSnap(direction, origin));
+    }
+
+    // A height off a base through origin along its normal, e.g. a box's or a cylinder's
+    restrictToHeight(origin: THREE.Vector3, normal: THREE.Vector3) {
+        this.restrictToAxis(new HeightAxisSnap(normal, origin));
+    }
+
+    private restrictToAxis(line: LineAxisSnap) {
         this._restriction = line;
         this.lineChoice = { snap: line, sticky: false };
         this._choice = this.lineChoice;

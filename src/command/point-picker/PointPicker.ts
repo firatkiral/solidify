@@ -348,6 +348,7 @@ export class PointPicker implements Executable<PointResult, PointResult> {
     restrictToPlaneThroughPoint(pt: THREE.Vector3, snap?: Snap) { this.model.restrictToPlaneThroughPoint(pt, snap) }
     restrictToPlane(plane: PlaneSnap) { return this.model.restrictToPlane(plane) }
     restrictToLine(origin: THREE.Vector3, direction: THREE.Vector3) { this.model.restrictToLine(origin, direction) }
+    restrictToHeight(origin: THREE.Vector3, normal: THREE.Vector3) { this.model.restrictToHeight(origin, normal) }
     addAxesAt(pt: THREE.Vector3, orientation = new THREE.Quaternion()) { this.model.addAxesAt(pt, orientation) }
     addSnap(...snaps: (PointSnap | RaycastableSnap)[]) { this.model.addSnap(...snaps) }
     addEssentialSnap(...snaps: PointSnap[]) { this.model.addEssentialSnap(...snaps) }
@@ -356,6 +357,14 @@ export class PointPicker implements Executable<PointResult, PointResult> {
     set facePreferenceMode(facePreferenceMode: PreferenceMode) { this.model.facePreferenceMode = facePreferenceMode }
 
     undo() { this.model.undo() }
+}
+
+// The height of a solid on a base (a box's, a cylinder's): one value along the base's normal through origin. Wherever the
+// cursor is, it takes the closest point on that normal; only points snap, to their level along it.
+export function pickHeight(editor: EditorLike, origin: THREE.Vector3, normal: THREE.Vector3, cb: (pt: PointResult) => void): CancellablePromise<PointResult> {
+    const picker = new PointPicker(editor);
+    picker.restrictToHeight(origin, normal);
+    return picker.execute(cb);
 }
 
 type ParseResult<T> = { tag: 'return-early', cancellable: CancellablePromise<PointResult> } | { tag: 'continue', _options: PointPickerOptions, _cb: ((pt: PointResult) => T) | undefined };

@@ -4,7 +4,7 @@ import * as THREE from "three";
 import Command from "../../command/Command";
 import { height, Measurements, radius } from "../../command/Measurements";
 import { ObjectPicker } from "../../command/ObjectPicker";
-import { PointPicker } from "../../command/point-picker/PointPicker";
+import { pickHeight, PointPicker } from "../../command/point-picker/PointPicker";
 import { AxisSnap } from "../../editor/snaps/AxisSnap";
 import { SelectionMode } from "../../selection/SelectionModeSet";
 import * as visual from "../../visual_model/VisualModel";
@@ -24,7 +24,7 @@ export class CylinderCommand extends Command {
         const gizmo = new EditCylinderGizmo(cylinder, this.editor);
 
         const circle = new CenterCircleFactory(this.editor.db, this.editor.materials, this.editor.signals).resource(this);
-        let pointPicker = new PointPicker(this.editor);
+        const pointPicker = new PointPicker(this.editor);
         pointPicker.facePreferenceMode = 'strong';
         pointPicker.straightSnaps.delete(AxisSnap.Z);
         const { point: p1, info: { snap } } = await pointPicker.execute().resource(this);
@@ -47,10 +47,8 @@ export class CylinderCommand extends Command {
         keyboard.prepare(cylinder).resource(this);
 
         // Like the box, the height runs along the base's normal wherever the cursor is, instead of falling back to the floor off-axis.
-        pointPicker = new PointPicker(this.editor);
         const axis = Z.clone().applyQuaternion(baseOrientation);
-        pointPicker.restrictToLine(p1, axis);
-        await pointPicker.execute(({ point: p3 }) => {
+        await pickHeight(this.editor, p1, axis, ({ point: p3 }) => {
             cylinder.p2 = p3;
             cylinder.update();
             keyboard.toggle(cylinder.isOverlapping);

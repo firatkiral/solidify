@@ -16,7 +16,7 @@ import { SolidCopier } from "../src/editor/SolidCopier";
 import * as visual from '../src/visual_model/VisualModel';
 import { FakeMaterials } from "../__mocks__/FakeMaterials";
 import './matchers';
-import { AxisSnap, LineAxisSnap } from "../src/editor/snaps/AxisSnap";
+import { AxisSnap, HeightAxisSnap, LineAxisSnap } from "../src/editor/snaps/AxisSnap";
 import { OrRestriction } from "../src/editor/snaps/Snap";
 import { PlaneGrid, PlaneSnap } from "../src/editor/snaps/PlaneSnap";
 import { PointSnap } from "../src/editor/snaps/PointSnap";
@@ -87,6 +87,20 @@ describe(AxisSnap, () => {
         const grid = new PlaneGrid(plane, 0.05);
         expect(height.project(new THREE.Vector3(0.33, 0.47, 0.1), grid).position).toApproximatelyEqual(new THREE.Vector3(0.33, 0.47, 0.12));
         expect(height.project(new THREE.Vector3(0.33, 0.47, -0.1), grid).position).toApproximatelyEqual(new THREE.Vector3(0.33, 0.47, -0.08));
+    });
+
+    test("a height whose normal points away from the plane's still steps along the line, not onto the plane", () => {
+        const plane = new ConstructionPlaneSnap(new THREE.Vector3(0, 0, 1));
+        const height = new HeightAxisSnap(new THREE.Vector3(0, 0, -1), new THREE.Vector3(9, -9, 0));
+        expect(height.isCoplanar(plane.plane)).toBe(false);
+        expect(height.project(new THREE.Vector3(9, -9, 116.8), new PlaneGrid(plane, 10)).position).toApproximatelyEqual(new THREE.Vector3(9, -9, 120));
+    });
+
+    test("a height off a raised base: points in the base's plane give no height", () => {
+        const height = new HeightAxisSnap(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0.3, 0.4, 0.5));
+        expect(height.isValid(new THREE.Vector3(2, -1, 0.5))).toBe(false);
+        expect(height.isValid(new THREE.Vector3(2, -1, 0.7))).toBe(true);
+        expect(height.isValid(new THREE.Vector3(2, -1, 0))).toBe(true);
     });
 })
 

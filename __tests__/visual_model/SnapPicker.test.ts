@@ -26,7 +26,7 @@ import * as visual from '../../src/visual_model/VisualModel';
 import { MakeViewport } from "../../__mocks__/FakeViewport";
 import '../matchers';
 import { PointSnap } from '../../src/editor/snaps/PointSnap';
-import { PointAxisSnap } from '../../src/editor/snaps/AxisSnap';
+import { AxisSnap, PointAxisSnap } from '../../src/editor/snaps/AxisSnap';
 import { Scene } from '../../src/editor/Scene';
 
 let editor: Editor;
@@ -159,6 +159,45 @@ describe(PointPickerSnapPicker, () => {
         const results = picker.intersect(pointPicker, cache, scene);
         expect(results.length).toBe(1);
         expect(results[0].snap).toBeInstanceOf(FaceCenterPointSnap);
+    });
+
+    describe('a height', () => {
+        // A base standing upright at x=-0.5, its height along +X; the cursor ray (straight down the Z axis) meets the
+        // height line at the origin
+        beforeEach(() => {
+            pointPicker.restrictToHeight(new THREE.Vector3(-0.5, 0, 0), new THREE.Vector3(1, 0, 0));
+        });
+
+        test('follows the cursor', () => {
+            raycast.mockReturnValueOnce([]).mockReturnValueOnce([]);
+            const results = picker.intersect(pointPicker, cache, scene);
+            expect(results[0].position).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
+        });
+
+        test('takes the level of a point', () => {
+            const object = [...cache.geometrySnaps.points][0];
+            const points = object.userData.points as PointSnap[];
+            const index = points.findIndex(p => p.position.x > 0.1);
+            raycast.mockReturnValueOnce([]).mockReturnValueOnce([{ point: points[index].position.clone(), distance: 1, object, index }]);
+            const results = picker.intersect(pointPicker, cache, scene);
+            expect(results[0].position).toApproximatelyEqual(new THREE.Vector3(points[index].position.x, 0, 0));
+        });
+
+        test("a point in the base's plane gives no height, the cursor does", () => {
+            pointPicker.addSnap(new PointSnap("foo", new THREE.Vector3(-0.5, 0.2, 0.1)));
+            const object = [...pointPicker.snaps.otherAddedSnaps.cache.points][0];
+            raycast.mockReturnValueOnce([]).mockReturnValueOnce([{ point: new THREE.Vector3(-0.5, 0.2, 0.1), distance: 1, object, index: 0 }]);
+            const results = picker.intersect(pointPicker, cache, scene);
+            expect(results[0].position).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
+        });
+
+        test('an axis under the cursor does not replace it', () => {
+            const axis = new AxisSnap("foo", new THREE.Vector3(0, 1, 0), new THREE.Vector3(0.3, 0, 0));
+            pointPicker.addSnap(axis);
+            raycast.mockReturnValueOnce([]).mockReturnValueOnce([{ point: new THREE.Vector3(0.3, 0.1, 0), distance: 1, object: axis.snapper }]);
+            const results = picker.intersect(pointPicker, cache, scene);
+            expect(results[0].position).toApproximatelyEqual(new THREE.Vector3(0, 0, 0));
+        });
     });
 });
 

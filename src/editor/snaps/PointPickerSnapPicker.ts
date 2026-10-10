@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { PointPickerModel } from "../../command/point-picker/PointPickerModel";
 import { Viewport } from "../../components/viewport/Viewport";
 import { Scene } from "../Scene";
+import { HeightAxisSnap } from "./AxisSnap";
 import { ConstructionPlaneSnap, FaceConstructionPlaneSnap } from "./ConstructionPlaneSnap";
 import { PointPickerSnapPickerStrategy } from "./PointPickerSnapPickerStrategy";
 import { PointSnap } from "./PointSnap";
@@ -80,7 +81,10 @@ export class PointPickerSnapPicker {
 
         if (choice !== undefined) {
             const chosen = strategy.intersectChoice(choice, raycaster);
-            const except = intersections.filter(i => !(i.snap instanceof FaceConstructionPlaneSnap || i.snap instanceof ConstructionPlaneSnap));
+            let except = intersections.filter(i => !(i.snap instanceof FaceConstructionPlaneSnap || i.snap instanceof ConstructionPlaneSnap));
+            // A height follows the cursor or takes the level of a point (corner, midpoint, center...); a face, edge,
+            // curve or axis under the cursor would replace the cursor
+            if (choice.snap instanceof HeightAxisSnap) except = except.filter(i => i.snap instanceof PointSnap);
             const projected = strategy.projectIntersectionOntoChoice(choice.snap, viewport, except);
             const result = projected.length > 0 ? projected : chosen;
             return strategy.applyRestrictions(gridStep, pointPicker, viewport, result);
