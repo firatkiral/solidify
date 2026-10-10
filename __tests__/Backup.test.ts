@@ -100,6 +100,18 @@ describe(Backup, () => {
         expect(other.document.id).not.toBe(editor.document.id);
     });
 
+    test("an autosave keeps how the document looked, which File › Restore shows", async () => {
+        const editor = await started();
+        const thumbnail = new Uint8Array([137, 80, 78, 71]);
+        jest.spyOn(editor, 'thumbnail').mockResolvedValue(thumbnail);
+        await edit(editor, 1);
+        await editor.backup.save();
+        close(editor);
+
+        const [slot] = await (await started()).backup.restorable();
+        expect(slot.thumbnail).toEqual(thumbnail);
+    });
+
     test("an empty new document isn't autosaved", async () => {
         const editor = await started();
         editor.signals.historyChanged.dispatch();
@@ -539,14 +551,25 @@ describe(Backup, () => {
         expect(browser.autosaves.items.get(corrupt()[0])).toEqual(truncated);
     });
 
-    test("New starts the tab over, and the browser doesn't ask again before it goes", async () => {
+    test("New starts an empty document in place, and the last one stays in File › Restore", async () => {
         const editor = await started();
         await edit(editor, 1);
+        await editor.backup.save();
+        const before = editor.document.id;
         const platform = platformOf(editor);
         platform.dialogs.answer = 1; // Don't Save
         await editor.newDocument();
-        expect(platform.reload).toHaveBeenCalled();
-        expect(platform.session.get()).toEqual({});
+        expect(platform.reload).not.toHaveBeenCalled();
+        expect(editor._db.items.length).toBe(0);
+        expect(editor.history.undoStack.length).toBe(0);
+        expect(editor.document.id).not.toBe(before);
+        expect(editor.document.modified).toBe(false);
+        expect((await editor.backup.restorable()).map(s => s.id)).toEqual([before]);
+
+        // A reload stays on the new document
+        const restarted = await reloaded(editor);
+        expect(restarted._db.items.length).toBe(0);
+        expect(restarted.document.id).not.toBe(before);
 
         const leaving = new Event('beforeunload', { cancelable: true });
         window.dispatchEvent(leaving);

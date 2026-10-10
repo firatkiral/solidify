@@ -70,6 +70,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
     private readonly helpersPass: RenderPass;
 
     private readonly navigatorGizmo: ViewportNavigatorGizmo;
+    private readonly navigatorPass: ViewportNavigatorPass;
     private readonly points = new ViewportPointControl(this, this.editor);
     readonly selector = new ViewportSelector(this, this.editor);
     readonly multiplexer = new ViewportControlMultiplexer(this, this.editor.layers, this.editor.db, this.editor.scene, this.editor.signals);
@@ -128,6 +129,7 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
             const navigatorGizmo = new ViewportNavigatorGizmo(this, this.editor.settings.Viewport.navigator.size, this.editor.settings.Viewport.navigator.padding);
             this.navigatorGizmo = navigatorGizmo;
             const navigatorPass = new ViewportNavigatorPass(navigatorGizmo, this.camera);
+            this.navigatorPass = navigatorPass;
             const gammaCorrection = new ShaderPass(GammaCorrectionShader);
 
             this.composer.addPass(renderPass);
@@ -388,17 +390,25 @@ export class Viewport implements MementoOriginator<ViewportMemento> {
 
     // A square picture of the view, cut from its middle. It's drawn right after rendering, while the canvas still holds the frame.
     snapshot(size: number, background: string): HTMLCanvasElement {
-        this.setNeedsRender();
-        this.render(this.lastFrameNumber + 1);
-        const source = this.renderer.domElement;
-        const canvas = document.createElement('canvas');
-        canvas.width = canvas.height = size;
-        const context = canvas.getContext('2d')!;
-        context.fillStyle = background;
-        context.fillRect(0, 0, size, size);
-        const side = Math.min(source.width, source.height);
-        context.drawImage(source, (source.width - side) / 2, (source.height - side) / 2, side, side, 0, 0, size, size);
-        return canvas;
+        // Without the navigation cube, which is for getting around the view, not part of the document
+        this.navigatorPass.enabled = false;
+        try {
+            this.setNeedsRender();
+            this.render(this.lastFrameNumber + 1);
+            const source = this.renderer.domElement;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const context = canvas.getContext('2d')!;
+            context.fillStyle = background;
+            context.fillRect(0, 0, size, size);
+            const side = Math.min(source.width, source.height);
+            context.drawImage(source, (source.width - side) / 2, (source.height - side) / 2, side, side, 0, 0, size, size);
+            return canvas;
+        } finally {
+            this.navigatorPass.enabled = true;
+            // The next frame, drawn before the screen updates, has it again
+            this.setNeedsRender();
+        }
     }
 
     private addOverlays(scene: THREE.Scene) {

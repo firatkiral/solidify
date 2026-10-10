@@ -276,8 +276,8 @@ describe('Integration test', () => {
         test('when no geometry or point picker settings', () => {
             expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(1);
             snaps.snapToGrid = true;
-            // The grid puts the plane, the origin and the three axes on the same grid point
-            expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(5);
+            // The grid puts the plane and the origin on the same grid point (the X/Y/Z axes are turned off)
+            expect(picker.intersect(pointPicker, cache, scene)).toHaveLength(2);
         });
 
         describe('when geometry additions', () => {

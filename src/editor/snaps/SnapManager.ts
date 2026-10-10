@@ -36,7 +36,7 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
 
     // Snapping to objects: on while any of Point/Edge/Face/Curve is; with all four off nothing snaps (not even the origin,
     // axes or guide lines). Point is every snap point (corners, midpoints, centers, crossings); Edge, Face and Curve are
-    // anywhere on the geometry itself. The origin and axes also need the Grid toggle.
+    // anywhere on the geometry itself. The origin also needs the Grid toggle.
     static readonly objectLayers: readonly visual.Layers[] = [visual.Layers.SnapPoint, visual.Layers.Face, visual.Layers.Curve, visual.Layers.CurveEdge];
     get enabled() { return this.forcedMask !== 0 || (!this.bypassed && SnapManager.objectLayers.some(layer => this.isLayerOn(layer))) }
     isLayerOn(layer: visual.Layers) { return (this.layers.mask & (1 << layer)) !== 0 }
@@ -81,7 +81,7 @@ export class SnapManager implements MementoOriginator<SnapMemento> {
     get snapToGrid() { return this._snapToGrid && !this.bypassed }
     get snapToGridSetting() { return this._snapToGrid }
 
-    // The origin and the X/Y/Z axes snap only while snapping to the grid
+    // The origin snaps only while snapping to the grid (the X/Y/Z axes are turned off, see SnapManagerGeometryCache)
     private setSnapToGrid(snapToGrid: boolean) {
         this._snapToGrid = snapToGrid;
         snapToGrid ? this.layers.enable(visual.Layers.SnapAxis) : this.layers.disable(visual.Layers.SnapAxis);

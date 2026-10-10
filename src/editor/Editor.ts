@@ -101,7 +101,7 @@ export class Editor {
     readonly keyboard = new KeyboardEventManager(this.keymaps);
     readonly snapBypass = new SnapBypass(this.snaps);
     readonly document = new CurrentDocument(this.history, this.signals, () => this._db.items.length === 0 && this.empties.items.length === 0);
-    readonly backup = new Backup(this.platform.autosaves, this.platform.locks, this.originator, this.document, this.signals, () => this.settings.Autosave.keep);
+    readonly backup = new Backup(this.platform.autosaves, this.platform.locks, this.originator, this.document, this.signals, () => this.settings.Autosave.keep, () => this.thumbnail());
     readonly recent = new RecentDocuments(this.platform.recent);
     readonly highlighter = new RenderedSceneBuilder(this.db, this.scene, this.textures, this.selection, this.styles, this.signals);
     readonly importer = new ImporterExporter(this.originator, this._db, this.empties, this.scene, this.images, this.contours, this.signals, this.meshes);
@@ -199,11 +199,8 @@ export class Editor {
 
     async newDocument() {
         if (!await this.confirmDiscard()) return;
-        // The reload starts an empty document; this one's autosave stays, in File › Restore
-        await this.backup.pause();
-        this.platform.session.set({});
-        this.leaving = true;
-        this.platform.reload();
+        // This one's autosave stays, in File › Restore
+        await this.replaceDocument(newDocumentId(), undefined, async () => { }, false);
     }
 
     async open(file?: OpenedFile) {

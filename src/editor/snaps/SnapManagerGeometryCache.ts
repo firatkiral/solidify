@@ -31,7 +31,7 @@ export class SnapManagerGeometryCache {
     // is on; the origin goes on the SnapAxis layer, so it snaps only while the Grid toggle is on.
     update() {
         const { basicSnaps, geometrySnaps, crossSnaps } = this.snaps.all;
-        const result = [];
+        const result: THREE.Object3D[] = [];
         const geometrySnapCache = new PointSnapCache();
         this._geometrySnaps = geometrySnapCache;
 
@@ -43,7 +43,9 @@ export class SnapManagerGeometryCache {
                 geometrySnapCache.add(new Set([snap]), visual.Layers.SnapAxis);
                 continue;
             } else if (snap instanceof RaycastableSnap) {
-                result.push(snap.snapper);
+                // The world X/Y/Z axes are turned off: with the grid on they pulled points along them, and the vertical
+                // one lifted points drawn on the construction plane off it. Uncomment to snap to them again.
+                // result.push(snap.snapper);
             } else assertUnreachable(snap);
         }
         geometrySnapCache.add(new Set(crossSnaps), visual.Layers.SnapPoint);

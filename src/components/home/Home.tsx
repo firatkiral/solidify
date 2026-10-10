@@ -23,6 +23,21 @@ function when(ms: number) {
 
 const button = "px-3 py-1.5 rounded-md text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus";
 
+const shown = (name: string) => name.replace(/\.solidify$/i, '');
+
+// A document as a tile: how it looked, its name and when it was last changed; dimmed when it can't be opened
+function tile(name: string, time: number, thumbnail: string | undefined, title: string, onClick?: () => void) {
+    return <li class={`group rounded-lg p-1.5 ${onClick !== undefined ? 'cursor-default hover:bg-ui-hover' : 'opacity-50'}`} title={title} onClick={onClick}>
+        <div class="aspect-square rounded-md overflow-hidden bg-ui-viewport ring-1 ring-ui-border flex items-center justify-center">
+            {thumbnail !== undefined
+                ? <img src={thumbnail} alt="" class="w-full h-full object-cover" draggable={false} />
+                : <solidify-icon name="file-menu" class="text-ui-faint"></solidify-icon>}
+        </div>
+        <div class="mt-1.5 text-sm text-ui-title truncate">{name}</div>
+        <div class="text-xs text-ui-muted">{when(time)}</div>
+    </li>;
+}
+
 // What a new tab shows first: a way to start, the documents from before, and work that wasn't saved
 export default (editor: Editor) => {
     class Home extends HTMLElement {
@@ -30,7 +45,8 @@ export default (editor: Editor) => {
         private recent: RecentDocument[] = [];
         private slots: Slot[] = [];
         private autosaved = new Set<string>();
-        private thumbnails = new Map<string, string>();
+        // Each picture's object URL, freed on close
+        private thumbnails = new Map<Uint8Array, string>();
         private command?: Disposable;
         private installOffer?: Disposable;
 
@@ -62,8 +78,8 @@ export default (editor: Editor) => {
                 this.recent = recent;
                 this.slots = slots;
                 this.autosaved = new Set(all.map(s => s.id));
-                for (const { id, thumbnail } of recent) {
-                    if (thumbnail !== undefined) this.thumbnails.set(id, URL.createObjectURL(new Blob([thumbnail], { type: 'image/png' })));
+                for (const { thumbnail } of [...recent, ...slots]) {
+                    if (thumbnail !== undefined) this.thumbnails.set(thumbnail, URL.createObjectURL(new Blob([thumbnail], { type: 'image/png' })));
                 }
             } catch (e) {
                 console.warn(e);
@@ -94,12 +110,6 @@ export default (editor: Editor) => {
             }
         }
 
-        private start = () => {
-            const { document } = editor;
-            if (document.file === undefined && !document.modified) this.close();
-            else editor.newDocument();
-        }
-
         private import = () => {
             this.close();
             editor.import();
@@ -114,6 +124,7 @@ export default (editor: Editor) => {
             const { savesInPlace } = editor.platform.files;
             // Without a handle to its file, a document opens from its autosave, if it has one
             const openable = (d: RecentDocument) => d.handle !== undefined || autosaved.has(d.id);
+            const url = (thumbnail?: Uint8Array) => thumbnail === undefined ? undefined : thumbnails.get(thumbnail);
             render(
                 <div class="fixed inset-0 z-50 flex items-center justify-center bg-ui-backdrop" onPointerDown={e => { if (e.target === e.currentTarget) this.close() }}>
                     <div class="flex flex-col w-[760px] max-w-[92vw] max-h-[88vh] rounded-xl overflow-hidden bg-ui-surface text-ui-text shadow-ui-shadow shadow-2xl ring-1 ring-ui-border">
@@ -130,7 +141,6 @@ export default (editor: Editor) => {
 
                         <div class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
                             <div class="flex flex-wrap items-center gap-2">
-                                <button class={`${button} text-ui-on-primary bg-ui-primary hover:bg-ui-primary-hover`} ref={el => el?.focus()} onClick={this.start}>New</button>
                                 <button class={`${button} text-ui-title bg-ui-raised hover:bg-ui-hover`} onClick={() => editor.open()}>Open…</button>
                                 <button class={`${button} text-ui-title bg-ui-raised hover:bg-ui-hover`} onClick={this.import}>Import…</button>
                                 <span class="pl-2 text-xs text-ui-muted">or drop a .solidify, STEP, STL, 3MF, OBJ or image file anywhere</span>
@@ -141,34 +151,20 @@ export default (editor: Editor) => {
                                 {recent.length === 0
                                     ? <div class="text-sm text-ui-muted">Documents you open or {savesInPlace ? 'save' : 'download'} appear here.</div>
                                     : <ol class="grid grid-cols-4 gap-3">
-                                        {recent.map(d => {
-                                            const ok = openable(d);
-                                            const thumbnail = thumbnails.get(d.id);
-                                            return <li class={`group rounded-lg p-1.5 ${ok ? 'cursor-default hover:bg-ui-hover' : 'opacity-50'}`}
-                                                title={ok ? d.name : `${d.name}: this browser can only open it from its file`}
-                                                onClick={() => { if (ok) editor.openRecent(d) }}>
-                                                <div class="aspect-square rounded-md overflow-hidden bg-ui-viewport ring-1 ring-ui-border flex items-center justify-center">
-                                                    {thumbnail !== undefined
-                                                        ? <img src={thumbnail} alt="" class="w-full h-full object-cover" draggable={false} />
-                                                        : <solidify-icon name="file-menu" class="text-ui-faint"></solidify-icon>}
-                                                </div>
-                                                <div class="mt-1.5 text-sm text-ui-title truncate">{d.name.replace(/\.solidify$/i, '')}</div>
-                                                <div class="text-xs text-ui-muted">{when(d.time)}</div>
-                                            </li>;
-                                        })}
+                                        {recent.map(d => openable(d)
+                                            ? tile(shown(d.name), d.time, url(d.thumbnail), d.name, () => editor.openRecent(d))
+                                            : tile(shown(d.name), d.time, url(d.thumbnail), `${d.name}: this browser can only open it from its file`))}
                                     </ol>}
                             </section>
 
                             {slots.length > 0 &&
                                 <section>
                                     <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ui-muted">Unsaved work</div>
-                                    <ol class="space-y-0.5">
-                                        {slots.map(slot =>
-                                            <li class="flex items-center justify-between px-3 py-1.5 rounded-md text-sm text-ui-text hover:bg-ui-hover cursor-default"
-                                                onClick={() => editor.restore(slot)}>
-                                                <span class="truncate">{slot.name ?? 'Untitled'}{slot.modified ? ' •' : ''}</span>
-                                                <span class="pl-6 text-xs text-ui-muted whitespace-nowrap">{when(slot.time)}</span>
-                                            </li>)}
+                                    <ol class="grid grid-cols-4 gap-3">
+                                        {slots.map(slot => {
+                                            const name = slot.name ?? 'Untitled';
+                                            return tile(`${shown(name)}${slot.modified ? ' •' : ''}`, slot.time, url(slot.thumbnail), name, () => editor.restore(slot));
+                                        })}
                                     </ol>
                                     <div class="mt-2 text-xs text-ui-muted">{restoreNote(editor)}</div>
                                 </section>}

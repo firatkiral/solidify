@@ -15,12 +15,15 @@ export interface Slot {
     readonly time: number;
     // Whether it holds changes that aren't in its file
     readonly modified: boolean;
+    // How it looked when it was written, if there was a view to draw it
+    readonly thumbnail?: Uint8Array;
 }
 
 interface SlotInfo {
     name?: string;
     time: number;
     modified: boolean;
+    thumbnail?: Uint8Array;
 }
 
 // Autosaves are kept in the browser, which may clear them; they're for getting work back, not for keeping it.
@@ -44,6 +47,7 @@ export class Backup {
         private readonly document: CurrentDocument,
         private readonly signals: EditorSignals,
         private readonly keep: () => number,
+        private readonly thumbnail: () => Promise<Uint8Array | undefined>,
     ) {
         // The selection isn't kept, so selecting, and undoing or redoing a selection, writes nothing: writing a large
         // document takes seconds, which every click would wait for
@@ -106,9 +110,11 @@ export class Backup {
         // An empty untitled document has nothing worth an autosave, and mustn't take the untitled one from another
         if (file === undefined && isNew && document.isEmpty()) return;
 
+        // Drawn now, so it shows what's written
+        const thumbnail = this.thumbnail();
         const { json, geometry, images, meshes } = await new SolidifyDocument(this.originator).serialize();
         const data = writeSolidifyFile({ id, json, geometry, images, meshes }, false);
-        const info: SlotInfo = { name: file?.name, time: Date.now(), modified };
+        const info: SlotInfo = { name: file?.name, time: Date.now(), modified, thumbnail: await thumbnail };
         // Together, so an autosave never has another's details
         await store.setMany([[this.dataKey(id), data], [this.infoKey(id), info]]);
         document.autosaved = true;
@@ -149,7 +155,8 @@ export class Backup {
                 console.warn(`Autosave ${id} has unreadable details`);
                 continue;
             }
-            result.push({ id, name: info.name, time: Number(info.time) || 0, modified: info.modified === true });
+            const thumbnail = info.thumbnail instanceof Uint8Array ? info.thumbnail : undefined;
+            result.push({ id, name: info.name, time: Number(info.time) || 0, modified: info.modified === true, thumbnail });
         }
         return result.sort((a, b) => b.time - a.time);
     }
